@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { SITE } from "@/lib/portfolio-content";
 import { useMagnetic } from "@/lib/motion-hooks";
 import PageTransition from "./PageTransition";
+import ThemeToggle from "./ThemeToggle";
 
 /**
  * Header fijo — logo tipográfico a la izquierda, menú mono mayúsculas derecha.
@@ -73,20 +74,22 @@ export default function Header() {
             {SITE.logo}
           </a>
 
-          <nav className="hidden md:flex items-center gap-7" aria-label="Principal">
-            {SITE.nav.map((item) => (
-              <button
-                key={item.label}
-                onClick={() => handleNav(item.target, item.label)}
-                className="mono text-[11px] hover:opacity-100 opacity-80 transition-opacity duration-300"
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-
-          {/* Menú móvil compacto */}
-          <MobileMenu onNav={handleNav} />
+          <div className="flex items-center gap-5 md:gap-7">
+            <nav className="hidden md:flex items-center gap-7" aria-label="Principal">
+              {SITE.nav.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => handleNav(item.target, item.label)}
+                  className="mono text-[11px] hover:opacity-100 opacity-80 transition-opacity duration-300"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+            <ThemeToggle />
+            {/* Menú móvil compacto */}
+            <MobileMenu onNav={handleNav} />
+          </div>
         </div>
       </header>
 

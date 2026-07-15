@@ -15,6 +15,7 @@ import AboutSection from "@/components/portfolio/AboutSection";
 import Achievements from "@/components/portfolio/Achievements";
 import Testimonials from "@/components/portfolio/Testimonials";
 import Blog from "@/components/portfolio/Blog";
+import FAQ from "@/components/portfolio/FAQ";
 import Contact from "@/components/portfolio/Contact";
 import Footer from "@/components/portfolio/Footer";
 import ScrollProgress from "@/components/portfolio/ScrollProgress";
@@ -71,6 +72,7 @@ export default function Home() {
           <Achievements />
           <Testimonials />
           <Blog />
+          <FAQ />
           <Contact />
         </main>
         <Footer />

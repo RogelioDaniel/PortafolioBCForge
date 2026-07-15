@@ -184,6 +184,54 @@ body.theme-dark ::selection {
 }
 
 /* ============================================================
+   Dark mode global del sitio (toggle persistente)
+   Independiente del theme flip de la sección cinética.
+   ============================================================ */
+html.theme-site-dark {
+  --bg-light: #0e0e10;
+  --bg-glow: #2a1f3d;
+  --ink: #f4f4f0;
+  --ink-soft: rgba(244, 244, 240, 0.6);
+  --ink-faint: rgba(244, 244, 240, 0.35);
+  --bg-navy: #1a1530;
+  --pill-border: rgba(244, 244, 240, 0.28);
+  --pill-border-strong: rgba(244, 244, 240, 0.5);
+  --line: rgba(244, 244, 240, 0.14);
+}
+html.theme-site-dark body {
+  background-color: #0e0e10;
+  color: #f4f4f0;
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+html.theme-site-dark ::selection {
+  background: #f4f4f0;
+  color: #0e0e10;
+}
+html.theme-site-dark .bg-noise {
+  opacity: 0.06;
+  mix-blend-mode: screen;
+}
+html.theme-site-dark .pill--solid {
+  background: #f4f4f0;
+  color: #0e0e10;
+  border-color: #f4f4f0;
+}
+html.theme-site-dark .btn-primary {
+  background: #f4f4f0;
+  color: #0e0e10;
+  border-color: #f4f4f0;
+}
+html.theme-site-dark .btn-primary:hover {
+  background: #fff;
+}
+html.theme-site-dark .cursor-dot {
+  background: #f4f4f0;
+}
+html.theme-site-dark .cursor-dot.is-hover {
+  background: #0e0e10;
+}
+
+/* ============================================================
    Componentes recurrentes
    ============================================================ */
 

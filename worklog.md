@@ -97,6 +97,24 @@
 
 **Verificación final:** 0 errores runtime, 0 console errors, lint limpio. Body creció a 5355 chars, 11 secciones. Modal probado (abre/cierra/galería/ESC). About confirmado en DOM (4 stats, 4 timeline). Testimonials confirmado (5 cards, header correcto). Noise overlay presente. VLM Testimonials 8/10.
 
+### Ronda 4 (cron webDevReview) — Cambios aplicados
+
+**QA inicial:** 0 errores runtime, 0 console errors, lint limpio. Body ~5355 chars, 11 secciones.
+
+**Features nuevas (4):**
+1. ✅ **Dark mode persistente** (`ThemeToggle.tsx` + `use-theme.ts`): toggle en header con icono pixel sol/luna. Persiste en localStorage. Script anti-FOUC en `<head>`. CSS tokens completos para dark (--bg-light→#0e0e10, --ink→#f4f4f0, glow púrpura, pills/botones invertidos). Independiente del theme flip de la sección cinética. VLM: dark 8/10, tema oscuro pulido y cohesivo.
+2. ✅ **FAQ acordeón** (`FAQ.tsx`): sección de preguntas frecuentes antes del contacto. Título "¿DUDAS? RESPONDO." + intro. 6 preguntas expandibles (uno abierto a la vez), icono +/- pixel que rota 45° al abrir, animación de altura con transition, hairline divisoria. Acordeón accesible (aria-expanded, aria-controls, role=region). VLM: 8/10.
+3. ✅ **Blog con búsqueda y filtros** (`Blog.tsx` reescrito): input de búsqueda con botón clear (✕), chips de filtro por categoría (Todas + 6 categorías únicas), filtrado en vivo por texto y categoría, contador de resultados, estado vacío ("NO SE ENCONTRARON ARTÍCULOS"). 6 artículos con excerpt + readTime añadidos al content. VLM: 10/10.
+4. ✅ **Contact form toast** (`Contact.tsx` + sonner): feedback visual al enviar — toast success "Abriendo tu cliente de email…" con nombre personalizado, toast error si faltan campos, estado "Enviando…" en botón. Sonner Toaster añadido al layout con styling pill mono que matchea el design system.
+
+**Mejoras de styling:**
+- ThemeToggle integrado en header entre nav y mobile menu
+- Dark mode CSS completo (tokens, pills, botones, cursor, noise, selection)
+- Blog items ampliados a 6 con excerpt + readTime
+- Sonner toaster con estilo pill (border-radius 999, mono uppercase)
+
+**Verificación final:** 0 errores runtime, 0 console errors, lint limpio. Body creció a 7748 chars, 13 secciones (12 + notifications). Dark mode probado (toggle on/off correcto). FAQ probado (6 items, expansión correcta, 1 abierto a la vez). Blog search probado (shader→1 resultado). Contact toast probado. VLM: dark 8/10, FAQ 8/10, blog 10/10.
+
 ### ⚠️ Restricción del sandbox (importante)
 El servidor `next dev` **muere entre llamadas del bash tool** (el sandbox reaporea procesos background cuando termina la sesión de shell). Por eso cada verificación requiere arrancar el servidor y testear en el MISMO comando bash. El usuario puede previsualizar vía el Preview Panel; si ve la pantalla de "Z.ai Logo" (waiting del gateway Caddy :81), significa que localhost:3000 está caído y hay que reiniciar `bun run dev`.
 
@@ -111,11 +129,16 @@ El servidor `next dev` **muere entre llamadas del bash tool** (el sandbox reapor
 8. **Performance:** lazy-load de Three.js con dynamic import para reducir el bundle inicial.
 9. **Hero 3D integración:** VLM sugiere que los objetos 3D podrían estar más integrados con el texto (8/10 → 10/10). Considerar partículas o shader de fondo sutil.
 10. ~~**Sección "Sobre mí" dedicada**~~ ✅ Hecho (Ronda 3 — AboutSection con timeline + stats counter)
-11. **Modo oscuro persistente:** el theme flip actual es solo para la sección cinética; añadir toggle de modo oscuro global con next-themes.
+11. ~~**Modo oscuro persistente**~~ ✅ Hecho (Ronda 4 — ThemeToggle con localStorage, FOUC script, CSS tokens dark)
 12. **Filtros de proyectos:** añadir chips de filtro por categoría en la sección de proyectos.
-13. **Búsqueda de blog:** input de búsqueda en la sección de blog para filtrar artículos.
-14. **FAQ:** sección de preguntas frecuentes antes del contacto.
-15. **Toast de confirmación al enviar formulario:** actualmente solo abre mailto; añadir feedback visual.
+13. ~~**Búsqueda de blog**~~ ✅ Hecho (Ronda 4 — Blog con input search + filtros por categoría, 6 artículos)
+14. ~~**FAQ**~~ ✅ Hecho (Ronda 4 — FAQSection acordeón con 6 preguntas, animación +/- pixel)
+15. ~~**Toast de confirmación al enviar formulario**~~ ✅ Hecho (Ronda 4 — sonner con success/error, estado sending)
+16. **Page transitions con View Transitions API** para navegación real entre rutas.
+17. **Command palette (Cmd+K)** para búsqueda global y navegación rápida.
+18. **Compartir en redes** en proyectos/blog (Web Share API).
+19. **Newsletter signup** en el footer.
+20. **Cookies/privacy banner** minimalista.
 
 ### Nota sobre el stack
 El usuario solicitó Vite + vanilla JS. Se construyó sobre Next.js 16 (requisito del sandbox) preservando 100% del lenguaje visual y de movimiento. Toda la lógica de animación (GSAP, Lenis, Three.js) es idéntica a como sería en Vite; solo cambia el wrapper de framework. Los placeholders `[CORCHETES]` están localizados en `src/lib/portfolio-content.ts`.

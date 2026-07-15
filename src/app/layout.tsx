@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Archivo, Space_Mono, Inter, Caveat } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "sonner";
+import { themeInitScript } from "@/lib/use-theme";
 
 // Display: Archivo variable — usaremos el eje de anchura condensado via font-stretch
 const archivo = Archivo({
@@ -60,11 +62,30 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        {/* Evita FOUC del dark mode: aplica la clase antes de pintar */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body
         className={`${archivo.variable} ${spaceMono.variable} ${inter.variable} ${caveat.variable} antialiased`}
       >
         {children}
         <Toaster />
+        <SonnerToaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: "var(--ink)",
+              color: "var(--bg-light)",
+              border: "1px solid var(--ink)",
+              borderRadius: "999px",
+              fontFamily: "var(--font-space-mono)",
+              fontSize: "12px",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            },
+          }}
+        />
       </body>
     </html>
   );

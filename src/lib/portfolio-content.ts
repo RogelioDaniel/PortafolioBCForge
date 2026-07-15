@@ -257,16 +257,49 @@ export const BLOG = {
       category: "WebGL",
       date: "12 Mar 2025",
       title: "Construyendo escenas 3D performantes con Three.js",
+      excerpt:
+        "Patrones y técnicas para mantener 60fps en escenas complejas: instancing, LOD, frustum culling y más.",
+      readTime: "8 min",
     },
     {
       category: "Animación",
       date: "28 Feb 2025",
       title: "Scroll storytelling: la guía completa con GSAP",
+      excerpt:
+        "Cómo diseñar narrativas de scroll que atrapen al usuario, desde el pinning hasta el scrub y los reveals.",
+      readTime: "12 min",
     },
     {
       category: "Performance",
       date: "10 Feb 2025",
       title: "Core Web Vitals en sitios 3D: mitos y realidades",
+      excerpt:
+        "¿Se puede tener un sitio 3D con LCP < 2.5s? Sí, y te cuento cómo lograrlo sin sacrificar la experiencia.",
+      readTime: "10 min",
+    },
+    {
+      category: "Design",
+      date: "22 Ene 2025",
+      title: "Micro-interacciones: el detalle que separa lo bueno de lo memorable",
+      excerpt:
+        "Principios de motion design para web: timing, easing, y cuándo animar (y cuándo no).",
+      readTime: "6 min",
+    },
+    {
+      category: "Three.js",
+      date: "05 Ene 2025",
+      title: "Shaders para diseñadores: una introducción visual",
+      excerpt:
+        "GLSL sin miedo: cómo escribir tu primer fragment shader y entender el pipeline de WebGL.",
+      readTime: "15 min",
+    },
+    {
+      category: "Accesibilidad",
+      date: "18 Dic 2024",
+      title: "Accesibilidad en experiencias 3D: no es opcional",
+      excerpt:
+        "Cómo hacer que tus escenas Three.js sean navegables con teclado y lectores de pantalla.",
+      readTime: "9 min",
     },
   ],
 };
@@ -341,4 +374,37 @@ export const TESTIMONIALS = [
     role: "CTO, Helios Corp",
   },
 ];
+
+export const FAQ = {
+  eyebrow: "[ PREGUNTAS FRECUENTES ]",
+  title: ["¿DUDAS?", "RESPONDO."],
+  intro:
+    "Las preguntas que más recibo. Si tienes una que no está aquí, escríbeme y te respondo personalmente.",
+  items: [
+    {
+      q: "¿Cuánto tarda un proyecto típico?",
+      a: "Depende del alcance: una landing page inmersiva toma 2-3 semanas, un sitio 3D completo 6-10 semanas, y un producto SaaS 3-6 meses. Tras una llamada de descubrimiento te doy un estimado preciso.",
+    },
+    {
+      q: "¿Trabajas con clientes de cualquier país?",
+      a: "Sí. Trabajo remoto desde Guadalajara, México, para clientes en toda LATAM, EE.UU. y Europa. Me adapto a tu zona horaria para reuniones y comunicación asíncrona.",
+    },
+    {
+      q: "¿Incluye diseño o solo desarrollo?",
+      a: "Ambos. Lidero el diseño visual y la dirección de arte, y también escribo todo el código. Si ya tienes diseño, lo implemento con fidelidad pixel-perfect. Si no, lo creamos juntos.",
+    },
+    {
+      q: "¿Qué tecnologías utilizas?",
+      a: "Stack core: React/Next.js, TypeScript, Three.js, GSAP y Tailwind. Para backend: Node.js, Prisma y PostgreSQL. Cada proyecto elige las herramientas óptimas, no las de moda.",
+    },
+    {
+      q: "¿Ofreces mantenimiento post-lanzamiento?",
+      a: "Sí. Todos los proyectos incluyen 30 días de soporte gratuito. Después ofrezco planes de mantenimiento mensual (actualizaciones, monitorización, mejoras iterativas).",
+    },
+    {
+      q: "¿Cómo es el proceso de pago?",
+      a: "50% al inicio, 50% al entregar. Para proyectos largos, hitos intermedios. Acepto transferencia, PayPal y cripto. Facturación formal disponible.",
+    },
+  ],
+};
 

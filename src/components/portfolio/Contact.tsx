@@ -3,28 +3,44 @@
 import { useState } from "react";
 import { CONTACT, SITE } from "@/lib/portfolio-content";
 import { useMagnetic } from "@/lib/motion-hooks";
+import { toast } from "sonner";
 
 /**
  * Contacto — formulario minimalista:
  *  - inputs de línea (label mono arriba + línea inferior 1px)
  *  - "PRESUPUESTO (USD)" con radio-pills seleccionables
  *  - botón pill negro magnético "ENVIAR →"
- *  - envío: mailto
+ *  - envío: mailto + toast de confirmación
  */
 export default function Contact() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [project, setProject] = useState("");
   const [budget, setBudget] = useState(CONTACT.budgets[0]);
+  const [sending, setSending] = useState(false);
   const btnRef = useMagnetic<HTMLButtonElement>(0.4);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const subject = encodeURIComponent(`Nuevo proyecto — ${name || "Sin nombre"}`);
+    if (!name || !email || !project) {
+      toast.error("Faltan campos", {
+        description: "Completa nombre, email y descripción del proyecto.",
+      });
+      return;
+    }
+    setSending(true);
+    const subject = encodeURIComponent(`Nuevo proyecto — ${name}`);
     const body = encodeURIComponent(
       `Nombre: ${name}\nEmail: ${email}\nPresupuesto: ${budget}\n\nProyecto:\n${project}`
     );
-    window.location.href = `mailto:${SITE.email}?subject=${subject}&body=${body}`;
+    setTimeout(() => {
+      window.location.href = `mailto:${SITE.email}?subject=${subject}&body=${body}`;
+      toast.success("Abriendo tu cliente de email…", {
+        description: `Gracias ${name}. Te responderé en menos de 24h.`,
+        duration: 5000,
+      });
+      setSending(false);
+    }, 600);
   };
 
   return (
@@ -142,10 +158,12 @@ export default function Contact() {
               <button
                 ref={btnRef}
                 type="submit"
+                disabled={sending}
                 className="btn-primary"
                 data-cursor="ENVIAR"
+                style={{ opacity: sending ? 0.6 : 1 }}
               >
-                Enviar
+                {sending ? "Enviando…" : "Enviar"}
                 <span className="btn-arrow" aria-hidden="true">
                   →
                 </span>
