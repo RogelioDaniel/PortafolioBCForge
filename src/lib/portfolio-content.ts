@@ -15,7 +15,7 @@ export const SITE = {
   ],
   nav: [
     { label: "Proyectos", target: "#proyectos" },
-    { label: "Sobre mí", target: "#manifesto" },
+    { label: "Sobre mí", target: "#sobre-mi" },
     { label: "Lab", target: "#logros" },
     { label: "Blog", target: "#blog" },
     { label: "Contacto", target: "#contacto" },
@@ -38,6 +38,14 @@ export type Project = {
   color: number;
   metalness: number;
   roughness: number;
+  // Detalle para el modal
+  year: string;
+  role: string;
+  client: string;
+  duration: string;
+  gallery: string[]; // descripciones de "imágenes" (gradientes decorativos)
+  highlights: string[];
+  results: { label: string; value: string }[];
 };
 
 export const PROJECTS: Project[] = [
@@ -52,6 +60,26 @@ export const PROJECTS: Project[] = [
     color: 0xd4a24c, // dorado
     metalness: 0.9,
     roughness: 0.15,
+    year: "2024",
+    role: "Front-end + 3D",
+    client: "Aurora Arquitectos",
+    duration: "4 meses",
+    gallery: [
+      "Vista del recorrido 3D del lobby principal",
+      "Configurador de materiales en tiempo real",
+      "Transición cinematográfica entre plantas",
+    ],
+    highlights: [
+      "Recorridos virtuales renderizados en tiempo real con WebGL",
+      "Sistema de iluminación dinámico basado en hora del día",
+      "Transiciones cinematográficas entre espacios",
+      "Optimización para dispositivos móviles (60fps en mid-range)",
+    ],
+    results: [
+      { label: "Tiempo en página", value: "+240%" },
+      { label: "Leads cualificados", value: "+180%" },
+      { label: "Lighthouse Perf", value: "94" },
+    ],
   },
   {
     keyword: "INTERACTIVO",
@@ -64,6 +92,26 @@ export const PROJECTS: Project[] = [
     color: 0x7b3ff2, // púrpura
     metalness: 0.6,
     roughness: 0.3,
+    year: "2024",
+    role: "Front-end lead",
+    client: "Nebula Tech",
+    duration: "6 meses",
+    gallery: [
+      "Configurador de producto en vivo",
+      "Checkout optimizado sin fricción",
+      "Vista 360° interactiva del producto",
+    ],
+    highlights: [
+      "Configurador de producto interactivo en tiempo real",
+      "Checkout optimizado (1-página, sin registro obligatoria)",
+      "Vista 360° de productos con zoom progresivo",
+      "Integración con inventario en tiempo real",
+    ],
+    results: [
+      { label: "Conversión", value: "+38%" },
+      { label: "Ticket medio", value: "+22%" },
+      { label: "Tasa de rebote", value: "-31%" },
+    ],
   },
   {
     keyword: "A MEDIDA",
@@ -76,6 +124,26 @@ export const PROJECTS: Project[] = [
     color: 0x2e6bff, // azul
     metalness: 0.3,
     roughness: 0.1,
+    year: "2023",
+    role: "Full-stack",
+    client: "Grupo Milenio",
+    duration: "8 meses",
+    gallery: [
+      "Dashboard principal con widgets configurables",
+      "Visualización de datos en tiempo real",
+      "Sistema de roles multi-tenant",
+    ],
+    highlights: [
+      "Arquitectura multi-tenant escalable (12,000+ usuarios)",
+      "Visualización de datos complejos con D3 + WebGL",
+      "Sistema de permisos granular por rol",
+      "API GraphQL con subscriptions en tiempo real",
+    ],
+    results: [
+      { label: "Usuarios activos", value: "12K+" },
+      { label: "Uptime", value: "99.9%" },
+      { label: "Query time", value: "-65%" },
+    ],
   },
   {
     keyword: "ENTERPRISE",
@@ -88,6 +156,26 @@ export const PROJECTS: Project[] = [
     color: 0xe8e8ec,
     metalness: 0.1,
     roughness: 0.6,
+    year: "2023",
+    role: "Tech lead",
+    client: "Helios Corp",
+    duration: "12 meses",
+    gallery: [
+      "Portal principal con diseño system unificado",
+      "Flujo de autenticación SSO accesible",
+      "Panel de administración multi-rol",
+    ],
+    highlights: [
+      "Design system con 200+ componentes documentados",
+      "Accesibilidad WCAG 2.1 AA auditada",
+      "Integración SSO (SAML + OIDC) para 12,000+ usuarios",
+      "Rendimiento optimizado para mercados emergentes (3G)",
+    ],
+    results: [
+      { label: "Adopción", value: "94%" },
+      { label: "Tickets soporte", value: "-58%" },
+      { label: "Score a11y", value: "AA" },
+    ],
   },
 ];
 
@@ -186,3 +274,71 @@ export const BLOG = {
 export const CONTACT = {
   budgets: ["<1K", "1K–5K", "5K+"],
 };
+
+export const ABOUT = {
+  eyebrow: "[ SOBRE MÍ ]",
+  title: ["DISEÑO", "CON CÓDIGO.", "CONSTRUYO", "CON ALMA."],
+  intro:
+    "Soy Rogelio Daniel, desarrollador front-end especializado en experiencias web inmersivas. Combinando diseño obsesivo y código limpio, construyo sitios que la gente recuerda.",
+  body: "Llevo más de 8 años creando productos digitales para startups y empresas en LATOM, EU y EE.UU. Mi obsesión: que cada interacción se sienta intencional, cada animación tenga propósito, y cada pixel cargue significado. Cuando no estoy codeando, estoy explorando shaders, montando en bici o tomando café de especialidad.",
+  stats: [
+    { value: "8+", label: "Años de experiencia" },
+    { value: "60+", label: "Proyectos lanzados" },
+    { value: "14", label: "Países atendidos" },
+    { value: "∞", label: "Tazas de café" },
+  ],
+  timeline: [
+    {
+      year: "2025",
+      role: "Front-end Lead",
+      org: "Estudio independiente",
+      desc: "Liderando proyectos 3D y experiencias inmersivas para clientes globales.",
+    },
+    {
+      year: "2022",
+      role: "Senior Front-end",
+      org: "Agencia digital",
+      desc: "Especialización en WebGL, GSAP y scroll storytelling. 3 SOTD en Awwwards.",
+    },
+    {
+      year: "2019",
+      role: "Front-end Developer",
+      org: "Startup SaaS",
+      desc: "Construcción de design systems y dashboards de data-viz en tiempo real.",
+    },
+    {
+      year: "2017",
+      role: "Junior Developer",
+      org: "Primeros pasos",
+      desc: "Empezando con HTML, CSS y JS vanilla. Descubrí GSAP y nunca volví atrás.",
+    },
+  ],
+};
+
+export const TESTIMONIALS = [
+  {
+    quote:
+      "Rogelio no solo entregó un sitio, entregó una experiencia. La conversión se disparó y nuestros clientes no dejan de hablar del sitio.",
+    author: "María Fernández",
+    role: "CEO, Nebula Tech",
+  },
+  {
+    quote:
+      "Trabajar con él es raro: combina el rigor técnico de un senior con la sensibilidad de un director de arte. Punto de referencia para nuestros proyectos.",
+    author: "Carlos Mendez",
+    role: "Product Lead, Grupo Milenio",
+  },
+  {
+    quote:
+      "El nivel de detalle en cada animación, cada transición, cada micro-interacción es obsesivo. El resultado habla por sí solo: Awwwards SOTD.",
+    author: "Ana Ruiz",
+    role: "Creative Director, Aurora",
+  },
+  {
+    quote:
+      "Nos entregó un design system que escaló a 12,000 usuarios sin un solo ticket de UX. Profesional y humano en igual medida.",
+    author: "David Soler",
+    role: "CTO, Helios Corp",
+  },
+];
+

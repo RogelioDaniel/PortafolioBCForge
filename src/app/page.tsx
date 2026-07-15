@@ -11,7 +11,9 @@ import Services from "@/components/portfolio/Services";
 import Marquee from "@/components/portfolio/Marquee";
 import KineticSection from "@/components/portfolio/KineticSection";
 import Manifesto from "@/components/portfolio/Manifesto";
+import AboutSection from "@/components/portfolio/AboutSection";
 import Achievements from "@/components/portfolio/Achievements";
+import Testimonials from "@/components/portfolio/Testimonials";
 import Blog from "@/components/portfolio/Blog";
 import Contact from "@/components/portfolio/Contact";
 import Footer from "@/components/portfolio/Footer";
@@ -47,6 +49,7 @@ export default function Home() {
   return (
     <>
       <BackgroundGlow />
+      <div className="bg-noise" aria-hidden="true" />
       <Cursor />
       <ScrollProgress active={loaded} />
       {loaded && <SoundToggle />}
@@ -64,7 +67,9 @@ export default function Home() {
           <Marquee />
           <KineticSection />
           <Manifesto />
+          <AboutSection />
           <Achievements />
+          <Testimonials />
           <Blog />
           <Contact />
         </main>

@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import ProjectsSceneManager from "./three/ProjectsSceneManager";
-import { PROJECTS } from "@/lib/portfolio-content";
+import ProjectModal from "./ProjectModal";
+import { PROJECTS, type Project } from "@/lib/portfolio-content";
 import { useMagnetic, usePrefersReducedMotion } from "@/lib/motion-hooks";
 
 /**
@@ -25,6 +26,7 @@ export default function Projects() {
   const activeRef = useRef(0);
   const progressRef = useRef(0);
   const [active, setActive] = useState(0);
+  const [modalProject, setModalProject] = useState<Project | null>(null);
   const reduced = usePrefersReducedMotion();
   const btnRef = useMagnetic<HTMLAnchorElement>(0.4);
 
@@ -201,9 +203,9 @@ export default function Projects() {
 
                   {/* Botón centro */}
                   <div className="md:col-span-4 flex justify-start md:justify-center">
-                    <a
+                    <button
                       ref={i === 0 ? btnRef : undefined}
-                      href={p.url}
+                      onClick={() => setModalProject(p)}
                       className="btn-primary"
                       data-cursor="VER"
                       aria-label={`Ver proyecto ${p.name}`}
@@ -212,7 +214,7 @@ export default function Projects() {
                       <span className="btn-arrow" aria-hidden="true">
                         →
                       </span>
-                    </a>
+                    </button>
                   </div>
 
                   {/* Desc derecha */}
@@ -281,6 +283,15 @@ export default function Projects() {
           </div>
         </div>
       </div>
+
+      {/* Modal de detalle del proyecto — key remounts on project change */}
+      {modalProject && (
+        <ProjectModal
+          key={modalProject.name}
+          project={modalProject}
+          onClose={() => setModalProject(null)}
+        />
+      )}
     </section>
   );
 }

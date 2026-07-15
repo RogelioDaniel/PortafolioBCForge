@@ -25,7 +25,7 @@ export function useKeyboardNav(enabled: boolean) {
       const key = e.key.toLowerCase();
       const map: Record<string, string> = {
         "1": "#proyectos",
-        "2": "#manifesto",
+        "2": "#sobre-mi",
         "3": "#logros",
         "4": "#blog",
         "5": "#contacto",

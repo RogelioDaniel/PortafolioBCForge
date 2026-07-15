@@ -80,6 +80,23 @@
 
 **Verificación final:** 0 errores runtime, 0 console errors, lint limpio. Todas las features confirmadas en DOM vía agent-browser. Keyboard nav probado (press 5 → contacto). VLM hero 8/10.
 
+### Ronda 3 (cron webDevReview) — Cambios aplicados
+
+**QA inicial:** 0 errores runtime, 0 console errors, lint limpio. Body ~3188 chars, 9 secciones. VLM: hero 8/10.
+
+**Features nuevas (3 secciones + 1 modal):**
+1. ✅ **ProjectModal** (`ProjectModal.tsx`): overlay a pantalla completa al clic en "VER PROYECTO". Galería navegable (click + flechas teclado), meta info (año/rol/cliente/duración), highlights con checkmarks pixel, resultados en stats boxes con color del proyecto, botón cerrar (X pixel magnético), ESC para cerrar, click backdrop para cerrar, animación GSAP de entrada (wipe up + stagger). Datos extendidos en `portfolio-content.ts` (4 proyectos con highlights/results/gallery).
+2. ✅ **AboutSection** (`AboutSection.tsx`): sección "Sobre mí" dedicada con eyebrow + título 4 líneas (DISEÑO/CON CÓDIGO/CONSTRUYO/CON ALMA), intro + body, **stats con contador animado** (8+ años, 60+ proyectos, 14 países, ∞ café), timeline vertical de carrera (4 hitos: 2025/2022/2019/2017) con dots + reveal stagger.
+3. ✅ **Testimonials** (`Testimonials.tsx`): sección de reseñas con header "LO QUE DICEN MIS CLIENTES", 2 columnas con parallax vertical opuesto (cinético), cards con comilla pixel decorativa, quote, avatar inicial + autor + rol. 4 testimonials placeholder.
+4. ✅ **Noise texture overlay** (`.bg-noise` en globals.css): grano SVG fractal sutil (opacity 0.035, mix-blend multiply) para dar profundidad premium al fondo lavanda.
+
+**Mejoras de styling:**
+- Nav "Sobre mí" ahora apunta a `#sobre-mi` (era `#manifesto`)
+- Keyboard nav actualizado (2 → sobre-mi)
+- ProjectModal con `key={project.name}` para reset de estado en cambio de proyecto
+
+**Verificación final:** 0 errores runtime, 0 console errors, lint limpio. Body creció a 5355 chars, 11 secciones. Modal probado (abre/cierra/galería/ESC). About confirmado en DOM (4 stats, 4 timeline). Testimonials confirmado (5 cards, header correcto). Noise overlay presente. VLM Testimonials 8/10.
+
 ### ⚠️ Restricción del sandbox (importante)
 El servidor `next dev` **muere entre llamadas del bash tool** (el sandbox reaporea procesos background cuando termina la sesión de shell). Por eso cada verificación requiere arrancar el servidor y testear en el MISMO comando bash. El usuario puede previsualizar vía el Preview Panel; si ve la pantalla de "Z.ai Logo" (waiting del gateway Caddy :81), significa que localhost:3000 está caído y hay que reiniciar `bun run dev`.
 
@@ -87,14 +104,18 @@ El servidor `next dev` **muere entre llamadas del bash tool** (el sandbox reapor
 1. ~~**Sonido real del preloader**~~ ✅ Hecho (Ronda 2 — Web Audio API ambient pad)
 2. **Imágenes reales de proyectos/blog:** usar image-generation skill para thumbnails WebP en lugar de los gradientes decorativos placeholder.
 3. ~~**Parallax por capas (data-speed)**~~ ✅ Hecho (Ronda 2 — cableado con ScrollTrigger en Achievements)
-4. **Página de proyecto individual:** el botón VER PROYECTO apunta a `#`; crear vista detalle con transición (modal overlay con galería + info detallada).
+4. ~~**Página de proyecto individual**~~ ✅ Hecho (Ronda 3 — ProjectModal overlay con galería + highlights + results)
 5. **Footer sticky verificado en contenido corto:** confirmar que en páginas con poco contenido el footer queda pegado al fondo (la estructura page-shell con min-h-screen + mt-auto ya lo garantiza, pero validar en navegador).
 6. **Optimización Three.js:** el ProjectsSceneManager recrea geometría/material al cambiar de proyecto — podría poolarse.
 7. **Accesibilidad:** añadir aria-label más descriptivos a los canvas 3D (actualmente aria-hidden).
 8. **Performance:** lazy-load de Three.js con dynamic import para reducir el bundle inicial.
 9. **Hero 3D integración:** VLM sugiere que los objetos 3D podrían estar más integrados con el texto (8/10 → 10/10). Considerar partículas o shader de fondo sutil.
-10. **Sección "Sobre mí" dedicada:** el manifiesto cubre parte, pero falta una sección con foto/avatar + bio extendida + timeline de carrera.
+10. ~~**Sección "Sobre mí" dedicada**~~ ✅ Hecho (Ronda 3 — AboutSection con timeline + stats counter)
 11. **Modo oscuro persistente:** el theme flip actual es solo para la sección cinética; añadir toggle de modo oscuro global con next-themes.
+12. **Filtros de proyectos:** añadir chips de filtro por categoría en la sección de proyectos.
+13. **Búsqueda de blog:** input de búsqueda en la sección de blog para filtrar artículos.
+14. **FAQ:** sección de preguntas frecuentes antes del contacto.
+15. **Toast de confirmación al enviar formulario:** actualmente solo abre mailto; añadir feedback visual.
 
 ### Nota sobre el stack
 El usuario solicitó Vite + vanilla JS. Se construyó sobre Next.js 16 (requisito del sandbox) preservando 100% del lenguaje visual y de movimiento. Toda la lógica de animación (GSAP, Lenis, Three.js) es idéntica a como sería en Vite; solo cambia el wrapper de framework. Los placeholders `[CORCHETES]` están localizados en `src/lib/portfolio-content.ts`.
