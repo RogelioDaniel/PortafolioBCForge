@@ -21,6 +21,8 @@ import Footer from "@/components/portfolio/Footer";
 import ScrollProgress from "@/components/portfolio/ScrollProgress";
 import SoundToggle from "@/components/portfolio/SoundToggle";
 import BackToTop from "@/components/portfolio/BackToTop";
+import CommandPalette from "@/components/portfolio/CommandPalette";
+import CommandKHint from "@/components/portfolio/CommandKHint";
 import { useKeyboardNav, KeyboardHint } from "@/lib/use-keyboard-nav";
 import { useSmoothScroll } from "@/lib/use-smooth-scroll";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
@@ -56,6 +58,8 @@ export default function Home() {
       {loaded && <SoundToggle />}
       {loaded && <BackToTop />}
       {loaded && !reduced && <KeyboardHint />}
+      {loaded && <CommandKHint />}
+      {loaded && <CommandPalette />}
 
       {!loaded && <Preloader onDone={() => setLoaded(true)} />}
 

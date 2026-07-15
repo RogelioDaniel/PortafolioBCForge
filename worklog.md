@@ -115,6 +115,22 @@
 
 **Verificación final:** 0 errores runtime, 0 console errors, lint limpio. Body creció a 7748 chars, 13 secciones (12 + notifications). Dark mode probado (toggle on/off correcto). FAQ probado (6 items, expansión correcta, 1 abierto a la vez). Blog search probado (shader→1 resultado). Contact toast probado. VLM: dark 8/10, FAQ 8/10, blog 10/10.
 
+### Ronda 5 (cron webDevReview) — Cambios aplicados
+
+**QA inicial:** 0 errores runtime, 0 console errors, lint limpio. Body ~7748 chars, 13 secciones.
+
+**Features nuevas (3):**
+1. ✅ **Command Palette (Cmd+K)** (`CommandPalette.tsx` + `CommandKHint.tsx`): paleta de comandos con `cmdk`. Abre con ⌘K / Ctrl+K / "/". Búsqueda global en tiempo real: navegación (5 secciones), acciones (ir arriba, cambiar tema, contacto), proyectos (4), blog (6 artículos). Agrupados por tipo con headings mono. Animación GSAP de entrada (fade + scale). Cierre con ESC o click backdrop. Hint flotante "⌘K" en esquina inferior derecha que aparece tras 2s. Footer con hints (↵ seleccionar, ↑↓ navegar). Pixel search icon SVG.
+2. ✅ **Newsletter signup** (`Newsletter.tsx`): integrado en el footer. Input de línea (estilo minimalista) + botón pill magnético "→". Validación de email con regex. Toast de success ("¡Suscripción confirmada!") y error (email inválido/faltante). Estado sending. Frase invitando a suscribirse.
+3. ✅ **Footer mejorado** (`Footer.tsx`): links de navegación y social con hover effect de flecha que desliza desde la izquierda (→ para internos, ↗ para externos). Newsletter integrado bajo el email. Layout refinado con mejor spacing.
+
+**Mejoras de styling:**
+- Keyboard hint actualizado: ahora muestra "⌘K · búsqueda" además de "1–5 · secciones"
+- Footer social/nav con animación de flecha en hover (translate + opacity)
+- CommandKHint con pixel search icon + estilo pill consistente
+
+**Verificación:** Lint limpio. Server devuelve HTTP 200 (113KB). HTML confirma: NEWSLETTER, Buscar artículos, todas las secciones (proyectos, sobre-mi, logros, blog, faq, contacto). 0 errores en dev log. agent-browser no pudo verificar visualmente (timeout por peso de 3D en sandbox), pero curl + grep confirman render correcto.
+
 ### ⚠️ Restricción del sandbox (importante)
 El servidor `next dev` **muere entre llamadas del bash tool** (el sandbox reaporea procesos background cuando termina la sesión de shell). Por eso cada verificación requiere arrancar el servidor y testear en el MISMO comando bash. El usuario puede previsualizar vía el Preview Panel; si ve la pantalla de "Z.ai Logo" (waiting del gateway Caddy :81), significa que localhost:3000 está caído y hay que reiniciar `bun run dev`.
 
@@ -135,10 +151,13 @@ El servidor `next dev` **muere entre llamadas del bash tool** (el sandbox reapor
 14. ~~**FAQ**~~ ✅ Hecho (Ronda 4 — FAQSection acordeón con 6 preguntas, animación +/- pixel)
 15. ~~**Toast de confirmación al enviar formulario**~~ ✅ Hecho (Ronda 4 — sonner con success/error, estado sending)
 16. **Page transitions con View Transitions API** para navegación real entre rutas.
-17. **Command palette (Cmd+K)** para búsqueda global y navegación rápida.
+17. ~~**Command palette (Cmd+K)**~~ ✅ Hecho (Ronda 5 — CommandPalette con cmdk, búsqueda global + navegación)
 18. **Compartir en redes** en proyectos/blog (Web Share API).
-19. **Newsletter signup** en el footer.
+19. ~~**Newsletter signup**~~ ✅ Hecho (Ronda 5 — Newsletter en footer con validación + toast)
 20. **Cookies/privacy banner** minimalista.
+21. **Página 404 custom** con diseño awwwards.
+22. **Loading skeleton** para secciones pesadas.
+23. **Open Graph image** dinámica con OG image generation.
 
 ### Nota sobre el stack
 El usuario solicitó Vite + vanilla JS. Se construyó sobre Next.js 16 (requisito del sandbox) preservando 100% del lenguaje visual y de movimiento. Toda la lógica de animación (GSAP, Lenis, Three.js) es idéntica a como sería en Vite; solo cambia el wrapper de framework. Los placeholders `[CORCHETES]` están localizados en `src/lib/portfolio-content.ts`.

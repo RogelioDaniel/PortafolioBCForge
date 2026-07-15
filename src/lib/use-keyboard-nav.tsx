@@ -80,6 +80,7 @@ export function KeyboardHint() {
       >
         <div className="opacity-90">ATAJOS</div>
         <div className="opacity-60 mt-1">1–5 · secciones</div>
+        <div className="opacity-60 mt-0.5">⌘K · búsqueda</div>
       </div>
       <script
         dangerouslySetInnerHTML={{
