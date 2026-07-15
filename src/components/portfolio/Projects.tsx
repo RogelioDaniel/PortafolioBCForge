@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import ProjectsSceneManager from "./three/ProjectsSceneManager";
@@ -24,6 +24,7 @@ export default function Projects() {
   const pinRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef(0);
   const progressRef = useRef(0);
+  const [active, setActive] = useState(0);
   const reduced = usePrefersReducedMotion();
   const btnRef = useMagnetic<HTMLAnchorElement>(0.4);
 
@@ -58,6 +59,7 @@ export default function Projects() {
             if (idx !== activeRef.current) {
               activeRef.current = idx;
               updateActive(idx);
+              setActive(idx);
             }
             // progreso local del proyecto activo (0..1)
             const localP = gsap.utils.clamp(
@@ -107,8 +109,6 @@ export default function Projects() {
     return () => ctx.revert();
   }, [reduced]);
 
-  const active = PROJECTS[0];
-
   return (
     <section
       ref={sectionRef}
@@ -141,8 +141,9 @@ export default function Projects() {
                     className="display"
                     style={{
                       fontSize: "clamp(3rem, 14vw, 13rem)",
-                      opacity: 0.12,
-                      mixBlendMode: "multiply",
+                      opacity: 0.18,
+                      color: "var(--ink)",
+                      letterSpacing: "-0.02em",
                     }}
                   >
                     {p.keyword}
@@ -236,16 +237,46 @@ export default function Projects() {
             </div>
           ))}
 
-          {/* Indicador de progreso lateral */}
-          <div className="hidden md:flex absolute right-6 top-1/2 -translate-y-1/2 z-[4] flex-col gap-2">
+          {/* Indicador de progreso lateral con estado activo */}
+          <div className="hidden md:flex absolute right-6 top-1/2 -translate-y-1/2 z-[4] flex-col gap-3 items-end">
             {PROJECTS.map((p, i) => (
-              <span
+              <button
                 key={p.keyword}
-                className="mono text-[10px] opacity-50 transition-opacity"
-                data-proj-dot={i}
+                onClick={() => {
+                  // Saltar al proyecto i (scroll relativo a la sección)
+                  const seg = 1 / PROJECTS.length;
+                  const targetProg = i * seg + seg * 0.5;
+                  const st = (window as unknown as { __lenis?: { scrollTo: (t: HTMLElement, o?: object) => void } }).__lenis;
+                  if (sectionRef.current) {
+                    const rect = sectionRef.current.getBoundingClientRect();
+                    const totalH = rect.height - window.innerHeight;
+                    const y = window.scrollY + rect.top + totalH * targetProg;
+                    if (st) {
+                      st.scrollTo(sectionRef.current, {
+                        offset: totalH * targetProg,
+                        duration: 1,
+                      });
+                    } else {
+                      window.scrollTo({ top: y, behavior: "smooth" });
+                    }
+                  }
+                }}
+                className="group flex items-center gap-2 mono text-[10px] transition-all duration-300"
+                style={{
+                  opacity: active === i ? 1 : 0.4,
+                  color: "var(--ink)",
+                }}
+                aria-label={`Ir al proyecto ${i + 1}: ${p.keyword}`}
               >
+                <span
+                  className="block h-px transition-all duration-300"
+                  style={{
+                    width: active === i ? 28 : 12,
+                    background: "var(--ink)",
+                  }}
+                />
                 {String(i + 1).padStart(2, "0")}
-              </span>
+              </button>
             ))}
           </div>
         </div>

@@ -8,12 +8,17 @@ import Header from "@/components/portfolio/Header";
 import Hero from "@/components/portfolio/Hero";
 import Projects from "@/components/portfolio/Projects";
 import Services from "@/components/portfolio/Services";
+import Marquee from "@/components/portfolio/Marquee";
 import KineticSection from "@/components/portfolio/KineticSection";
 import Manifesto from "@/components/portfolio/Manifesto";
 import Achievements from "@/components/portfolio/Achievements";
 import Blog from "@/components/portfolio/Blog";
 import Contact from "@/components/portfolio/Contact";
 import Footer from "@/components/portfolio/Footer";
+import ScrollProgress from "@/components/portfolio/ScrollProgress";
+import SoundToggle from "@/components/portfolio/SoundToggle";
+import BackToTop from "@/components/portfolio/BackToTop";
+import { useKeyboardNav, KeyboardHint } from "@/lib/use-keyboard-nav";
 import { useSmoothScroll } from "@/lib/use-smooth-scroll";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
 
@@ -27,6 +32,8 @@ export default function Home() {
 
   // Smooth scroll solo tras preloader y si no hay reduced motion
   useSmoothScroll(loaded && !reduced);
+  // Atajos de teclado (1–5 secciones, t/home → top)
+  useKeyboardNav(loaded && !reduced);
 
   useEffect(() => {
     // Bloquea scroll durante preloader
@@ -41,6 +48,10 @@ export default function Home() {
     <>
       <BackgroundGlow />
       <Cursor />
+      <ScrollProgress active={loaded} />
+      {loaded && <SoundToggle />}
+      {loaded && <BackToTop />}
+      {loaded && !reduced && <KeyboardHint />}
 
       {!loaded && <Preloader onDone={() => setLoaded(true)} />}
 
@@ -50,6 +61,7 @@ export default function Home() {
           <Hero />
           <Projects />
           <Services />
+          <Marquee />
           <KineticSection />
           <Manifesto />
           <Achievements />

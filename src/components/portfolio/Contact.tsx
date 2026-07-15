@@ -123,6 +123,15 @@ export default function Contact() {
                       borderColor: budget === b ? "var(--ink)" : "var(--pill-border)",
                     }}
                   >
+                    {budget === b && (
+                      <span
+                        aria-hidden="true"
+                        className="inline-block"
+                        style={{ marginRight: 4 }}
+                      >
+                        ✓
+                      </span>
+                    )}
                     {b}
                   </button>
                 ))}

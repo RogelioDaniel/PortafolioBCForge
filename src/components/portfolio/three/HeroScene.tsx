@@ -52,9 +52,11 @@ export default function HeroScene({
 
     const matWhite = new THREE.MeshStandardMaterial({
       color: 0xf4f4f0,
-      roughness: 0.75,
-      metalness: 0.0,
+      roughness: 0.7,
+      metalness: 0.05,
       flatShading: true,
+      transparent: true,
+      opacity: 0.92,
     });
 
     type Floater = {
@@ -86,13 +88,15 @@ export default function HeroScene({
           (Math.random() - 0.5) * 0.003
         ),
         floatPhase: Math.random() * Math.PI * 2,
-        floatAmp: 0.18 + Math.random() * 0.2,
+        floatAmp: 0.12 + Math.random() * 0.12,
       });
     };
 
-    makeFloater(new THREE.IcosahedronGeometry(1.05, 0), -3.4, 0.9, 0, 1);
-    makeFloater(new THREE.DodecahedronGeometry(0.85, 0), 2.9, -0.6, 0.5, 1);
-    makeFloater(new THREE.OctahedronGeometry(0.7, 0), 0.4, 1.6, -0.5, 1);
+    // Posicionados en las 4 esquinas (lejos del titular centrado) para NO
+    // tapar ninguna letra. El titular ocupa la franja central vertical.
+    makeFloater(new THREE.IcosahedronGeometry(0.7, 0), 4.2, 2.7, 0, 0.65);
+    makeFloater(new THREE.DodecahedronGeometry(0.65, 0), -4.2, -2.5, 0.5, 0.7);
+    makeFloater(new THREE.OctahedronGeometry(0.5, 0), 3.6, -2.8, -0.5, 0.6);
 
     const mouse = { x: 0, y: 0 };
     const target = { x: 0, y: 0 };

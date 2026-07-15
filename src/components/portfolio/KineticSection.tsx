@@ -48,17 +48,24 @@ export default function KineticSection() {
           tl.call(flipOn, [], 0);
           gsap.set(w, { autoAlpha: 1, yPercent: 0 });
         } else {
-          gsap.set(w, { autoAlpha: 0, yPercent: 60 });
+          gsap.set(w, { autoAlpha: 0, yPercent: 70 });
+          // Salida completa de la palabra anterior ANTES de entrar la nueva
+          // (evita superposición ilegible durante el scrub)
           tl.to(words[i - 1], {
-            yPercent: -60,
+            yPercent: -70,
             autoAlpha: 0,
-            duration: 0.5,
-            ease: "power3.inOut",
+            duration: 0.42,
+            ease: "power3.in",
           });
           tl.to(
             w,
-            { yPercent: 0, autoAlpha: 1, duration: 0.5, ease: "power3.out" },
-            "<"
+            {
+              yPercent: 0,
+              autoAlpha: 1,
+              duration: 0.42,
+              ease: "power3.out",
+            },
+            ">-0.05"
           );
         }
       });

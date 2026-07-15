@@ -2,25 +2,30 @@
 
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
+import { getAmbient } from "@/lib/ambient-sound";
 
 /**
  * Preloader — pantalla lavanda con:
  *  - "LOADING" en display condensado gigante a la izquierda
  *  - barra-píldora con borde donde un círculo negro avanza
  *  - porcentaje grande a la derecha (contador 0→100)
- *  - toggle pill ON/OFF de sonido
+ *  - toggle pill ON/OFF de sonido (conectado a Web Audio API)
  * Al llegar a 100, la pantalla se abre con un wipe vertical.
  */
 export default function Preloader({ onDone }: { onDone: () => void }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [pct, setPct] = useState(0);
   const [soundOn, setSoundOn] = useState(false);
-  const [leaving, setLeaving] = useState(false);
+  const [, setLeaving] = useState(false);
 
   useEffect(() => {
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
+
+    // Sincroniza el estado del toggle con el ambient sound
+    const ambient = getAmbient();
+    const unsub = ambient?.subscribe((on) => setSoundOn(on));
 
     // Contador 0 → 100
     const obj = { v: 0 };
@@ -33,13 +38,9 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
     });
     tl.to(
       rootRef.current,
-      {
-        duration: 0.1,
-        onComplete: () => {},
-      },
+      { duration: 0.1, onComplete: () => {} },
       "+=0.1"
     );
-    // Wipe vertical — dos mitades se separan
     tl.call(() => setLeaving(true));
     tl.to(rootRef.current, {
       yPercent: -100,
@@ -50,8 +51,14 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
 
     return () => {
       tl.kill();
+      unsub?.();
     };
   }, [onDone]);
+
+  const toggleSound = () => {
+    // Requiere gesto del usuario para iniciar AudioContext
+    getAmbient()?.toggle();
+  };
 
   const pctWidth = `${pct}%`;
 
@@ -59,10 +66,7 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
     <div
       ref={rootRef}
       className="fixed inset-0 z-[100] bg-[var(--bg-light)] flex flex-col justify-between"
-      style={{
-        transform: leaving ? undefined : undefined,
-      }}
-      aria-hidden={leaving}
+      aria-hidden={false}
     >
       {/* Glow sutil de fondo */}
       <div
@@ -128,7 +132,7 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
           PARA UNA EXPERIENCIA MÁS INMERSIVA ACTIVA EL SONIDO
         </p>
         <button
-          onClick={() => setSoundOn((s) => !s)}
+          onClick={toggleSound}
           className="pill"
           aria-pressed={soundOn}
           aria-label={soundOn ? "Desactivar sonido" : "Activar sonido"}

@@ -44,15 +44,19 @@ export default function ProjectsSceneManager({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mount.appendChild(renderer.domElement);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.75);
     scene.add(ambient);
-    const key = new THREE.DirectionalLight(0xffffff, 1.7);
-    key.position.set(3, 5, 4);
+    // Luz clave más suave y difusa para evitar hotspots duros
+    const key = new THREE.DirectionalLight(0xffffff, 0.9);
+    key.position.set(4, 6, 5);
     scene.add(key);
-    const rim = new THREE.DirectionalLight(0xf3d8cd, 0.9);
-    rim.position.set(-4, -1, 2);
+    const rim = new THREE.DirectionalLight(0xf3d8cd, 0.5);
+    rim.position.set(-5, -1, 3);
     scene.add(rim);
-    const purple = new THREE.PointLight(0x7b3ff2, 0.6, 20);
+    const fill = new THREE.DirectionalLight(0xdce2f0, 0.4);
+    fill.position.set(0, -3, 4);
+    scene.add(fill);
+    const purple = new THREE.PointLight(0x7b3ff2, 0.35, 20);
     purple.position.set(-3, 2, 3);
     scene.add(purple);
 

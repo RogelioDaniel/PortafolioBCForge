@@ -53,6 +53,23 @@ export default function Achievements() {
           }
         );
       });
+
+      // Parallax por capas: objetos con data-speed se mueven a distinta
+      // velocidad según el scroll (profundidad)
+      const layers = ref.current?.querySelectorAll<HTMLElement>("[data-speed]");
+      layers?.forEach((layer) => {
+        const speed = parseFloat(layer.dataset.speed || "0.5");
+        gsap.to(layer, {
+          y: () => -speed * 120,
+          ease: "none",
+          scrollTrigger: {
+            trigger: ref.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: true,
+          },
+        });
+      });
     }, ref);
     return () => ctx.revert();
   }, [reduced]);
