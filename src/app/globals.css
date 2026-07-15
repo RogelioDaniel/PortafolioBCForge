@@ -1,0 +1,427 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   PORTAFOLIO — Sistema de diseño
+   Inspirado en la dirección de arte de noomoagency.com
+   Fondo lavanda + glow durazno animado, tipografía condensada.
+   ============================================================ */
+
+@theme inline {
+  --color-background: var(--bg-light);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-space-mono);
+  --font-display: var(--font-archivo);
+  --font-script: var(--font-caveat);
+}
+
+:root {
+  /* Paleta */
+  --bg-light: #dce2f0;   /* lavanda/periwinkle pálido — fondo principal */
+  --bg-glow: #f3d8cd;    /* durazno/rosa del resplandor radial */
+  --ink: #0e0e10;        /* texto casi negro */
+  --ink-soft: rgba(14, 14, 16, 0.6);
+  --ink-faint: rgba(14, 14, 16, 0.35);
+  --bg-dark: #000000;    /* sección cinética */
+  --bg-navy: #16132e;    /* tarjetas oscuras */
+  --pill-border: rgba(14, 14, 16, 0.35);
+  --pill-border-strong: rgba(14, 14, 16, 0.55);
+  --line: rgba(14, 14, 16, 0.16);
+
+  --radius: 999px;
+
+  --font-archivo: "Archivo", sans-serif;
+  --font-space-mono: "Space Mono", monospace;
+  --font-inter: "Inter", sans-serif;
+  --font-caveat: "Caveat", cursive;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--bg-light);
+    color: var(--ink);
+    font-family: var(--font-inter);
+    font-size: 15px;
+    line-height: 1.5;
+    overflow-x: hidden;
+    /* el glow animado se inyecta con .bg-glow */
+  }
+
+  ::selection {
+    background: var(--ink);
+    color: var(--bg-light);
+  }
+
+  /* Foco accesible */
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Scrollbar minimal (Lenis maneja el scroll, pero fallback) */
+  ::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+  }
+}
+
+/* ============================================================
+   Tipografía
+   ============================================================ */
+.display {
+  font-family: var(--font-archivo);
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 0.88;
+  letter-spacing: -0.01em;
+  font-stretch: 78%; /* eje condensado de Archivo variable */
+}
+
+.mono {
+  font-family: var(--font-space-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+}
+
+.mono-lg {
+  font-family: var(--font-space-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 13px;
+}
+
+.script {
+  font-family: var(--font-caveat);
+  font-weight: 700;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-archivo);
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  font-stretch: 78%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ============================================================
+   Fondo: glow radial durazno que flota lentamente
+   Nunca plano: lavanda + glow en movimiento
+   ============================================================ */
+.bg-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at var(--glow-x, 30%) var(--glow-y, 25%),
+      var(--bg-glow) 0%,
+      rgba(243, 216, 205, 0.45) 18%,
+      rgba(243, 216, 205, 0) 42%
+    );
+  transition: background 0.2s linear;
+  will-change: background;
+}
+
+/* Variante oscura para la sección cinética */
+body.theme-dark {
+  background-color: var(--bg-dark);
+  color: #f4f4f4;
+  transition: background-color 0.6s ease, color 0.6s ease;
+}
+body.theme-dark ::selection {
+  background: #fff;
+  color: #000;
+}
+
+/* ============================================================
+   Componentes recurrentes
+   ============================================================ */
+
+/* Pill chip */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--pill-border);
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--font-space-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--ink);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: pointer;
+}
+.pill:hover {
+  border-color: var(--ink);
+  background: rgba(14, 14, 16, 0.04);
+}
+.pill--solid {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+.pill--solid:hover {
+  background: #000;
+  border-color: #000;
+}
+.pill--ghost-light {
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+
+/* Botón primario magnético */
+.btn-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.95rem 1.5rem;
+  background: #111;
+  color: #fff;
+  border-radius: 999px;
+  font-family: var(--font-space-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 12px;
+  line-height: 1;
+  border: 1px solid #111;
+  cursor: pointer;
+  overflow: hidden;
+  transition: background 0.3s ease, border-color 0.3s ease;
+  will-change: transform;
+}
+.btn-primary .btn-arrow {
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-primary:hover .btn-arrow {
+  transform: translateX(5px);
+}
+.btn-primary--light {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--pill-border);
+}
+.btn-primary--light:hover {
+  border-color: var(--ink);
+}
+
+/* Input de línea (sin cajas) */
+.line-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--pill-border);
+  background: transparent;
+  padding: 0.6rem 0;
+  color: var(--ink);
+  font-family: var(--font-inter);
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+.line-input::placeholder {
+  color: var(--ink-faint);
+  font-family: var(--font-space-mono);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.line-input:focus {
+  border-bottom-color: var(--ink);
+}
+
+/* Reveal de texto con máscara */
+.reveal-mask {
+  overflow: hidden;
+  display: block;
+}
+.reveal-mask > .reveal-inner {
+  display: block;
+  transform: translateY(110%);
+  will-change: transform;
+}
+
+/* Etiqueta de sección */
+.section-label {
+  font-family: var(--font-space-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+/* Línea divisoria hairline */
+.hairline {
+  border-top: 1px solid var(--line);
+}
+
+/* ============================================================
+   Cursor personalizado
+   ============================================================ */
+.cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--ink);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  mix-blend-mode: difference;
+  transition: width 0.25s ease, height 0.25s ease, background 0.25s ease;
+}
+.cursor-dot.is-hover {
+  width: 48px;
+  height: 48px;
+  background: #fff;
+}
+.cursor-label {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 10000;
+  transform: translate(-50%, -50%) translate(28px, 28px);
+  font-family: var(--font-space-mono);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.cursor-dot.is-hover ~ .cursor-label {
+  opacity: 1;
+}
+
+/* ============================================================
+   Animaciones utilitarias
+   ============================================================ */
+@keyframes scrollChevron {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+.chevron-bounce {
+  animation: scrollChevron 1.6s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.caret {
+  display: inline-block;
+  width: 0.5ch;
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes spinSlow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spin-slow {
+  animation: spinSlow 4s linear infinite;
+}
+
+/* ============================================================
+   Reduced motion — desactiva todo lo pesado
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.3s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.3s !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal-mask > .reveal-inner {
+    transform: none !important;
+  }
+  .cursor-dot,
+  .cursor-label {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   Helpers de layout
+   ============================================================ */
+.no-scroll {
+  overflow: hidden;
+}
+
+.container-edge {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+@media (min-width: 768px) {
+  .container-edge {
+    padding: 0 2.5rem;
+  }
+}
+@media (min-width: 1200px) {
+  .container-edge {
+    padding: 0 3.5rem;
+  }
+}
+
+/* Asegura footer pegado al fondo con sticky natural */
+.page-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.page-shell > main {
+  flex: 1 0 auto;
+}
