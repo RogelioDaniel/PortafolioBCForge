@@ -126,9 +126,10 @@ export default function HeroScene({
       [0, 0, 1], [0, 0, -1],
     ];
 
-    makeVoxelCluster(stairs, -2.6, 0.9, 0.8, 0.28);
-    makeVoxelCluster(figure, 1.9, -0.7, 1.0, 0.3);
-    makeVoxelCluster(cross, 3.4, 1.5, 0.4, 0.24);
+    // Escala contenida: acentos discretos sobre el titular, no protagonistas
+    makeVoxelCluster(stairs, -2.9, 1.0, 0.6, 0.17);
+    makeVoxelCluster(figure, 2.1, -0.5, 0.9, 0.19);
+    makeVoxelCluster(cross, 3.9, 1.6, 0.3, 0.13);
 
     const mouse = { x: 0, y: 0 };
     const target = { x: 0, y: 0 };

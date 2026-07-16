@@ -5,11 +5,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { themeInitScript } from "@/lib/use-theme";
 
-// Display: Archivo variable — usaremos el eje de anchura condensado via font-stretch
+// Display: Archivo VARIABLE con eje de anchura (wdth 62–125).
+// CRÍTICO: sin `axes: ["wdth"]` next/font sirve instancias estáticas y
+// `font-stretch` se ignora — el look condensado de todo el sitio depende de esto.
 const archivo = Archivo({
   variable: "--font-archivo",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  axes: ["wdth"],
   display: "swap",
 });
 

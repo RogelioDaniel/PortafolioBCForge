@@ -79,15 +79,16 @@ export default function Hero() {
     <section
       ref={rootRef}
       id="top"
-      className="relative min-h-[100svh] flex flex-col justify-center overflow-hidden pt-24"
+      className="relative h-[100svh] flex flex-col overflow-hidden pt-24 pb-14"
       aria-label="Introducción"
     >
-      {/* Capa 1: texto base (z-1) — debajo del canvas */}
-      <div className="hero-content relative z-[1] flex items-center">
+      {/* Capa 1: texto base (z-1) — debajo del canvas. flex-1 centra el titular
+          y deja la bio siempre visible al fondo (sin desbordar el viewport) */}
+      <div className="hero-content relative z-[1] flex-1 flex items-center min-h-0">
         <div className="container-edge w-full">
           <h1
             className="display"
-            style={{ fontSize: "clamp(2.8rem, 11.5vw, 11rem)" }}
+            style={{ fontSize: "clamp(3rem, 12.5vw, 12.5rem)" }}
           >
             {HERO.lines.map((line, i) => (
               <span key={i} className="hero-line reveal-mask block">
@@ -101,8 +102,8 @@ export default function Hero() {
       {/* Capa 2: canvas Three.js (z-2) — objetos en las esquinas, no tapan texto */}
       <HeroScene reduced={reduced} isTouch={isTouch} />
 
-      {/* Bio abajo */}
-      <div className="hero-fade relative z-10 container-edge mt-8 md:mt-10">
+      {/* Bio abajo — dentro del viewport siempre */}
+      <div className="hero-fade relative z-10 container-edge shrink-0">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="flex items-center gap-3">
             <span

@@ -86,16 +86,16 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
       </div>
 
       {/* Centro — LOADING + barra con círculo deslizante + % (estilo Labs) */}
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-8 md:gap-10 px-6 md:px-10">
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6 md:gap-10 px-6 md:px-10">
         <h1
-          className="display display--heavy leading-[0.85] shrink-0"
-          style={{ fontSize: "clamp(3rem, 9vw, 7.5rem)" }}
+          className="display display--heavy leading-[0.82] shrink-0"
+          style={{ fontSize: "clamp(3.2rem, 11vw, 11rem)" }}
         >
           LOADING
         </h1>
         {/* Barra píldora outline: el círculo negro viaja de izquierda a derecha */}
         <div
-          className="relative h-12 md:h-16 rounded-full border w-full flex-1"
+          className="relative h-14 md:h-24 rounded-full border w-full flex-1"
           style={{ borderColor: "var(--pill-border-strong)" }}
           role="progressbar"
           aria-valuenow={pct}
@@ -103,35 +103,37 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
           aria-valuemax={100}
           aria-label="Cargando"
         >
-          <span
-            className="absolute top-1/2 -translate-y-1/2 rounded-full bg-[var(--ink)] block w-8 h-8 md:w-11 md:h-11"
-            style={{
-              left: `calc(0.5rem + (100% - 1rem - 2.75rem) * ${pct / 100})`,
-              transition: "left 0.1s linear",
-            }}
-          />
+          {/* Pista interior con padding; el translateX(-pct%) mantiene el
+              círculo siempre dentro de la pista sin constantes mágicas */}
+          <div className="absolute inset-2 md:inset-2.5">
+            <span
+              className="absolute top-1/2 h-full aspect-square rounded-full bg-[var(--ink)] block"
+              style={{
+                left: `${pct}%`,
+                transform: `translateX(-${pct}%) translateY(-50%)`,
+                transition: "left 0.1s linear",
+              }}
+            />
+          </div>
         </div>
-        <div className="shrink-0 flex items-start">
+        <div className="shrink-0 flex items-start justify-end">
           <span
-            className="display display--heavy tabular-nums leading-none"
-            style={{ fontSize: "clamp(3rem, 9vw, 7.5rem)" }}
+            className="display display--heavy tabular-nums leading-[0.82]"
+            style={{ fontSize: "clamp(3.2rem, 11vw, 11rem)" }}
           >
             {pct}
           </span>
           <span
-            className="display display--heavy leading-none mt-1 md:mt-2"
-            style={{ fontSize: "clamp(1.2rem, 3vw, 2.4rem)" }}
+            className="display display--heavy leading-none mt-1 md:mt-3"
+            style={{ fontSize: "clamp(1.3rem, 3.2vw, 3rem)" }}
           >
             %
           </span>
         </div>
       </div>
 
-      {/* Bottom — toggle sonido */}
-      <div className="relative z-10 flex flex-col items-center pb-8 md:pb-10">
-        <p className="mono text-[11px] text-center opacity-70 max-w-[26ch] mb-3">
-          PARA UNA EXPERIENCIA MÁS INMERSIVA ACTIVA EL SONIDO
-        </p>
+      {/* Bottom — toggle sonido arriba, texto debajo (orden de la referencia Labs) */}
+      <div className="relative z-10 flex flex-col items-center gap-3 pb-8 md:pb-10">
         <button
           onClick={toggleSound}
           className="pill"
@@ -157,6 +159,11 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
             <span className="ml-2 w-7">{soundOn ? "ON" : "OFF"}</span>
           </span>
         </button>
+        <p className="mono text-[11px] leading-relaxed text-center opacity-70 max-w-[40ch]">
+          PARA UNA EXPERIENCIA MÁS INMERSIVA
+          <br />
+          ACTIVA EL SONIDO
+        </p>
       </div>
     </div>
   );

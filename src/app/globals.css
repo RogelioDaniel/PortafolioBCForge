@@ -105,9 +105,11 @@
   font-stretch: 78%; /* eje condensado de Archivo variable */
 }
 
-/* Variante pesada solo para momentos puntuales (preloader estilo Labs) */
+/* Variante pesada ultra-condensada (preloader estilo Labs: alto, estrecho, negro) */
 .display--heavy {
-  font-weight: 800;
+  font-weight: 900;
+  font-stretch: 62%;
+  letter-spacing: 0;
 }
 
 .mono {
@@ -343,14 +345,15 @@ html.theme-site-dark .cursor-dot.is-hover {
   border-bottom-color: var(--ink);
 }
 
-/* Reveal de texto con máscara */
+/* Reveal de texto con máscara.
+   IMPORTANTE: visible por defecto — GSAP (fromTo) aplica el estado oculto
+   justo antes de animar. Si el JS falla, el texto NUNCA queda invisible. */
 .reveal-mask {
   overflow: hidden;
   display: block;
 }
 .reveal-mask > .reveal-inner {
   display: block;
-  transform: translateY(110%);
   will-change: transform;
 }
 
