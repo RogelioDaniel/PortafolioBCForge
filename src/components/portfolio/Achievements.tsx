@@ -117,8 +117,17 @@ export default function Achievements() {
           <DecorFloaters />
         </div>
 
-        {/* Statement mono */}
-        <p className="mono-lg max-w-[50ch] mb-12 md:mb-16" style={{ fontFamily: "var(--font-space-mono)", textTransform: "none", letterSpacing: 0 }}>
+        {/* Statement mono mayúsculas, grande (como "RECOGNITION FOR..." de la referencia) */}
+        <p
+          className="max-w-[34ch] mb-12 md:mb-16"
+          style={{
+            fontFamily: "var(--font-space-mono)",
+            textTransform: "uppercase",
+            letterSpacing: "0.02em",
+            fontSize: "clamp(1.05rem, 2.4vw, 1.7rem)",
+            lineHeight: 1.3,
+          }}
+        >
           {ACHIEVEMENTS.statement}
         </p>
 
@@ -135,15 +144,19 @@ export default function Achievements() {
                 className="w-full py-6 md:py-8 flex items-center justify-between text-left transition-opacity duration-300"
                 style={{ opacity: hovered === null || hovered === i ? 1 : 0.3 }}
               >
-                <span className="flex items-baseline gap-3 md:gap-4">
+                <span className="flex items-start gap-2 md:gap-3">
                   <span
-                    className="display"
-                    style={{ fontSize: "clamp(1.5rem, 4vw, 3rem)" }}
+                    style={{
+                      fontFamily: "var(--font-inter)",
+                      fontWeight: 500,
+                      fontSize: "clamp(1.25rem, 2.4vw, 2rem)",
+                      letterSpacing: "-0.01em",
+                    }}
                   >
                     {item.name}
                   </span>
-                  <sup className="mono text-[11px] opacity-60">
-                    {item.count}
+                  <sup className="mono text-[11px] opacity-60 mt-1">
+                    /{item.count}
                   </sup>
                 </span>
                 <span className="mono text-[16px] md:text-[20px] transition-transform duration-300 group-hover:translate-x-2">
@@ -206,23 +219,32 @@ function DecorFloaters() {
           opacity: 0.85,
         }}
       />
+      {/* Formas pálidas, como los objetos 3D claros de la referencia */}
       <div
         data-speed="0.6"
         className="absolute top-[60%] left-[5%] w-7 h-7 rounded-full"
-        style={{ background: "#d4a24c" }}
+        style={{
+          background: "#f4f4f0",
+          boxShadow: "0 2px 10px rgba(14,14,16,0.12)",
+        }}
       />
       <div
         data-speed="0.45"
         className="absolute top-[20%] left-[40%] w-5 h-5"
         style={{
-          background: "#7b3ff2",
+          background: "#f4f4f0",
+          boxShadow: "0 2px 8px rgba(14,14,16,0.12)",
           clipPath: "polygon(50% 0,100% 50%,50% 100%,0 50%)",
         }}
       />
       <div
         data-speed="0.7"
         className="absolute top-[75%] right-[20%] w-6 h-6 rotate-45"
-        style={{ background: "#2e6bff", opacity: 0.8 }}
+        style={{
+          background: "#f4f4f0",
+          boxShadow: "0 2px 8px rgba(14,14,16,0.12)",
+          opacity: 0.9,
+        }}
       />
     </div>
   );

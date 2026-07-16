@@ -75,7 +75,7 @@ export default function Header() {
           </a>
 
           <div className="flex items-center gap-5 md:gap-7">
-            <nav className="hidden md:flex items-center gap-7" aria-label="Principal">
+            <nav className="hidden md:flex items-center gap-8 lg:gap-12" aria-label="Principal">
               {SITE.nav.map((item) => (
                 <button
                   key={item.label}

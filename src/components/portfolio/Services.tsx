@@ -75,16 +75,13 @@ export default function Services() {
               <div className="mb-6">
                 <span className="pill">{col.chip}</span>
               </div>
-              <ul className="flex flex-col">
+              {/* Lista de texto plano, sin divisores (como la referencia) */}
+              <ul className="flex flex-col gap-2">
                 {col.items.map((item) => (
-                  <li
-                    key={item}
-                    className="svc-row hairline py-4 flex items-center justify-between group cursor-default"
-                  >
-                    <span className="text-[15px] md:text-[16px] group-hover:translate-x-1 transition-transform duration-300">
+                  <li key={item} className="svc-row cursor-default">
+                    <span className="text-[15px] md:text-[16px] inline-block hover:translate-x-1 transition-transform duration-300">
                       {item}
                     </span>
-                    <span className="mono text-[11px] opacity-40">→</span>
                   </li>
                 ))}
               </ul>

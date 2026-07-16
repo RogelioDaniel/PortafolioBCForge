@@ -124,7 +124,7 @@ export default function Footer() {
           <div className="flex items-baseline gap-3">
             <span className="text-[15px] lowercase">{SITE.logo}</span>
             <span className="script text-[20px] text-[var(--ink-soft)]">
-              portfolio
+              portafolio
             </span>
           </div>
           <div className="flex items-center gap-4">

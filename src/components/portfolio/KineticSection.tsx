@@ -98,9 +98,9 @@ export default function KineticSection() {
             {KINETIC_WORDS.map((w) => (
               <span
                 key={w}
-                className="kinetic-word absolute display"
+                className="kinetic-word absolute display whitespace-nowrap"
                 style={{
-                  fontSize: "clamp(2.5rem, 13vw, 11rem)",
+                  fontSize: "clamp(2.6rem, 14.5vw, 13rem)",
                   color: "#f4f4f4",
                   willChange: "transform, opacity",
                 }}

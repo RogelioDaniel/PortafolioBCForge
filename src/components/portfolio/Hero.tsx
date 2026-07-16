@@ -87,7 +87,7 @@ export default function Hero() {
         <div className="container-edge w-full">
           <h1
             className="display"
-            style={{ fontSize: "clamp(2.6rem, 10.5vw, 9.5rem)" }}
+            style={{ fontSize: "clamp(2.8rem, 11.5vw, 11rem)" }}
           >
             {HERO.lines.map((line, i) => (
               <span key={i} className="hero-line reveal-mask block">
@@ -118,20 +118,13 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Indicador SCROLL */}
+      {/* Indicador SCROLL — texto plano + chevron, sin píldora (como la referencia) */}
       <div
-        className="hero-fade absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5 px-4 py-2 rounded-full border"
-        style={{
-          color: "var(--ink)",
-          background: "rgba(220,226,240,0.92)",
-          borderColor: "var(--pill-border)",
-          backdropFilter: "blur(8px)",
-        }}
+        className="hero-fade absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5"
+        style={{ color: "var(--ink)" }}
       >
-        <span className="mono text-[11px]" style={{ opacity: 1, fontWeight: 700 }}>
-          SCROLL
-        </span>
-        <PixelChevron className="chevron-bounce" size={14} />
+        <span className="mono text-[11px] opacity-70">SCROLL</span>
+        <PixelChevron className="chevron-bounce opacity-70" size={12} />
       </div>
     </section>
   );

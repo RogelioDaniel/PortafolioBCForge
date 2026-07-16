@@ -205,6 +205,10 @@ export default function ProjectsSceneManager({
   }, [projects, activeRef, progressRef]);
 
   return (
-    <div ref={mountRef} className="absolute inset-0 z-[1]" aria-hidden="true" />
+    <div
+      ref={mountRef}
+      className="absolute inset-0 z-[2] pointer-events-none"
+      aria-hidden="true"
+    />
   );
 }

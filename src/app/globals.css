@@ -97,11 +97,17 @@
    ============================================================ */
 .display {
   font-family: var(--font-archivo);
-  font-weight: 800;
+  /* Peso medio, no black: el look Noomo es condensado alto con trazo moderado */
+  font-weight: 500;
   text-transform: uppercase;
   line-height: 0.88;
   letter-spacing: -0.01em;
   font-stretch: 78%; /* eje condensado de Archivo variable */
+}
+
+/* Variante pesada solo para momentos puntuales (preloader estilo Labs) */
+.display--heavy {
+  font-weight: 800;
 }
 
 .mono {
@@ -127,7 +133,7 @@ h1,
 h2,
 h3 {
   font-family: var(--font-archivo);
-  font-weight: 800;
+  font-weight: 500;
   text-transform: uppercase;
   line-height: 0.9;
   letter-spacing: -0.01em;
@@ -155,8 +161,13 @@ a {
       rgba(243, 216, 205, 0.45) 18%,
       rgba(243, 216, 205, 0) 42%
     );
-  transition: background 0.2s linear;
+  transition: background 0.2s linear, opacity 0.6s ease;
   will-change: background;
+}
+
+/* Durante el theme flip a negro, el glow durazno se apaga */
+body.theme-dark .bg-glow {
+  opacity: 0;
 }
 
 /* Textura de grano sutil (noise) — da profundidad premium al fondo lavanda.

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { getAmbient } from "@/lib/ambient-sound";
+import { SITE } from "@/lib/portfolio-content";
 
 /**
  * Preloader — pantalla lavanda con:
@@ -60,8 +61,6 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
     getAmbient()?.toggle();
   };
 
-  const pctWidth = `${pct}%`;
-
   return (
     <div
       ref={rootRef}
@@ -80,48 +79,50 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
 
       {/* Top — logo mini */}
       <div className="relative z-10 flex justify-between items-center px-6 md:px-10 pt-6 md:pt-8">
-        <span className="mono text-[11px] opacity-60">[TU_LOGO]</span>
-        <span className="mono text-[11px] opacity-60">PORTAFOLIO · 2025</span>
+        <span className="mono text-[11px] opacity-60">{SITE.logo}</span>
+        <span className="mono text-[11px] opacity-60">
+          PORTAFOLIO · {new Date().getFullYear()}
+        </span>
       </div>
 
-      {/* Centro — LOADING + barra + % */}
-      <div className="relative z-10 flex flex-col md:flex-row md:items-end gap-8 md:gap-12 px-6 md:px-10">
-        <div className="flex-1">
-          <h1
-            className="display leading-[0.85]"
-            style={{ fontSize: "clamp(3.5rem, 14vw, 11rem)" }}
-          >
-            LOADING
-          </h1>
-        </div>
-        <div className="w-full md:w-[34%] md:pb-3">
-          {/* Barra píldora */}
-          <div
-            className="relative h-9 rounded-full border w-full overflow-hidden"
-            style={{ borderColor: "var(--pill-border-strong)" }}
-            role="progressbar"
-            aria-valuenow={pct}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Cargando"
-          >
-            <div
-              className="absolute inset-y-0 left-0 bg-[var(--ink)] rounded-full flex items-center justify-end pr-3"
-              style={{ width: pctWidth, transition: "width 0.1s linear" }}
-            >
-              <span
-                className="block w-2 h-2 rounded-full"
-                style={{ background: "var(--bg-light)" }}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="md:pb-2">
+      {/* Centro — LOADING + barra con círculo deslizante + % (estilo Labs) */}
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-8 md:gap-10 px-6 md:px-10">
+        <h1
+          className="display display--heavy leading-[0.85] shrink-0"
+          style={{ fontSize: "clamp(3rem, 9vw, 7.5rem)" }}
+        >
+          LOADING
+        </h1>
+        {/* Barra píldora outline: el círculo negro viaja de izquierda a derecha */}
+        <div
+          className="relative h-12 md:h-16 rounded-full border w-full flex-1"
+          style={{ borderColor: "var(--pill-border-strong)" }}
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Cargando"
+        >
           <span
-            className="display tabular-nums"
-            style={{ fontSize: "clamp(2.5rem, 8vw, 6rem)" }}
+            className="absolute top-1/2 -translate-y-1/2 rounded-full bg-[var(--ink)] block w-8 h-8 md:w-11 md:h-11"
+            style={{
+              left: `calc(0.5rem + (100% - 1rem - 2.75rem) * ${pct / 100})`,
+              transition: "left 0.1s linear",
+            }}
+          />
+        </div>
+        <div className="shrink-0 flex items-start">
+          <span
+            className="display display--heavy tabular-nums leading-none"
+            style={{ fontSize: "clamp(3rem, 9vw, 7.5rem)" }}
           >
-            {String(pct).padStart(3, "0")}
+            {pct}
+          </span>
+          <span
+            className="display display--heavy leading-none mt-1 md:mt-2"
+            style={{ fontSize: "clamp(1.2rem, 3vw, 2.4rem)" }}
+          >
+            %
           </span>
         </div>
       </div>

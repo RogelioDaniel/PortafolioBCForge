@@ -145,17 +145,17 @@ export default function Blog() {
               >
                 <a href="#" className="block" data-cursor="LEER">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-10 items-center">
-                    {/* Thumbnail 16:9 con chips + overlay hover */}
+                    {/* Thumbnail 16:9 con chips apiladas dentro (arriba-derecha) + overlay hover */}
                     <div className="md:col-span-4 relative">
-                      <div className="absolute -top-3 left-4 z-20 flex flex-col gap-1.5">
-                        <span className="pill bg-[var(--bg-light)]">
-                          {item.category}
-                        </span>
-                      </div>
                       <div
                         className="relative aspect-[16/9] overflow-hidden rounded-xl"
                         style={{ background: "var(--bg-navy)" }}
                       >
+                        <div className="absolute top-2 right-2 z-20 flex flex-col items-end gap-1.5">
+                          <span className="pill pill--ghost-light backdrop-blur-sm">
+                            {item.category}
+                          </span>
+                        </div>
                         <div
                           className="absolute inset-0"
                           style={{
@@ -186,11 +186,11 @@ export default function Blog() {
                         {item.category} · {item.date} · {item.readTime}
                       </span>
                       <h3
-                        className="font-bold leading-tight mb-2"
+                        className="leading-snug mb-2"
                         style={{
-                          fontFamily: "var(--font-archivo)",
-                          fontSize: "clamp(1.2rem, 2.4vw, 1.8rem)",
-                          textTransform: "uppercase",
+                          fontFamily: "var(--font-inter)",
+                          fontWeight: 500,
+                          fontSize: "clamp(1.15rem, 2vw, 1.55rem)",
                           letterSpacing: "-0.01em",
                         }}
                       >
@@ -201,10 +201,16 @@ export default function Blog() {
                       </p>
                     </div>
 
-                    {/* Flecha */}
+                    {/* Flecha en caja cuadrada oscura (como la referencia) */}
                     <div className="md:col-span-1 flex md:justify-end">
-                      <span className="mono text-[18px] transition-transform duration-300 group-hover:translate-x-1">
-                        →
+                      <span
+                        className="w-9 h-9 flex items-center justify-center border transition-all duration-300 group-hover:bg-[var(--ink)] group-hover:text-[var(--bg-light)] group-hover:border-[var(--ink)]"
+                        style={{ borderColor: "var(--pill-border)" }}
+                        aria-hidden="true"
+                      >
+                        <span className="mono text-[14px] transition-transform duration-300 group-hover:translate-x-0.5">
+                          →
+                        </span>
                       </span>
                     </div>
                   </div>

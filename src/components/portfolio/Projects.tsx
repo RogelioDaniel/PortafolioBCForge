@@ -124,26 +124,19 @@ export default function Projects() {
           ref={pinRef}
           className="sticky top-0 h-[100svh] w-full overflow-hidden flex items-center justify-center"
         >
-          {/* Escena 3D central */}
-          <ProjectsSceneManager
-            projects={PROJECTS}
-            activeRef={activeRef}
-            progressRef={progressRef}
-          />
-
-          {/* Palabra clave gigante centrada (capa sobre el 3D) */}
-          <div className="absolute inset-0 z-[2] flex items-center justify-center pointer-events-none">
+          {/* Palabra clave gigante centrada — negro sólido, DEBAJO del canvas:
+              el objeto 3D pasa por delante de las letras (look de la referencia) */}
+          <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
             <div className="relative w-full h-full">
-              {PROJECTS.map((p, i) => (
+              {PROJECTS.map((p) => (
                 <div
                   key={p.keyword}
                   className="project-keyword absolute inset-0 flex items-center justify-center overflow-hidden"
                 >
                   <span
-                    className="display"
+                    className="display whitespace-nowrap"
                     style={{
-                      fontSize: "clamp(3rem, 14vw, 13rem)",
-                      opacity: 0.18,
+                      fontSize: "clamp(3.2rem, 15vw, 14.5rem)",
                       color: "var(--ink)",
                       letterSpacing: "-0.02em",
                     }}
@@ -154,6 +147,13 @@ export default function Projects() {
               ))}
             </div>
           </div>
+
+          {/* Escena 3D central — sobre el texto */}
+          <ProjectsSceneManager
+            projects={PROJECTS}
+            activeRef={activeRef}
+            progressRef={progressRef}
+          />
 
           {/* Paneles de contenido por proyecto (tags / nombre / desc / botón) */}
           {PROJECTS.map((p, i) => (
@@ -175,30 +175,18 @@ export default function Projects() {
                 </div>
               </div>
 
-              {/* Centro: nombre + palabra clave legible (móvil) */}
-              <div className="container-edge md:hidden text-center">
-                <span
-                  className="display block"
-                  style={{ fontSize: "clamp(2rem, 11vw, 5rem)" }}
-                >
-                  {p.keyword}
-                </span>
-              </div>
-
               {/* Bottom: tags izq + desc der + botón centro */}
               <div className="container-edge pb-10 md:pb-14">
                 <div
                   className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-end"
                   style={{ pointerEvents: "auto" }}
                 >
-                  {/* Tags */}
-                  <div className="md:col-span-4 flex flex-wrap gap-2">
+                  {/* Tags: un solo pill + texto mono separado por " / " (referencia) */}
+                  <div className="md:col-span-4 flex flex-wrap items-center gap-3">
                     <span className="pill">Website</span>
-                    {p.tags.map((t) => (
-                      <span key={t} className="pill">
-                        {t}
-                      </span>
-                    ))}
+                    <span className="mono text-[11px] opacity-70">
+                      {p.tags.join(" / ")}
+                    </span>
                   </div>
 
                   {/* Botón centro */}
@@ -220,11 +208,11 @@ export default function Projects() {
                   {/* Desc derecha */}
                   <div className="md:col-span-4 md:text-right">
                     <h3
-                      className="font-bold mb-2"
+                      className="mb-2"
                       style={{
-                        fontFamily: "var(--font-archivo)",
-                        fontSize: "clamp(1.1rem, 2vw, 1.6rem)",
-                        textTransform: "uppercase",
+                        fontFamily: "var(--font-inter)",
+                        fontWeight: 600,
+                        fontSize: "clamp(1rem, 1.6vw, 1.25rem)",
                         letterSpacing: "-0.01em",
                       }}
                     >
