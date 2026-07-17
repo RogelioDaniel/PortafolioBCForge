@@ -308,13 +308,13 @@ export default function Projects() {
             key={p.keyword}
             onClick={() => goToProject(i)}
             className={`project-dot group flex items-center gap-2 mono text-[10px] transition-all duration-300${active === i ? " is-active" : ""}`}
-            style={{ opacity: active === i ? 1 : 0.4, color: "var(--ink)" }}
+            style={{ opacity: active === i ? 1 : 0.6, color: "var(--ink)" }}
             aria-label={`Ir al proyecto ${i + 1}: ${p.keyword}`}
           >
             <span
-              className="block h-px transition-all duration-300"
+              className="block h-1.5 rounded-full transition-all duration-300"
               style={{
-                width: active === i ? 28 : 12,
+                width: active === i ? 24 : 6,
                 background: active === i ? p.accent : "var(--ink)",
               }}
             />
