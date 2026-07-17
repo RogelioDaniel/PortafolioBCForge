@@ -154,17 +154,19 @@ export default function Projects() {
         onOpen={() => openProject(current)}
       />
 
-      {/* Panel superior: índice + nombre + tags + descripción */}
-      <div className="absolute top-0 left-0 right-0 z-[3] container-edge pt-24 md:pt-28 pointer-events-none">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="mono text-[11px] opacity-60">
-            {String(active + 1).padStart(2, "0")} /{" "}
-            {String(PROJECTS.length).padStart(2, "0")}
-          </span>
+      {/* Panel superior: índice + nombre + tags + descripción.
+          El índice y el pill van a la DERECHA para no chocar con el logo del
+          header (arriba-izquierda) en pantallas angostas. */}
+      <div className="absolute top-0 left-0 right-0 z-[3] container-edge pt-28 md:pt-28 pointer-events-none">
+        <div className="flex items-center justify-end gap-3 mb-4">
           <span
             className="block h-px flex-1 max-w-[120px]"
             style={{ background: "var(--line)" }}
           />
+          <span className="mono text-[11px] opacity-60">
+            {String(active + 1).padStart(2, "0")} /{" "}
+            {String(PROJECTS.length).padStart(2, "0")}
+          </span>
           <span
             className="pill"
             style={{ borderColor: current.accent, color: current.accent }}

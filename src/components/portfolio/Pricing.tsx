@@ -46,10 +46,11 @@ export default function Pricing() {
     <section
       ref={ref}
       id="precios"
-      className="relative h-[100svh] w-full flex flex-col justify-center overflow-hidden"
+      data-screen-scroll
+      className="relative h-[100svh] w-full overflow-y-auto overflow-x-hidden"
       aria-label="Precios"
     >
-      <div className="container-edge w-full">
+      <div className="container-edge w-full min-h-[100svh] flex flex-col justify-center py-24 md:py-16">
         {/* Encabezado */}
         <div className="mb-8 md:mb-12 max-w-[46ch]">
           <span className="price-head section-label block mb-4">
