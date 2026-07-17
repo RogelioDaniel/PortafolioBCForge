@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { gsap } from "gsap";
 import ProjectScenes from "./scenes/ProjectScenes";
 import { PROJECTS, type Project } from "@/lib/portfolio-content";
 import { useScreenNav } from "@/lib/use-screen-nav";
+import { getAmbient } from "@/lib/ambient-sound";
 
 /**
  * Proyectos destacados — EXPERIENCIA GUIADA (sin scroll).
@@ -23,6 +24,8 @@ import { useScreenNav } from "@/lib/use-screen-nav";
 
 export default function Projects() {
   const { registerSubNav } = useScreenNav();
+  const sectionRef = useRef<HTMLElement>(null);
+  const keywordRef = useRef<HTMLSpanElement>(null);
   const activeRef = useRef(0);
   const progressRef = useRef(0);
   const [active, setActive] = useState(0);
@@ -103,6 +106,43 @@ export default function Projects() {
     };
   }, [startReveal]);
 
+  useEffect(() => {
+    const section = sectionRef.current;
+    const keyword = keywordRef.current;
+    if (!section || !keyword) return;
+
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let phase = 0;
+    const unsubscribe = getAmbient()?.subscribeAnalysis(
+      ({ bass, mid, treble, energy }) => {
+        if (motionQuery.matches) return;
+        phase += 0.075 + energy * 0.06;
+        section.style.setProperty("--project-bass", bass.toFixed(3));
+        section.style.setProperty("--project-mid", mid.toFixed(3));
+        section.style.setProperty("--project-treble", treble.toFixed(3));
+        section.style.setProperty("--project-energy", energy.toFixed(3));
+        section.dataset.beat = energy > 0.045 ? "on" : "off";
+
+        (keywordRef.current ?? keyword).querySelectorAll<HTMLElement>(".project-letter").forEach(
+          (letter, index) => {
+            const wave = Math.sin(phase + index * 0.72);
+            const counterWave = Math.cos(phase * 0.78 + index * 0.48);
+            const lift = wave * (1.5 + mid * 10);
+            const sway = counterWave * treble * 2.4;
+            const scaleY = 1 + bass * (0.035 + (index % 3) * 0.012);
+            const scaleX = 1 - bass * 0.018;
+            letter.style.transform = `translate3d(${sway.toFixed(2)}px, ${lift.toFixed(2)}px, 0) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)})`;
+          }
+        );
+      }
+    );
+
+    return () => {
+      unsubscribe?.();
+      delete section.dataset.beat;
+    };
+  }, []);
+
   // Registrar la sub-navegación: las flechas globales avanzan de proyecto.
   useEffect(() => {
     const sub = {
@@ -126,13 +166,15 @@ export default function Projects() {
 
   return (
     <section
+      ref={sectionRef}
       id="proyectos"
-      className="relative h-[100svh] w-full overflow-hidden flex items-center justify-center"
+      className="project-stage relative h-[100svh] w-full overflow-hidden flex items-center justify-center"
       aria-label="Proyectos destacados"
     >
       {/* Palabra clave gigante centrada — DEBAJO de la escena */}
       <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
         <span
+          ref={keywordRef}
           key={`kw-${active}`}
           className="project-keyword display whitespace-nowrap project-kw-enter"
           style={{
@@ -141,7 +183,17 @@ export default function Projects() {
             letterSpacing: "-0.02em",
           }}
         >
-          {current.keyword}
+          {Array.from(current.keyword).map((character, index) => (
+            <span
+              key={`${current.keyword}-${index}`}
+              className="project-letter"
+              style={{ "--letter-index": index } as CSSProperties}
+              aria-hidden="true"
+            >
+              {character === " " ? "\u00a0" : character}
+            </span>
+          ))}
+          <span className="sr-only">{current.keyword}</span>
         </span>
       </div>
 
@@ -202,7 +254,7 @@ export default function Projects() {
 
       {/* Botón "Ver proyecto" — elevado para NO chocar con la nav global inferior */}
       <div className="absolute left-0 right-0 bottom-24 md:bottom-28 z-[3] container-edge">
-        <div className="flex justify-center" style={{ pointerEvents: "auto" }}>
+        <div className="project-cta-reactive flex justify-center" style={{ pointerEvents: "auto" }}>
           <a
             href={current.liveUrl}
             target="_blank"
@@ -229,7 +281,7 @@ export default function Projects() {
           <button
             key={p.keyword}
             onClick={() => goToProject(i)}
-            className="group flex items-center gap-2 mono text-[10px] transition-all duration-300"
+            className={`project-dot group flex items-center gap-2 mono text-[10px] transition-all duration-300${active === i ? " is-active" : ""}`}
             style={{ opacity: active === i ? 1 : 0.4, color: "var(--ink)" }}
             aria-label={`Ir al proyecto ${i + 1}: ${p.keyword}`}
           >

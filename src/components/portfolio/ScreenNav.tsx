@@ -42,7 +42,7 @@ export default function ScreenNav() {
         disabled={isFirst}
         data-cursor="ATRÁS"
         aria-label={prevTarget ?? "Pantalla anterior"}
-        className="screen-arrow group disabled:opacity-0 disabled:pointer-events-none transition-all duration-300 hover:scale-110"
+        className="screen-arrow music-nudge group disabled:opacity-0 disabled:pointer-events-none transition-all duration-300 hover:scale-110"
         style={{
           width: isTouch ? 40 : 46,
           height: isTouch ? 40 : 46,
@@ -90,7 +90,7 @@ export default function ScreenNav() {
         disabled={isLast}
         data-cursor="SIGUIENTE"
         aria-label={nextTarget ?? "Siguiente pantalla"}
-        className={`screen-arrow group disabled:opacity-0 disabled:pointer-events-none transition-all duration-300 hover:scale-110${
+        className={`screen-arrow music-nudge group disabled:opacity-0 disabled:pointer-events-none transition-all duration-300 hover:scale-110${
           subNavEdges?.atEnd ? " screen-arrow-reveal" : ""
         }`}
         style={{
