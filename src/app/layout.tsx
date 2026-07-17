@@ -50,6 +50,9 @@ export const metadata: Metadata = {
     "landing page",
   ],
   authors: [{ name: "BCForge" }],
+  icons: {
+    icon: "/icon.svg",
+  },
   openGraph: {
     title: "BCForge — Sitios web que elevan tu negocio",
     description:
