@@ -2073,18 +2073,18 @@ html[data-screen-transition="true"] .voxel-drifter-reactive {
 }
 
 .pricing-layout {
-  padding-top: 7rem;
-  padding-bottom: 9rem;
+  padding-top: 5rem;
+  padding-bottom: 5.5rem;
 }
 
 @media (min-width: 768px) {
   .pricing-layout {
-    padding-top: 8rem;
-    padding-bottom: 10rem;
+    padding-top: 5.5rem;
+    padding-bottom: 6rem;
   }
 }
 
-@media (min-width: 768px) and (min-height: 980px) {
+@media (min-width: 768px) and (min-height: 700px) {
   .pricing-layout {
     justify-content: center;
   }

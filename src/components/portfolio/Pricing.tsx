@@ -51,30 +51,30 @@ export default function Pricing() {
       className="relative h-[100svh] w-full overflow-y-auto overflow-x-hidden"
       aria-label="Precios"
     >
-      <div className="pricing-layout container-edge w-full min-h-[100svh] flex flex-col justify-start">
+      <div className="pricing-layout container-edge w-full h-[100svh] flex flex-col justify-center pt-16 md:pt-20 pb-20 md:pb-24">
         {/* Encabezado */}
-        <div className="mb-6 md:mb-8 max-w-[46ch]">
-          <span className="price-head section-label block mb-3">
+        <div className="mb-4 md:mb-5 max-w-[46ch]">
+          <span className="price-head section-label block mb-2">
             {PRICING.eyebrow}
           </span>
           <h2
             className="price-head audio-title display"
-            style={{ fontSize: "clamp(2.4rem, 7vw, 5.5rem)" }}
+            style={{ fontSize: "clamp(1.8rem, 5vw, 3.8rem)" }}
           >
             <AudioTitleWave variant="spark" />
             {PRICING.title.join(" ")}
           </h2>
-          <p className="price-head mt-3 text-[13px] md:text-[15px] leading-relaxed opacity-80 max-w-[42ch]">
+          <p className="price-head mt-2 text-[12px] md:text-[13px] leading-relaxed opacity-80 max-w-[42ch]">
             {PRICING.intro}
           </p>
         </div>
 
         {/* Planes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           {PRICING.tiers.map((tier) => (
             <div
               key={tier.name}
-              className="price-card relative rounded-2xl border p-6 md:p-6 flex flex-col"
+              className="price-card relative rounded-2xl border p-4 md:p-5 flex flex-col"
               style={{
                 borderColor: tier.popular ? "var(--ink)" : "var(--pill-border)",
                 background: tier.popular
@@ -96,24 +96,24 @@ export default function Pricing() {
               )}
 
               <span className="mono text-[11px] opacity-60">{tier.name}</span>
-              <div className="mt-3 flex items-baseline gap-1.5">
+              <div className="mt-2 flex items-baseline gap-1.5">
                 <span className="mono text-[12px] opacity-50">desde</span>
                 <span
                   className="display"
-                  style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
+                  style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.4rem)" }}
                 >
                   {tier.price}
                 </span>
                 <span className="mono text-[11px] opacity-50">{tier.unit}</span>
               </div>
-              <p className="text-[12px] opacity-70 mt-1 mb-5">{tier.tagline}</p>
+              <p className="text-[11px] opacity-70 mt-1 mb-3">{tier.tagline}</p>
 
-              <ul className="flex flex-col gap-2.5 mb-6">
+              <ul className="flex flex-col gap-1.5 mb-4">
                 {tier.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-[13px]">
+                  <li key={f} className="flex items-start gap-2 text-[12px]">
                     <span
                       aria-hidden="true"
-                      className="mt-[6px] block shrink-0 w-1.5 h-1.5 rounded-full"
+                      className="mt-[5px] block shrink-0 w-1.5 h-1.5 rounded-full"
                       style={{ background: "var(--ink)", opacity: 0.7 }}
                     />
                     <span className="opacity-90">{f}</span>
@@ -136,7 +136,7 @@ export default function Pricing() {
         </div>
 
         {/* Nota */}
-        <p className="price-head mt-6 md:mt-8 text-[12px] opacity-60 max-w-[70ch] leading-relaxed">
+        <p className="price-head mt-4 md:mt-5 text-[11px] opacity-60 max-w-[70ch] leading-relaxed">
           {PRICING.note}
         </p>
       </div>
