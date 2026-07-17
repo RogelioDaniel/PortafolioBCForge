@@ -23,7 +23,7 @@ import { usePrefersReducedMotion } from "@/lib/motion-hooks";
  */
 
 export default function Projects() {
-  const { registerSubNav } = useScreenNav();
+  const { registerSubNav, notifySubNavChange } = useScreenNav();
   const reduced = usePrefersReducedMotion();
   const activeRef = useRef(0);
   const progressRef = useRef(0);
@@ -73,6 +73,17 @@ export default function Projects() {
         yoyo: true,
         repeat: 1,
         repeatDelay: 0.35,
+        onUpdate: write,
+        onComplete: complete,
+      });
+    } else if (scene === "cafe") {
+      // La escena traduce este progreso lineal a: arrugar, cambiar la comanda
+      // dentro de la bola y desdoblar. Replica el ritmo del sitio original.
+      tweenRef.current = gsap.to(obj, {
+        v: 1,
+        duration: 2.45,
+        delay,
+        ease: "none",
         onUpdate: write,
         onComplete: complete,
       });
@@ -170,6 +181,10 @@ export default function Projects() {
     return () => registerSubNav(sub, true);
   }, [registerSubNav, goToProject, lastIndex]);
 
+  useEffect(() => {
+    notifySubNavChange();
+  }, [active, notifySubNavChange]);
+
   const openProject = useCallback((project: Project) => {
     if (project.liveUrl && project.liveUrl !== "#") {
       window.open(project.liveUrl, "_blank", "noopener,noreferrer");
@@ -190,9 +205,8 @@ export default function Projects() {
       data-project-tone={current.scene}
       aria-label="Proyectos destacados"
     >
-      {/* Palabra clave gigante centrada — Helado Nube ya lleva su propio
-          lettering dentro de la escena y no necesita la palabra CREMA detrás. */}
-      {current.scene !== "icecream" && (
+      {/* Helado Nube y Café Tonalli ya llevan lettering dentro de su escena. */}
+      {current.scene !== "icecream" && current.scene !== "cafe" && (
         <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
           <span
             key={`kw-${active}`}

@@ -36,7 +36,7 @@ export const HERO = {
   bio: "BCForge — consultora de desarrollo web. Creamos sitios, tiendas en línea y experiencias interactivas que hacen crecer tu negocio.",
 };
 
-export type SceneKind = "burger" | "lego" | "icecream" | "glass";
+export type SceneKind = "burger" | "lego" | "icecream" | "glass" | "cafe";
 
 export type Project = {
   keyword: string;
@@ -180,6 +180,37 @@ export const PROJECTS: Project[] = [
       { label: "Esquirlas", value: "280" },
       { label: "Transiciones", value: "6" },
       { label: "Desde", value: "1998" },
+    ],
+  },
+  {
+    keyword: "CAFÉ TONALLI",
+    name: "Café Tonalli",
+    description:
+      "Café mexicano de barrio con una identidad de cartel impreso. La navegación se convierte en papel: la página se arruga, cambia de comanda dentro de la bola y vuelve a desplegarse.",
+    tags: ["Three.js", "Editorial", "Motion"],
+    url: "#",
+    liveUrl: "https://cafeteria-five-khaki.vercel.app/",
+    scene: "cafe",
+    accent: "#f3df4d",
+    year: "2026",
+    role: "Front-end + WebGL",
+    client: "Café Tonalli",
+    duration: "6 semanas",
+    gallery: [
+      "Cartel editorial inspirado en cafeterías mexicanas de barrio",
+      "Página completa que se arruga y desdobla con Three.js",
+      "Comandas, menú y reservación con una misma identidad impresa",
+    ],
+    highlights: [
+      "Transición de papel procedural con un solo mesh y draw call",
+      "Texturas de portada y comanda intercambiadas dentro del pliegue",
+      "Personajes y objetos mexicanos ilustrados como cartel popular",
+      "Experiencia responsive con fallback estático y movimiento reducido",
+    ],
+    results: [
+      { label: "Transición", value: "Papel 3D" },
+      { label: "Estilo", value: "Mexicano" },
+      { label: "Escena", value: "1 draw" },
     ],
   },
 ];

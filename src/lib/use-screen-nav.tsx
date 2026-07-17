@@ -156,10 +156,12 @@ export function ScreenNavProvider({
         if (target === cur || lockRef.current) return cur;
         lockRef.current = true;
         setDirection(target > cur ? "next" : "prev");
-        // Liberar el lock apenas termina la transición visual.
+        // Inicio → Proyectos usa una transición de 620 ms; conservar el lock
+        // hasta su último frame evita que una segunda pulsación la interrumpa.
+        const transitionLock = cur === 0 && target === 1 ? 680 : 500;
         window.setTimeout(() => {
           lockRef.current = false;
-        }, 500);
+        }, transitionLock);
         // Disparar replayTick para que la nueva pantalla re-animen
         setReplayTick((t) => t + 1);
         return target;

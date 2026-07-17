@@ -1,5 +1,5 @@
 /**
- * Utilidades compartidas por las 4 escenas SVG de proyectos.
+ * Utilidades compartidas por las escenas de proyectos.
  * Cada escena recibe refs a (activeRef, progressRef) que vienen del
  * sistema de scroll storytelling de Projects.tsx, y aplica sus propias
  * animaciones de capas leyendo progressRef.current (0..1 por proyecto).

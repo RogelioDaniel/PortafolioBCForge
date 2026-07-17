@@ -441,6 +441,18 @@ html[data-project-tone] .audio-wash {
     0 0 72px rgba(205, 235, 255, 0.36);
 }
 
+.audio-wash-surface--cafe {
+  --wash-rgb: 243 223 77;
+  border: 1px solid rgba(255, 238, 151, 0.18);
+  background:
+    radial-gradient(circle at 31% 27%, rgba(255, 247, 200, 0.68) 0 6%, transparent 20%),
+    radial-gradient(circle at 56% 48%, rgba(243, 223, 77, 0.4), rgba(192, 90, 62, 0.18) 48%, transparent 72%),
+    linear-gradient(145deg, rgba(29, 32, 89, 0.2), transparent 62%);
+  box-shadow:
+    inset -24px -28px 64px rgba(29, 32, 89, 0.18),
+    0 0 78px rgba(243, 223, 77, 0.34);
+}
+
 .audio-wash-surface--glass::before {
   content: "";
   position: absolute;
@@ -467,7 +479,8 @@ html[data-project-tone="glass"] .audio-wash-surface--glass::after {
 html[data-project-tone="burger"] .audio-wash-surface--burger,
 html[data-project-tone="lego"] .audio-wash-surface--lego,
 html[data-project-tone="icecream"] .audio-wash-surface--icecream,
-html[data-project-tone="glass"] .audio-wash-surface--glass {
+html[data-project-tone="glass"] .audio-wash-surface--glass,
+html[data-project-tone="cafe"] .audio-wash-surface--cafe {
   opacity: 1;
   visibility: visible;
   transition-delay: 0s;
@@ -1139,17 +1152,13 @@ body.theme-dark .bg-noise {
   transition: transform 180ms ease;
 }
 
-.sound-track-compact-icon {
-  display: none;
-  font-family: var(--font-space-mono);
-  font-size: 16px;
-  line-height: 1;
-}
-
 .sound-track-menu {
   position: relative;
   z-index: 80;
   width: min(290px, calc(100vw - 40px));
+  max-height: min(28rem, var(--radix-dropdown-menu-content-available-height));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0.55rem;
   border: 1px solid color-mix(in srgb, var(--ink) 24%, transparent);
   border-radius: 18px;
@@ -1159,6 +1168,10 @@ body.theme-dark .bg-noise {
   backdrop-filter: blur(14px) saturate(125%);
   -webkit-backdrop-filter: blur(14px) saturate(125%);
   animation: sound-menu-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sound-track-menu[data-state="closed"] {
+  animation: sound-menu-out 140ms ease-in both;
 }
 
 .sound-track-menu-heading {
@@ -1256,6 +1269,17 @@ body.theme-dark .bg-noise {
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes sound-menu-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 5px, 0) scale(0.98);
   }
 }
 
@@ -1423,6 +1447,12 @@ html[data-screen-transition="true"] .bg-noise {
 
 .screen-slot[data-transition="project-reveal"][data-phase="exit"] {
   animation: project-hero-release 0.34s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+/* La entrada especial ya dejó la pantalla en su pose final. Cuando se desmonta
+   el Hero no debe arrancar de nuevo la entrada genérica desde opacity: 0. */
+.screen-slot[data-screen-index="1"][data-phase="enter"][data-dir="next"]:not([data-transition]) {
+  animation: none;
 }
 
 .project-reveal-transition {
@@ -1612,6 +1642,16 @@ html[data-controls-dimmed="true"] .wa-fab:focus-visible {
   opacity: 1;
 }
 
+html[data-music-menu-open="true"] .screen-nav-audio {
+  opacity: 0;
+  pointer-events: none;
+}
+
+html[data-music-menu-open="true"] .project-cta-reactive {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .screen-arrow {
   position: relative;
   display: inline-flex;
@@ -1634,11 +1674,28 @@ html.theme-site-dark .screen-arrow {
 
 html[data-music-reactive="true"] .screen-arrow:not(:disabled),
 html[data-music-reactive="true"] .sound-toggle,
-html[data-music-reactive="true"] .btn-primary,
-html[data-music-reactive="true"] .wa-fab {
+html[data-music-reactive="true"] .btn-primary {
   box-shadow:
     0 0 8px rgba(255, 247, 229, 0.78),
     0 0 22px rgba(243, 216, 205, 0.52);
+}
+
+/* WhatsApp escucha únicamente los medios: percusión/cuerpo del afrobeat.
+   El color permanece verde y no compite con el resto de luces del sitio. */
+html[data-music-reactive="true"] .wa-fab {
+  box-shadow:
+    0 0 calc(9px + var(--music-mid-flow) * 13px)
+      rgb(37 211 102 / calc(0.38 + var(--music-mid-flow) * 0.34)),
+    0 0 calc(24px + var(--music-mid-flow) * 28px)
+      rgb(37 211 102 / calc(0.2 + var(--music-mid-flow) * 0.24));
+}
+
+html[data-music-reactive="true"] .wa-fab::after {
+  animation: none;
+  border-color: rgb(37 211 102 / calc(0.36 + var(--music-mid-flow) * 0.42));
+  opacity: calc(0.28 + var(--music-mid-flow) * 0.58);
+  transform: scale(calc(1.04 + var(--music-mid-flow) * 0.28));
+  transition: opacity 90ms ease-out, transform 90ms ease-out;
 }
 
 html[data-music-reactive="true"] .screen-arrow:not(:disabled),
@@ -1751,7 +1808,9 @@ html.theme-site-dark .project-subnav {
 .project-cta-reactive {
   transform: translate3d(0, calc(var(--music-mid-flow) * -3px), 0)
     scale(calc(1 + var(--music-bass-hit) * 0.035));
-  transition: transform 110ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    transform 110ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease;
 }
 
 .project-cta-reactive .btn-primary {
@@ -1941,6 +2000,10 @@ html[data-screen-transition="true"] .voxel-drifter-reactive {
   --voxel-glow-rgb: 205 235 255;
 }
 
+.screen-slot:has(.project-stage[data-project-tone="cafe"]) > .voxel-drifters {
+  --voxel-glow-rgb: 243 223 77;
+}
+
 @keyframes voxel-drift {
   0% {
     transform: translate3d(-10px, 7px, 0) rotate(var(--drifter-start-rotation));
@@ -1954,12 +2017,12 @@ html[data-screen-transition="true"] .voxel-drifter-reactive {
 }
 
 @media (max-width: 820px) {
-  /* En pantallas estrechas el selector conserva un objetivo táctil de 44px,
-     pero se vuelve compacto para no invadir el CTA ni las flechas globales. */
+  /* En móvil solo queda visible el altavoz. Al tocarlo, la ficha de la canción
+     se despliega hacia arriba y vuelve a contraerse automáticamente. */
   .sound-dock {
-    align-items: flex-start;
+    align-items: center;
     bottom: max(1.25rem, env(safe-area-inset-bottom));
-    flex-direction: column-reverse;
+    flex-direction: row;
     left: max(0.5rem, env(safe-area-inset-left));
   }
 
@@ -1968,24 +2031,29 @@ html[data-screen-transition="true"] .voxel-drifter-reactive {
   }
 
   .sound-track-toggle {
-    display: flex;
-    width: 44px;
-    min-width: 44px;
-    padding: 0;
-    justify-content: center;
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    width: min(230px, calc(100vw - 1rem));
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(0, 10px, 0) scale(0.96);
+    transform-origin: left bottom;
+    visibility: hidden;
+    transition:
+      opacity 180ms ease,
+      transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 240ms,
+      border-color 180ms ease,
+      background-color 180ms ease;
   }
 
-  .sound-track-status,
-  .sound-track-copy {
-    display: none;
-  }
-
-  .sound-track-toggle > svg {
-    display: none;
-  }
-
-  .sound-track-compact-icon {
-    display: block;
+  .sound-dock[data-panel-open="true"] .sound-track-toggle {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate3d(0, 0, 0) scale(1);
+    visibility: visible;
+    transition-delay: 0s;
   }
 
   .sound-invite-label {
@@ -2055,8 +2123,13 @@ html[data-screen-transition="true"] .voxel-drifter-reactive {
 @media (prefers-reduced-motion: reduce) {
   .sound-toggle[data-invite="true"],
   .sound-invite-ring,
-  .sound-invite-label {
+  .sound-invite-label,
+  .sound-track-menu {
     animation: none !important;
+  }
+
+  .sound-track-toggle {
+    transition: none !important;
   }
 
   .sound-invite-ring,
@@ -2095,6 +2168,12 @@ html[data-screen-transition="true"] .voxel-drifter-reactive {
   html[data-music-reactive="true"] .btn-primary,
   html[data-music-reactive="true"] .wa-fab {
     box-shadow: none;
+  }
+
+  html[data-music-reactive="true"] .wa-fab::after {
+    opacity: 0.34;
+    transform: none;
+    transition: none;
   }
 }
 @keyframes screen-arrow-pop {

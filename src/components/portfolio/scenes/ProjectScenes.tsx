@@ -5,14 +5,15 @@ import BurgerScene from "./BurgerScene";
 import LegoScene from "./LegoScene";
 import IceCreamScene from "./IceCreamScene";
 import GlassSceneWebGL from "./GlassSceneWebGL";
+import CafePaperScene from "./CafePaperScene";
 
 /**
  * ProjectScenes — muestra SOLO la escena del proyecto activo.
  *
- * RENDIMIENTO / BUG NaN: antes se montaban las 4 escenas a la vez (las
+ * RENDIMIENTO / BUG NaN: antes se montaban todas las escenas a la vez (las
  * inactivas con display:none). La escena WebGL de vidrio se inicializaba con
  * ancho/alto = 0 → geometría con posiciones NaN (spam en consola) y, además,
- * los 4 loops de animación corrían siempre. Ahora solo se monta la activa, así
+ * todos los loops de animación corrían siempre. Ahora solo se monta la activa, así
  * que la escena WebGL se inicializa ya con tamaño y solo corre un loop.
  *
  * Click en la escena → onOpen() abre la URL real del proyecto (el sitio en vivo).
@@ -34,7 +35,13 @@ export default function ProjectScenes({
   onOpen: () => void;
 }) {
   const p = projects[active];
-  const accentFallback = ["#e8542a", "#f5b82e", "#a73f55", "#b87333"];
+  const accentFallback = [
+    "#e8542a",
+    "#f5b82e",
+    "#a73f55",
+    "#b87333",
+    "#f3df4d",
+  ];
 
   const common = {
     activeRef,
@@ -53,6 +60,7 @@ export default function ProjectScenes({
       {active === 1 && <LegoScene {...common} />}
       {active === 2 && <IceCreamScene {...common} />}
       {active === 3 && <GlassSceneWebGL {...common} />}
+      {active === 4 && <CafePaperScene {...common} />}
     </div>
   );
 }

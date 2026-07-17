@@ -25,6 +25,7 @@ export default function BackgroundGlow() {
           <span className="audio-wash-surface audio-wash-surface--lego" />
           <span className="audio-wash-surface audio-wash-surface--icecream" />
           <span className="audio-wash-surface audio-wash-surface--glass" />
+          <span className="audio-wash-surface audio-wash-surface--cafe" />
         </span>
         <span className="audio-rail audio-rail--one" />
         <span className="audio-rail audio-rail--two" />

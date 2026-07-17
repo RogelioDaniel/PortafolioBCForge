@@ -167,8 +167,9 @@ export default function BurgerScene({
       const mid = audio.midFlow;
       const treble = audio.trebleSpark;
 
-      // Cada ingrediente responde a la banda que mejor encaja con su peso:
-      // bajos en pan/carne, medios en rellenos y agudos en hojas/pan superior.
+      // Cada ingrediente responde a la banda que mejor encaja con su peso.
+      // La cabeza mezcla bombo (bajos) y percusión (medios), el pulso más
+      // reconocible del afrobeat; los agudos solo rematan el gesto.
       setLayerTransform(bottomRef.current, -bass * 1.8, bass * 3.2, bass * 0.45, 355);
       setLayerTransform(pattyRef.current, bass * 1.4, -bass * 5.8, -bass * 0.8, 292);
       setLayerTransform(cheeseRef.current, mid * 3.2, -mid * 6.4, mid * 1.15, 260);
@@ -176,9 +177,9 @@ export default function BurgerScene({
       setLayerTransform(lettuceRef.current, treble * 4.8, -treble * 9.6, treble * 1.55, 201);
       setLayerTransform(
         topRef.current,
-        -treble * 3.5,
-        -(bass * 3.6 + treble * 7.2),
-        (treble - bass) * 1.4,
+        (mid - bass) * 6.2,
+        -(bass * 8.5 + mid * 5.5 + treble * 2.8),
+        (mid - bass) * 3.2 + treble * 0.8,
         145
       );
       setLayerTransform(

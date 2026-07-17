@@ -1,12 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   AMBIENT_TRACKS,
   getAmbient,
   type AmbientTrack,
 } from "@/lib/ambient-sound";
+
+const COMPACT_SOUND_QUERY = "(max-width: 820px)";
+
+function subscribeCompactSound(callback: () => void) {
+  const query = window.matchMedia(COMPACT_SOUND_QUERY);
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+
+function getCompactSoundSnapshot() {
+  return window.matchMedia(COMPACT_SOUND_QUERY).matches;
+}
 
 /**
  * SoundToggle — botón flotante (esquina inferior-izquierda) que persiste
@@ -17,7 +29,14 @@ export default function SoundToggle() {
   const [on, setOn] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   const [track, setTrack] = useState<AmbientTrack>(AMBIENT_TRACKS[0]);
+  const collapseTimerRef = useRef<number | null>(null);
+  const compact = useSyncExternalStore(
+    subscribeCompactSound,
+    getCompactSoundSnapshot,
+    () => false
+  );
 
   useEffect(() => {
     const ambient = getAmbient();
@@ -31,8 +50,41 @@ export default function SoundToggle() {
     };
   }, []);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const expanded = compact && (mobilePanelOpen || menuOpen);
+    if (expanded) root.dataset.musicMenuOpen = "true";
+    else delete root.dataset.musicMenuOpen;
+
+    return () => {
+      delete root.dataset.musicMenuOpen;
+    };
+  }, [compact, menuOpen, mobilePanelOpen]);
+
+  useEffect(
+    () => () => {
+      if (collapseTimerRef.current !== null) {
+        window.clearTimeout(collapseTimerRef.current);
+      }
+    },
+    []
+  );
+
+  const revealMobilePanel = () => {
+    if (!compact) return;
+    setMobilePanelOpen(true);
+    if (collapseTimerRef.current !== null) {
+      window.clearTimeout(collapseTimerRef.current);
+    }
+    collapseTimerRef.current = window.setTimeout(() => {
+      setMobilePanelOpen(false);
+      collapseTimerRef.current = null;
+    }, 4200);
+  };
+
   const toggle = () => {
     setHasInteracted(true);
+    revealMobilePanel();
     getAmbient()?.toggle();
   };
 
@@ -42,6 +94,7 @@ export default function SoundToggle() {
 
     setHasInteracted(true);
     setMenuOpen(false);
+    setMobilePanelOpen(false);
     const shouldStart = !ambient.isPlaybackRequested();
     const selected = await ambient.selectTrack(trackId);
     if (shouldStart && selected && !ambient.isPlaybackRequested()) {
@@ -54,6 +107,7 @@ export default function SoundToggle() {
   return (
     <div
       className="sound-dock fixed bottom-5 left-5 z-[57] flex items-center gap-2"
+      data-panel-open={compact && (mobilePanelOpen || menuOpen) ? "true" : "false"}
     >
       <button
         onClick={toggle}
@@ -94,6 +148,13 @@ export default function SoundToggle() {
         onOpenChange={(open) => {
           if (open) setHasInteracted(true);
           setMenuOpen(open);
+          if (compact) {
+            if (collapseTimerRef.current !== null) {
+              window.clearTimeout(collapseTimerRef.current);
+              collapseTimerRef.current = null;
+            }
+            setMobilePanelOpen(open);
+          }
         }}
       >
         <DropdownMenu.Trigger asChild>
@@ -108,9 +169,6 @@ export default function SoundToggle() {
             <span className="sound-track-copy">
               <strong>{track.title}</strong>
               <small>{track.artist}</small>
-            </span>
-            <span className="sound-track-compact-icon" aria-hidden="true">
-              ♪
             </span>
             <svg
               viewBox="0 0 10 10"
