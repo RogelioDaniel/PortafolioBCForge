@@ -3,18 +3,17 @@
 import { useEffect, useState, useCallback } from "react";
 import { Command } from "cmdk";
 import { gsap } from "gsap";
-import { SITE, PROJECTS, BLOG } from "@/lib/portfolio-content";
-import { scrollToSection } from "@/lib/use-smooth-scroll";
+import { SITE, PROJECTS } from "@/lib/portfolio-content";
+import { useScreenNav, SCREENS } from "@/lib/use-screen-nav";
 
 /**
  * CommandPalette — paleta de comandos (Cmd+K / Ctrl+K).
- * Búsqueda global: navegación a secciones, proyectos, blog, acciones (theme, top).
- * Estilo pill/mono que matchea el design system del portafolio.
- * Abre con Cmd+K / Ctrl+K / "/", cierra con ESC.
+ * P5: usa screen-nav (goTo) en lugar de Lenis. Sin sección Blog.
  */
 export default function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const { goTo } = useScreenNav();
 
   // Toggle con Cmd+K / Ctrl+K / "/"
   useEffect(() => {
@@ -76,7 +75,11 @@ export default function CommandPalette() {
     []
   );
 
-  const goSection = (target: string) => run(() => scrollToSection(target));
+  const goScreenByTarget = (target: string) => {
+    const id = target.replace("#", "");
+    const idx = SCREENS.findIndex((s) => s.id === id);
+    if (idx >= 0) run(() => goTo(idx));
+  };
 
   // Construir lista de comandos
   const navItems = SITE.nav.map((n) => ({
@@ -84,7 +87,7 @@ export default function CommandPalette() {
     id: `nav-${n.label}`,
     label: n.label,
     hint: "Sección",
-    action: () => goSection(n.target),
+    action: () => goScreenByTarget(n.target),
   }));
 
   const projectItems = PROJECTS.map((p) => ({
@@ -92,31 +95,16 @@ export default function CommandPalette() {
     id: `proj-${p.name}`,
     label: p.name,
     hint: p.keyword,
-    action: () => goSection("#proyectos"),
-  }));
-
-  const blogItems = BLOG.items.map((b) => ({
-    type: "blog" as const,
-    id: `blog-${b.title}`,
-    label: b.title,
-    hint: `Blog · ${b.category}`,
-    action: () => goSection("#blog"),
+    action: () => goScreenByTarget("#proyectos"),
   }));
 
   const actionItems = [
     {
       type: "action" as const,
       id: "act-top",
-      label: "Ir arriba",
+      label: "Ir al inicio",
       hint: "Acción",
-      action: () =>
-        run(() => {
-          const lenis = (
-            window as unknown as { __lenis?: { scrollTo: (t: number, o?: object) => void } }
-          ).__lenis;
-          if (lenis) lenis.scrollTo(0, { duration: 1.2 });
-          else window.scrollTo({ top: 0, behavior: "smooth" });
-        }),
+      action: () => run(() => goTo(0)),
     },
     {
       type: "action" as const,
@@ -136,11 +124,11 @@ export default function CommandPalette() {
       id: "act-contact",
       label: "Enviar un mensaje",
       hint: "Acción",
-      action: () => goSection("#contacto"),
+      action: () => goScreenByTarget("#contacto"),
     },
   ];
 
-  const allItems = [...navItems, ...actionItems, ...projectItems, ...blogItems];
+  const allItems = [...navItems, ...actionItems, ...projectItems];
 
   const filtered = query
     ? allItems.filter(
@@ -181,7 +169,7 @@ export default function CommandPalette() {
             <SearchIcon />
             <Command.Input
               autoFocus
-              placeholder="Busca secciones, proyectos, artículos…"
+              placeholder="Busca secciones, proyectos, acciones…"
               value={query}
               onValueChange={setQuery}
               className="flex-1 bg-transparent outline-none text-[15px]"
@@ -209,7 +197,6 @@ export default function CommandPalette() {
               </Command.Empty>
             )}
 
-            {/* Agrupar por tipo */}
             {filtered.some((i) => i.type === "nav") && (
               <Command.Group
                 heading="Navegación"
@@ -243,19 +230,6 @@ export default function CommandPalette() {
               >
                 {filtered
                   .filter((i) => i.type === "project")
-                  .map((item) => (
-                    <CommandRow key={item.id} item={item} />
-                  ))}
-              </Command.Group>
-            )}
-
-            {filtered.some((i) => i.type === "blog") && (
-              <Command.Group
-                heading="Blog"
-                className="px-2 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:opacity-50"
-              >
-                {filtered
-                  .filter((i) => i.type === "blog")
                   .map((item) => (
                     <CommandRow key={item.id} item={item} />
                   ))}

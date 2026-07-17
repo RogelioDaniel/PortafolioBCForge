@@ -1,114 +1,71 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { gsap } from "gsap";
+import { useEffect, useState } from "react";
 import { SITE } from "@/lib/portfolio-content";
-import { useMagnetic } from "@/lib/motion-hooks";
-import PageTransition from "./PageTransition";
+import { useScreenNav, SCREENS } from "@/lib/use-screen-nav";
 import ThemeToggle from "./ThemeToggle";
 
 /**
  * Header fijo — logo tipográfico a la izquierda, menú mono mayúsculas derecha.
- * Se oculta al bajar y reaparece al subir. Al clic en enlace: transición de página.
+ * P5: ahora usa el screen-nav (goTo) en lugar de Lenis para navegar.
+ * Se oculta al bajar (no aplica ya) — ahora siempre visible salvo en la
+ * primera pantalla (hero limpio). Al clic en enlace: goTo(index de pantalla).
  */
 export default function Header() {
-  const ref = useRef<HTMLElement>(null);
-  const lastY = useRef(0);
+  const { current, goTo } = useScreenNav();
   const [hidden, setHidden] = useState(false);
-  const [pastHero, setPastHero] = useState(false);
-  const [transition, setTransition] = useState<null | string>(null);
-  const logoRef = useMagnetic<HTMLAnchorElement>(0.25);
 
-  useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY;
-      // El header solo aparece tras pasar el hero (100% del viewport)
-      const isPastHero = y > window.innerHeight * 0.9;
-      setPastHero(isPastHero);
-      // Auto-hide al bajar, reveal al subir (solo cuando ya pasamos el hero)
-      if (isPastHero && y > 120 && y > lastY.current) {
-        setHidden(true);
-      } else {
-        setHidden(false);
-      }
-      lastY.current = y;
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  // El header no se muestra en la primera pantalla (hero limpio)
+  const pastHero = current !== 0;
 
-  const handleNav = (target: string, label: string) => {
-    // Transición de página simulada (overlay lavanda + hourglass + typewriter)
-    setTransition(label);
-    // La transición se encarga del scrollTo al terminar
-    setTimeout(() => {
-      const el = document.querySelector(target);
-      if (el) {
-        const lenis = (window as unknown as { __lenis?: { scrollTo: (t: HTMLElement, o?: object) => void } }).__lenis;
-        if (lenis) {
-          lenis.scrollTo(el as HTMLElement, { offset: 0, duration: 1.2 });
-        } else {
-          (el as HTMLElement).scrollIntoView({ behavior: "smooth" });
-        }
-      }
-      // Tiempo para que la transición cierre el overlay
-      setTimeout(() => setTransition(null), 600);
-    }, 900);
+  const handleNav = (target: string) => {
+    const idx = SCREENS.findIndex((s) => s.id === target.replace("#", ""));
+    if (idx >= 0) goTo(idx);
   };
 
   return (
-    <>
-      <header
-        ref={ref}
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-700"
-        style={{
-          transform: hidden ? "translateY(-100%)" : "translateY(0)",
-          opacity: pastHero ? 1 : 0,
-          pointerEvents: pastHero ? "auto" : "none",
-        }}
-      >
-        <div className="container-edge flex items-center justify-between py-5 md:py-6">
-          <a
-            ref={logoRef}
-            href="#top"
-            onClick={(e) => {
-              e.preventDefault();
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="text-[15px] font-medium tracking-tight lowercase"
-            style={{ fontFamily: "var(--font-inter)" }}
-          >
-            {SITE.logo}
-          </a>
+    <header
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-700"
+      style={{
+        opacity: pastHero ? 1 : 0,
+        pointerEvents: pastHero ? "auto" : "none",
+      }}
+    >
+      <div className="container-edge flex items-center justify-between py-5 md:py-6">
+        <button
+          onClick={() => goTo(0)}
+          className="text-[15px] font-medium tracking-tight lowercase transition-opacity hover:opacity-70"
+          style={{ fontFamily: "var(--font-inter)" }}
+          aria-label="Volver al inicio"
+        >
+          {SITE.logo}
+        </button>
 
-          <div className="flex items-center gap-5 md:gap-7">
-            <nav className="hidden md:flex items-center gap-8 lg:gap-12" aria-label="Principal">
-              {SITE.nav.map((item) => (
-                <button
-                  key={item.label}
-                  onClick={() => handleNav(item.target, item.label)}
-                  className="mono text-[11px] hover:opacity-100 opacity-80 transition-opacity duration-300"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </nav>
-            <ThemeToggle />
-            {/* Menú móvil compacto */}
-            <MobileMenu onNav={handleNav} />
-          </div>
+        <div className="flex items-center gap-5 md:gap-7">
+          <nav className="hidden md:flex items-center gap-8 lg:gap-12" aria-label="Principal">
+            {SITE.nav.map((item) => (
+              <button
+                key={item.label}
+                onClick={() => handleNav(item.target)}
+                className="mono text-[11px] hover:opacity-100 opacity-80 transition-opacity duration-300"
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+          <ThemeToggle />
+          {/* Menú móvil compacto */}
+          <MobileMenu onNav={handleNav} />
         </div>
-      </header>
-
-      {transition && <PageTransition label={transition} />}
-    </>
+      </div>
+    </header>
   );
 }
 
 function MobileMenu({
   onNav,
 }: {
-  onNav: (target: string, label: string) => void;
+  onNav: (target: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -123,8 +80,11 @@ function MobileMenu({
       </button>
       {open && (
         <nav
-          className="absolute top-full right-6 mt-2 flex flex-col gap-3 bg-[var(--bg-light)] border rounded-2xl p-4"
-          style={{ borderColor: "var(--pill-border)" }}
+          className="absolute top-full right-6 mt-2 flex flex-col gap-3 rounded-2xl p-4"
+          style={{
+            background: "var(--bg-light)",
+            border: "1px solid var(--pill-border)",
+          }}
           aria-label="Móvil"
         >
           {SITE.nav.map((item) => (
@@ -132,7 +92,7 @@ function MobileMenu({
               key={item.label}
               onClick={() => {
                 setOpen(false);
-                onNav(item.target, item.label);
+                onNav(item.target);
               }}
               className="mono text-[12px] text-left"
             >

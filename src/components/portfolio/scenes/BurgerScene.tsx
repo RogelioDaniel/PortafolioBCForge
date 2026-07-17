@@ -141,10 +141,18 @@ export default function BurgerScene({
     <svg
       ref={rootRef}
       viewBox="0 0 520 430"
-      className="scene-svg burger-scene h-auto w-full"
-      role="img"
-      aria-label="Hamburguesa caricaturesca de Carne Viva que se desarma al avanzar"
-      style={{ maxWidth: "440px" }}
+      className="scene-svg burger-scene h-auto w-full cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label="Hamburguesa de Carne Viva — click para abrir el sitio"
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      style={{ maxWidth: "min(70vw, 360px)" }}
     >
       {/* Capa clickable invisible para todo el cuerpo */}
       <rect
@@ -153,8 +161,6 @@ export default function BurgerScene({
         width="400"
         height="370"
         fill="transparent"
-        style={{ cursor: "pointer" }}
-        onClick={onOpen}
         aria-hidden="true"
       />
 

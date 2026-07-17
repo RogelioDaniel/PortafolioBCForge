@@ -2,23 +2,21 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ABOUT } from "@/lib/portfolio-content";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
+import { useScreenNav } from "@/lib/use-screen-nav";
 
 /**
- * AboutSection — sección "Sobre mí" dedicada:
- *  - Eyebrow + título display en 4 líneas (reveal por líneas con mask)
- *  - Intro destacada + body extendido en columna
- *  - Stats grandes con contador animado al entrar en viewport
- *  - Timeline vertical de carrera (4 hitos) con reveal stagger
+ * AboutSection — sección "Sobre mí" dedicada.
+ * Animaciones onEnter (replayTick del screen-nav). El contenedor hace scroll
+ * interno si el contenido excede el viewport (la pantalla es 100vh fija).
  */
 export default function AboutSection() {
   const ref = useRef<HTMLElement>(null);
   const reduced = usePrefersReducedMotion();
+  const { replayTick } = useScreenNav();
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
       if (reduced) return;
 
@@ -33,7 +31,7 @@ export default function AboutSection() {
             duration: 1,
             ease: "power4.out",
             stagger: 0.1,
-            scrollTrigger: { trigger: ref.current, start: "top 75%" },
+            delay: 0.15,
           }
         );
       }
@@ -50,8 +48,7 @@ export default function AboutSection() {
             duration: 0.9,
             ease: "power3.out",
             stagger: 0.12,
-            delay: 0.3,
-            scrollTrigger: { trigger: ref.current, start: "top 70%" },
+            delay: 0.4,
           }
         );
       }
@@ -69,7 +66,7 @@ export default function AboutSection() {
             v: numeric,
             duration: 1.6,
             ease: "power2.out",
-            scrollTrigger: { trigger: stat, start: "top 85%" },
+            delay: 0.6,
             onUpdate: () => {
               stat.textContent = Math.round(obj.v) + suffix;
             },
@@ -79,7 +76,7 @@ export default function AboutSection() {
 
       // Timeline reveal
       const tlItems = ref.current?.querySelectorAll(".timeline-item");
-      tlItems?.forEach((item) => {
+      tlItems?.forEach((item, i) => {
         gsap.fromTo(
           item,
           { opacity: 0, x: -30 },
@@ -88,19 +85,19 @@ export default function AboutSection() {
             x: 0,
             duration: 0.7,
             ease: "power3.out",
-            scrollTrigger: { trigger: item, start: "top 88%" },
+            delay: 0.7 + i * 0.12,
           }
         );
       });
     }, ref);
     return () => ctx.revert();
-  }, [reduced]);
+  }, [reduced, replayTick]);
 
   return (
     <section
       ref={ref}
       id="sobre-mi"
-      className="py-24 md:py-36 relative"
+      className="h-[100svh] overflow-y-auto py-16 md:py-20 relative"
       aria-label="Sobre mí"
     >
       <div className="container-edge">

@@ -4,13 +4,17 @@ import { useEffect, useRef } from "react";
 import type { SceneProps } from "./scene-shared";
 
 /**
- * IceCreamScene — cono con bolas de helado que se DERRITEN al avanzar el scroll.
- * Inspirado en Helado Nube: tono editorial, crema fluyente, paleta cálida.
+ * IceCreamScene — CORTINA CREMOSA que cae y baña las letras "HELADO NUBE".
  *
- * Animaciones:
- *  - Idle: las bolas "respiran" sutilmente (idle wobble)
- *  - Scroll: goteo crece, las bolas se achatan ligeramente y gotas caen
- *  - Cortina de crema sutil en el fondo al final del progreso
+ * P6: sustituye el cono anterior (horrible) por una cortina de crema fluida
+ * que desciende desde arriba con ondas realistas, revelando el texto debajo.
+ * Inspirado en el shader de crema de Helado Nube, pero en SVG/CSS puro.
+ *
+ * Animación con scroll:
+ *  - p=0: cortina cubre todo el texto
+ *  - p→0.5: la cortina baja descubriendo "HELADO"
+ *  - p→1: la cortina termina de bajar y un goteo de crema cuelga
+ * La cortina tiene gradiente con vetas, ondas en el borde inferior y brillo.
  */
 export default function IceCreamScene({
   activeRef,
@@ -19,11 +23,10 @@ export default function IceCreamScene({
   onOpen,
 }: SceneProps) {
   const rootRef = useRef<SVGSVGElement>(null);
-  const scoop1Ref = useRef<SVGGElement>(null); // bola superior
-  const scoop2Ref = useRef<SVGGElement>(null); // bola media
-  const dripRef = useRef<SVGPathElement>(null); // goteo del helado
-  const dropsRef = useRef<SVGGElement>(null); // gotas que caen
-  const creamCurtainRef = useRef<SVGRectElement>(null);
+  const curtainRef = useRef<SVGPathElement>(null);
+  const dripRef = useRef<SVGPathElement>(null);
+  const drip2Ref = useRef<SVGPathElement>(null);
+  const sheenRef = useRef<SVGRectElement>(null);
 
   useEffect(() => {
     let raf = 0;
@@ -33,53 +36,52 @@ export default function IceCreamScene({
       const active = activeRef.current;
       if (active !== 2) return;
 
-      // Achatamiento y "derretimiento" de las bolas
-      const meltT = Math.min(1, p / 0.8);
-      // Bola superior: se aplasta un poco y se desliza abajo
-      if (scoop1Ref.current) {
-        const scaleY = 1 - meltT * 0.18;
-        const translateY = meltT * 12;
-        scoop1Ref.current.style.transform = `translateY(${translateY}px) scaleY(${scaleY})`;
-        scoop1Ref.current.style.transformOrigin = "center bottom";
+      // La cortina baja: en p=0 cubre todo (y=0..440), en p=1 solo queda un charco arriba
+      const reveal = Math.min(1, p / 0.85); // 0..1
+      // Posición superior del borde inferior de la cortina
+      const curtainBottomY = reveal * 440; // baja de 0 a 440
+
+      // Onda sinusoidal en el borde inferior de la cortina (realismo)
+      const waveAmp = 14;
+      const waveFreq = 0.035;
+      const t = performance.now() / 1000;
+      let pathD = `M0 0 L360 0 L360 ${curtainBottomY} `;
+      // Borde inferior con ondas
+      for (let x = 360; x >= 0; x -= 8) {
+        const wave = Math.sin(x * waveFreq + t * 1.5) * waveAmp;
+        const y = curtainBottomY + wave;
+        pathD += `L${x} ${y.toFixed(1)} `;
       }
-      // Bola media
-      if (scoop2Ref.current) {
-        const scaleY = 1 - meltT * 0.12;
-        scoop2Ref.current.style.transform = `scaleY(${scaleY})`;
-        scoop2Ref.current.style.transformOrigin = "center bottom";
+      pathD += "Z";
+      if (curtainRef.current) {
+        curtainRef.current.setAttribute("d", pathD);
+        curtainRef.current.style.opacity = reveal < 1 ? "1" : "0.15";
       }
 
-      // Goteo: la longitud del drip crece con el progreso
+      // Goteo central que cuelga cuando la cortina ya bajó bastante
+      const dripShow = Math.max(0, (p - 0.4) / 0.6);
+      const dripLen = dripShow * 70;
       if (dripRef.current) {
-        const dripLen = meltT * 80;
         dripRef.current.setAttribute(
           "d",
-          `M170 110 Q165 ${110 + dripLen * 0.5} 168 ${110 + dripLen} Q172 ${115 + dripLen} 168 ${120 + dripLen} Z`
+          `M175 ${curtainBottomY - 5} Q170 ${curtainBottomY + dripLen * 0.5} 178 ${curtainBottomY + dripLen} Q183 ${curtainBottomY + dripLen + 6} 172 ${curtainBottomY + dripLen + 12} Q162 ${curtainBottomY + dripLen + 6} 168 ${curtainBottomY + dripLen} Z`
         );
-        dripRef.current.style.opacity = (0.6 + meltT * 0.4).toFixed(2);
+        dripRef.current.style.opacity = dripShow.toFixed(2);
+      }
+      if (drip2Ref.current) {
+        const dripLen2 = dripShow * 50;
+        drip2Ref.current.setAttribute(
+          "d",
+          `M205 ${curtainBottomY - 5} Q201 ${curtainBottomY + dripLen2 * 0.5} 207 ${curtainBottomY + dripLen2} Q211 ${curtainBottomY + dripLen2 + 4} 203 ${curtainBottomY + dripLen2 + 9} Q196 ${curtainBottomY + dripLen2 + 4} 200 ${curtainBottomY + dripLen2} Z`
+        );
+        drip2Ref.current.style.opacity = (dripShow * 0.7).toFixed(2);
       }
 
-      // Gotas que caen
-      if (dropsRef.current) {
-        const drops = dropsRef.current.querySelectorAll<SVGCircleElement>("circle");
-        drops.forEach((drop, i) => {
-          const delay = i * 0.15;
-          const localP = Math.max(0, p - delay);
-          const fallT = Math.min(1, localP / 0.3);
-          const y = 110 + fallT * 130;
-          const x = 150 + i * 40 + Math.sin(fallT * Math.PI) * 10;
-          drop.setAttribute("cy", y.toFixed(1));
-          drop.setAttribute("cx", x.toFixed(1));
-          drop.style.opacity = (fallT * (1 - fallT) * 4).toFixed(2); // fade in/out
-        });
-      }
-
-      // Cortina de crema al final (efecto Helado Nube)
-      if (creamCurtainRef.current) {
-        const curtainT = Math.max(0, (p - 0.7) / 0.3);
-        creamCurtainRef.current.style.opacity = curtainT.toFixed(2);
-        const h = 20 + curtainT * 280;
-        creamCurtainRef.current.setAttribute("height", h.toFixed(0));
+      // Brillo/sheen que se desliza (realismo de líquido)
+      if (sheenRef.current) {
+        const sheenY = (t * 30) % 440;
+        sheenRef.current.setAttribute("y", sheenY.toFixed(1));
+        sheenRef.current.style.opacity = (reveal < 0.9 ? 0.25 : 0).toFixed(2);
       }
     };
     animate();
@@ -90,105 +92,110 @@ export default function IceCreamScene({
     <svg
       ref={rootRef}
       viewBox="0 0 360 440"
-      className="scene-svg icecream-scene h-auto w-full"
-      role="img"
-      aria-label="Helado que se derrite al avanzar el scroll"
-      style={{ maxWidth: "320px" }}
+      className="scene-svg icecream-scene h-auto w-full cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label="Helado Nube — cortina cremosa, click para abrir el sitio"
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      style={{ maxWidth: "min(75vw, 420px)" }}
     >
       <defs>
-        <linearGradient id="scoop-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f8d0d8" />
-          <stop offset="100%" stopColor={accent} />
+        {/* Gradiente de crema con vetas (rosa/fresa de Helado Nube) */}
+        <linearGradient id="cream-grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#fbeae0" />
+          <stop offset="30%" stopColor="#f8d0d8" />
+          <stop offset="55%" stopColor={accent} stopOpacity="0.85" />
+          <stop offset="80%" stopColor="#f5e6c8" />
+          <stop offset="100%" stopColor="#e8b8a0" />
         </linearGradient>
-        <linearGradient id="cone-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e8b06a" />
-          <stop offset="100%" stopColor="#b8762e" />
+        {/* Brillo especular */}
+        <linearGradient id="cream-sheen" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.6" />
+          <stop offset="50%" stopColor="#ffffff" stopOpacity="0" />
+        </linearGradient>
+        {/* Vetas más oscuras para realismo */}
+        <linearGradient id="cream-streak" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="transparent" />
+          <stop offset="40%" stopColor="#d99890" stopOpacity="0.3" />
+          <stop offset="60%" stopColor="transparent" />
         </linearGradient>
       </defs>
 
       {/* Capa clickable */}
+      <rect x="0" y="0" width="360" height="440" fill="transparent" aria-hidden="true" />
+
+      {/* Glow cálido detrás */}
+      <ellipse cx="180" cy="220" rx="170" ry="120" fill={accent} opacity="0.08" />
+
+      {/* TEXTO "HELADO NUBE" — debajo de la cortina (se va revelando) */}
+      <g className="icecream-text" textAnchor="middle">
+        <text
+          x="180"
+          y="195"
+          fontFamily="var(--font-archivo), sans-serif"
+          fontSize="58"
+          fontWeight="900"
+          fill="var(--ink)"
+          letterSpacing="-2"
+          style={{ fontStretch: "85%" }}
+        >
+          HELADO
+        </text>
+        <text
+          x="180"
+          y="265"
+          fontFamily="var(--font-caveat), cursive"
+          fontSize="72"
+          fontWeight="700"
+          fill={accent}
+        >
+          Nube
+        </text>
+        {/* Subtítulo editorial */}
+        <text
+          x="180"
+          y="305"
+          fontFamily="var(--font-space-mono), monospace"
+          fontSize="10"
+          fill="var(--ink)"
+          opacity="0.6"
+          letterSpacing="3"
+        >
+          EL LUJO SE SIRVE DESPACIO
+        </text>
+      </g>
+
+      {/* Vetas de crema (decorativas, fijas) */}
+      <rect x="0" y="0" width="360" height="440" fill="url(#cream-streak)" opacity="0.5" />
+
+      {/* Brillo que se desliza */}
       <rect
+        ref={sheenRef}
         x="0"
         y="0"
         width="360"
-        height="440"
-        fill="transparent"
-        style={{ cursor: "pointer" }}
-        onClick={onOpen}
-        aria-hidden="true"
+        height="40"
+        fill="url(#cream-sheen)"
+        opacity="0"
       />
 
-      {/* Sombra base */}
-      <ellipse cx="180" cy="425" rx="90" ry="12" fill="var(--ink)" opacity="0.1" />
-
-      {/* Cono */}
-      <g className="icecream-cone">
-        <path
-          d="M120 240 L180 420 L240 240 Z"
-          fill="url(#cone-grad)"
-          stroke="var(--ink)"
-          strokeWidth="3"
-          strokeLinejoin="round"
-        />
-        {/* Patrón de waffle */}
-        <g stroke="#8a5520" strokeWidth="1.5" opacity="0.5">
-          <line x1="140" y1="280" x2="220" y2="280" />
-          <line x1="148" y1="310" x2="212" y2="310" />
-          <line x1="156" y1="340" x2="204" y2="340" />
-          <line x1="164" y1="370" x2="196" y2="370" />
-          {/* Diagonales */}
-          <line x1="120" y1="240" x2="180" y2="320" />
-          <line x1="150" y1="240" x2="210" y2="320" />
-          <line x1="180" y1="240" x2="240" y2="320" />
-          <line x1="210" y1="240" x2="150" y2="320" />
-          <line x1="240" y1="240" x2="180" y2="320" />
-        </g>
-      </g>
-
-      {/* Bola media */}
-      <g ref={scoop2Ref} className="icecream-scoop">
-        <circle cx="180" cy="200" r="70" fill="#f5e6c8" stroke="var(--ink)" strokeWidth="3" />
-        <ellipse cx="160" cy="185" rx="20" ry="12" fill="#fff" opacity="0.5" />
-      </g>
-
-      {/* Bola superior (sabor: fresa → color de acento) */}
-      <g ref={scoop1Ref} className="icecream-scoop">
-        <circle cx="180" cy="120" r="60" fill="url(#scoop-grad)" stroke="var(--ink)" strokeWidth="3" />
-        <ellipse cx="160" cy="105" rx="18" ry="10" fill="#fff" opacity="0.55" />
-        {/* Cerezita */}
-        <circle cx="180" cy="58" r="8" fill="#c41e3a" stroke="var(--ink)" strokeWidth="2" />
-        <path d="M180 50 Q186 38 196 36" fill="none" stroke="#2d8a3e" strokeWidth="3" strokeLinecap="round" />
-      </g>
-
-      {/* Goteo del helado */}
+      {/* CORTINA CREMOSA — la animación principal (path dinámico) */}
       <path
-        ref={dripRef}
-        d="M170 110 Q165 110 168 110 Z"
-        fill={accent}
-        stroke="var(--ink)"
-        strokeWidth="1.5"
-        opacity="0"
+        ref={curtainRef}
+        d="M0 0 L360 0 L360 0 L0 0 Z"
+        fill="url(#cream-grad)"
+        opacity="1"
       />
 
-      {/* Gotas que caen */}
-      <g ref={dropsRef}>
-        <circle cx="150" cy="110" r="7" fill={accent} stroke="var(--ink)" strokeWidth="1.5" opacity="0" />
-        <circle cx="190" cy="110" r="6" fill={accent} stroke="var(--ink)" strokeWidth="1.5" opacity="0" />
-        <circle cx="230" cy="110" r="8" fill={accent} stroke="var(--ink)" strokeWidth="1.5" opacity="0" />
-        <circle cx="170" cy="110" r="5" fill="#f5e6c8" stroke="var(--ink)" strokeWidth="1.5" opacity="0" />
-      </g>
-
-      {/* Cortina de crema al final del scroll */}
-      <rect
-        ref={creamCurtainRef}
-        x="0"
-        y="0"
-        width="360"
-        height="0"
-        fill="#f8d0d8"
-        opacity="0"
-        style={{ transition: "none" }}
-      />
+      {/* Gotas que cuelgan */}
+      <path ref={dripRef} d="M0 0 Z" fill="url(#cream-grad)" opacity="0" />
+      <path ref={drip2Ref} d="M0 0 Z" fill="url(#cream-grad)" opacity="0" />
     </svg>
   );
 }

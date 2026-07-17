@@ -16,8 +16,6 @@ export const SITE = {
   nav: [
     { label: "Proyectos", target: "#proyectos" },
     { label: "Sobre mí", target: "#sobre-mi" },
-    { label: "Lab", target: "#logros" },
-    { label: "Blog", target: "#blog" },
     { label: "Contacto", target: "#contacto" },
   ],
 };
@@ -112,7 +110,7 @@ export const PROJECTS: Project[] = [
     ],
   },
   {
-    keyword: "HELADO NUBE",
+    keyword: "CREMA",
     name: "Helado Nube",
     description:
       "Heladería artesanal de lujo desde 1962. Cremas fluyentes, tema reactivo por sabor y un mascot de helado que te sigue con la mirada. El lujo se sirve despacio.",
@@ -249,60 +247,6 @@ export const ACHIEVEMENTS = {
     { name: "Google Developer Expert", count: "01" },
     { name: "Speaker — FrontFest", count: "02" },
     { name: "Artículos publicados", count: "24" },
-  ],
-};
-
-export const BLOG = {
-  title: "MIS ARTÍCULOS",
-  items: [
-    {
-      category: "WebGL",
-      date: "12 Mar 2025",
-      title: "Construyendo escenas 3D performantes con Three.js",
-      excerpt:
-        "Patrones y técnicas para mantener 60fps en escenas complejas: instancing, LOD, frustum culling y más.",
-      readTime: "8 min",
-    },
-    {
-      category: "Animación",
-      date: "28 Feb 2025",
-      title: "Scroll storytelling: la guía completa con GSAP",
-      excerpt:
-        "Cómo diseñar narrativas de scroll que atrapen al usuario, desde el pinning hasta el scrub y los reveals.",
-      readTime: "12 min",
-    },
-    {
-      category: "Performance",
-      date: "10 Feb 2025",
-      title: "Core Web Vitals en sitios 3D: mitos y realidades",
-      excerpt:
-        "¿Se puede tener un sitio 3D con LCP < 2.5s? Sí, y te cuento cómo lograrlo sin sacrificar la experiencia.",
-      readTime: "10 min",
-    },
-    {
-      category: "Design",
-      date: "22 Ene 2025",
-      title: "Micro-interacciones: el detalle que separa lo bueno de lo memorable",
-      excerpt:
-        "Principios de motion design para web: timing, easing, y cuándo animar (y cuándo no).",
-      readTime: "6 min",
-    },
-    {
-      category: "Three.js",
-      date: "05 Ene 2025",
-      title: "Shaders para diseñadores: una introducción visual",
-      excerpt:
-        "GLSL sin miedo: cómo escribir tu primer fragment shader y entender el pipeline de WebGL.",
-      readTime: "15 min",
-    },
-    {
-      category: "Accesibilidad",
-      date: "18 Dic 2024",
-      title: "Accesibilidad en experiencias 3D: no es opcional",
-      excerpt:
-        "Cómo hacer que tus escenas Three.js sean navegables con teclado y lectores de pantalla.",
-      readTime: "9 min",
-    },
   ],
 };
 

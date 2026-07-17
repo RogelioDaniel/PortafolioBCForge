@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
+import { useScreenNav } from "@/lib/use-screen-nav";
 
 /**
  * Marquee — ticker horizontal infinito, firma awwwards.
@@ -37,9 +37,9 @@ export default function Marquee() {
   const topTrack = useRef<HTMLDivElement>(null);
   const bottomTrack = useRef<HTMLDivElement>(null);
   const reduced = usePrefersReducedMotion();
+  const { replayTick } = useScreenNav();
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
       if (reduced) return;
 
@@ -48,36 +48,23 @@ export default function Marquee() {
       const botEl = bottomTrack.current;
       if (!topEl || !botEl) return;
 
-      // Duplicamos contenido para loop seamless
-      const dupTop = topEl.innerHTML;
-      const dupBot = botEl.innerHTML;
-      topEl.innerHTML = dupTop + dupTop;
-      botEl.innerHTML = dupBot + dupBot;
+      // Duplicamos contenido para loop seamless (solo si no se duplicó ya)
+      if (topEl.children.length <= ITEMS_TOP.length) {
+        topEl.innerHTML = topEl.innerHTML + topEl.innerHTML;
+        botEl.innerHTML = botEl.innerHTML + botEl.innerHTML;
+      }
 
       const loopTop = gsap.to(topEl, {
         xPercent: -50,
-        duration: 48,
+        duration: 40,
         ease: "none",
         repeat: -1,
       });
       const loopBot = gsap.to(botEl, {
         xPercent: 50,
-        duration: 56,
+        duration: 46,
         ease: "none",
         repeat: -1,
-      });
-
-      // Velocidad ligada al scroll
-      ScrollTrigger.create({
-        trigger: ref.current,
-        start: "top bottom",
-        end: "bottom top",
-        onUpdate: (self) => {
-          const v = self.getVelocity();
-          const speed = gsap.utils.clamp(0.3, 3, 1 + Math.abs(v) / 800);
-          loopTop.timeScale(self.direction > 0 ? speed : -speed);
-          loopBot.timeScale(self.direction > 0 ? -speed : speed);
-        },
       });
 
       // Pausa al hover
@@ -100,7 +87,7 @@ export default function Marquee() {
       };
     }, ref);
     return () => ctx.revert();
-  }, [reduced]);
+  }, [reduced, replayTick]);
 
   const Star = () => (
     <span

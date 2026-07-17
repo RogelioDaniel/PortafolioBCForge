@@ -2,28 +2,29 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import HeroScene from "./three/HeroScene";
 import { PixelChevron } from "./PixelIcons";
 import { HERO } from "@/lib/portfolio-content";
 import { useIsTouch, usePrefersReducedMotion } from "@/lib/motion-hooks";
+import { useScreenNav } from "@/lib/use-screen-nav";
 
 /**
  * Hero (100vh) — MINIMALISTA Y ELEGANTE.
- *  - Solo el titular grande de 3 líneas + indicador SCROLL.
- *  - Quitados: logo, texto "FRONT-END · 3D · MOTION" y la bio.
+ *  - Solo el titular grande de 3 líneas + indicador de navegación.
  *  - Animación elegante: cada letra entra escalonada con leve blur/rotación,
  *    línea decorativa que se dibuja debajo del titular, y respiración sutil.
- *  - Escena Three.js de voxels se mantiene entre las letras.
+ *  - P4 (bug "no se ven las letras"): ya NO hay parallax de salida con scroll.
+ *    Las letras se animan onEnter (al montar / al volver a la pantalla) y
+ *    quedan siempre visibles. La animación se re-dispara con replayTick.
  */
 export default function Hero() {
   const rootRef = useRef<HTMLElement>(null);
   const lineRef = useRef<SVGPathElement>(null);
   const reduced = usePrefersReducedMotion();
   const isTouch = useIsTouch();
+  const { replayTick } = useScreenNav();
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
       const chars = rootRef.current?.querySelectorAll<HTMLElement>(".hero-char");
       const line = lineRef.current;
@@ -33,42 +34,41 @@ export default function Hero() {
         return;
       }
 
+      // Reset por si se re-anima
+      if (chars && chars.length) {
+        gsap.set(chars, { opacity: 0, yPercent: 120, rotate: 8, filter: "blur(8px)" });
+      }
+
       // Entrada letra por letra: stagger + blur + rotación
       if (chars && chars.length) {
-        gsap.fromTo(
-          chars,
-          {
-            opacity: 0,
-            yPercent: 120,
-            rotate: 8,
-            filter: "blur(8px)",
-          },
-          {
-            opacity: 1,
-            yPercent: 0,
-            rotate: 0,
-            filter: "blur(0px)",
-            duration: 0.9,
-            ease: "power3.out",
-            stagger: { each: 0.035, from: "start" },
-            delay: 0.3,
-          }
-        );
+        gsap.to(chars, {
+          opacity: 1,
+          yPercent: 0,
+          rotate: 0,
+          filter: "blur(0px)",
+          duration: 0.9,
+          ease: "power3.out",
+          stagger: { each: 0.035, from: "start" },
+          delay: 0.3,
+        });
       }
 
       // Línea decorativa que se dibuja debajo del titular
       if (line) {
         const length = line.getTotalLength();
-        gsap.set(line, { strokeDasharray: length, strokeDashoffset: length });
-        gsap.to(line, {
-          strokeDashoffset: 0,
-          duration: 1.4,
-          ease: "power2.inOut",
-          delay: 1.2,
-        });
+        gsap.fromTo(
+          line,
+          { strokeDasharray: length, strokeDashoffset: length },
+          {
+            strokeDashoffset: 0,
+            duration: 1.4,
+            ease: "power2.inOut",
+            delay: 1.2,
+          }
+        );
       }
 
-      // Indicador SCROLL fade
+      // Indicador fade
       gsap.fromTo(
         rootRef.current?.querySelectorAll(".hero-fade") as NodeListOf<HTMLElement>,
         { opacity: 0, y: 20 },
@@ -94,22 +94,9 @@ export default function Hero() {
           delay: 2,
         });
       }
-
-      // Parallax de salida del hero
-      gsap.to(rootRef.current?.querySelector(".hero-content") as HTMLElement, {
-        yPercent: 14,
-        opacity: 0.4,
-        ease: "none",
-        scrollTrigger: {
-          trigger: rootRef.current,
-          start: "top top",
-          end: "bottom top",
-          scrub: true,
-        },
-      });
     }, rootRef);
     return () => ctx.revert();
-  }, [reduced]);
+  }, [reduced, replayTick]);
 
   // Split de cada línea en caracteres (preserva espacios)
   const renderLine = (line: string, lineIdx: number) =>
@@ -175,16 +162,17 @@ export default function Hero() {
       {/* Capa 2: canvas Three.js (z-2) */}
       <HeroScene reduced={reduced} isTouch={isTouch} />
 
-      {/* Indicador SCROLL — abajo-centro */}
+      {/* Indicador de navegación — abajo-centro (invita a usar las flechas) */}
       <div
         className="hero-fade absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2"
         style={{ color: "var(--ink)" }}
       >
         <span className="mono text-[10px] opacity-60 tracking-[0.3em]">
-          SCROLL
+          USA LAS FLECHAS
         </span>
         <PixelChevron className="chevron-bounce opacity-60" size={12} />
       </div>
     </section>
   );
 }
+

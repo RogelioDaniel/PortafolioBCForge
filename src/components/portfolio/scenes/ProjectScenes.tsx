@@ -1,20 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import type { Project } from "@/lib/portfolio-content";
 import BurgerScene from "./BurgerScene";
 import LegoScene from "./LegoScene";
 import IceCreamScene from "./IceCreamScene";
-import GlassScene from "./GlassScene";
+import GlassSceneWebGL from "./GlassSceneWebGL";
 
 /**
- * ProjectScenes — reemplaza al antiguo ProjectsSceneManager (Three.js).
- * Monta las 4 escenas SVG en capas absolutas y hace crossfade entre ellas
- * según el índice activo. Cada escena recibe (activeRef, progressRef) y
- * gestiona su propia animación de capas interna.
+ * ProjectScenes — monta las 4 escenas SVG en capas y muestra SOLO la activa.
  *
- * Reemplaza también el indicador de "click para ver" + el handler de
- * apertura de URL real.
+ * P4 (parpadeo): el cambio entre escenas es instantáneo (display:none en las
+ *   inactivas), sin transición de opacidad que deje ver la escena anterior.
+ * P3 (click): toda la capa activa captura el click; el click en la animación
+ *   O en el indicador abre la URL real del proyecto.
  */
 export default function ProjectScenes({
   projects,
@@ -44,19 +43,20 @@ export default function ProjectScenes({
     return () => cancelAnimationFrame(raf);
   }, [activeRef]);
 
-  const openProject = (url: string) => {
+  const openProject = useCallback((url: string) => {
     if (url && url !== "#") {
       window.open(url, "_blank", "noopener,noreferrer");
     }
-  };
+  }, []);
 
   return (
     <div
       ref={wrapRef}
-      className="absolute inset-0 z-[2] pointer-events-none"
+      className="absolute inset-0 z-[2] flex items-center justify-center"
       aria-hidden="false"
     >
-      {/* Cada escena en su propia capa; la activa es visible y recibe clicks */}
+      {/* Cada escena en su propia capa; SOLO la activa está en el DOM visual.
+          display:none en las inactivas evita el parpadeo de la escena anterior. */}
       <SceneLayer active={active === 0}>
         <BurgerScene
           activeRef={activeRef}
@@ -82,7 +82,7 @@ export default function ProjectScenes({
         />
       </SceneLayer>
       <SceneLayer active={active === 3}>
-        <GlassScene
+        <GlassSceneWebGL
           activeRef={activeRef}
           progressRef={progressRef}
           accent={projects[3]?.accent || "#b87333"}
@@ -90,13 +90,26 @@ export default function ProjectScenes({
         />
       </SceneLayer>
 
-      {/* Indicador de click pulsante — solo en la escena activa */}
-      <ClickHint active={active} accent={projects[active]?.accent || "var(--ink)"} />
+      {/* Indicador de click pulsante — también clickable */}
+      <button
+        type="button"
+        onClick={() => openProject(projects[active]?.liveUrl)}
+        className="click-hint absolute z-[6] bottom-[16%] left-1/2 -translate-x-1/2 flex items-center gap-2 mono text-[10px] bg-transparent border-0 cursor-pointer"
+        style={{ color: "var(--ink)" }}
+        aria-label={`Abrir ${projects[active]?.name} en una nueva pestaña`}
+      >
+        <span
+          className="click-hint-dot"
+          style={{ background: projects[active]?.accent || "var(--ink)" }}
+          aria-hidden="true"
+        />
+        <span className="opacity-70">CLICK PARA VER EL SITIO →</span>
+      </button>
     </div>
   );
 }
 
-/** Capa contenedora de una escena: absoluta, crossfade según active. */
+/** Capa contenedora de una escena: solo la activa se renderiza visualmente. */
 function SceneLayer({
   active,
   children,
@@ -106,31 +119,12 @@ function SceneLayer({
 }) {
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center transition-opacity duration-500"
+      className="absolute inset-0 flex items-center justify-center"
       style={{
-        opacity: active ? 1 : 0,
-        pointerEvents: active ? "auto" : "none",
+        display: active ? "flex" : "none",
       }}
     >
       {children}
-    </div>
-  );
-}
-
-/** Indicador "click para ver" pulsante que flota sobre la escena activa. */
-function ClickHint({ active, accent }: { active: number; accent: string }) {
-  return (
-    <div
-      key={active}
-      className="click-hint pointer-events-none absolute bottom-[18%] left-1/2 -translate-x-1/2 flex items-center gap-2 mono text-[10px]"
-      style={{ color: "var(--ink)" }}
-    >
-      <span
-        className="click-hint-dot"
-        style={{ background: accent }}
-        aria-hidden="true"
-      />
-      <span className="opacity-70">CLICK PARA VER EL SITIO →</span>
     </div>
   );
 }

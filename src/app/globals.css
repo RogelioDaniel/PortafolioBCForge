@@ -237,12 +237,6 @@ html.theme-site-dark .btn-primary {
 html.theme-site-dark .btn-primary:hover {
   background: #fff;
 }
-html.theme-site-dark .cursor-dot {
-  background: #f4f4f0;
-}
-html.theme-site-dark .cursor-dot.is-hover {
-  background: #0e0e10;
-}
 
 /* ============================================================
    Componentes recurrentes
@@ -380,18 +374,34 @@ html.theme-site-dark .cursor-dot.is-hover {
   left: 0;
   width: 8px;
   height: 8px;
-  background: var(--ink);
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
   transform: translate(-50%, -50%);
-  mix-blend-mode: difference;
   transition: width 0.25s ease, height 0.25s ease, background 0.25s ease;
+}
+/* P5: MODO CLARO (default del navegador sin .theme-site-dark):
+   dot blanco con borde oscuro — visible sobre el lavanda claro. */
+.cursor-dot {
+  background: #ffffff;
+  box-shadow: 0 0 0 1.5px rgba(14, 14, 16, 0.55);
+  mix-blend-mode: normal;
 }
 .cursor-dot.is-hover {
   width: 48px;
   height: 48px;
-  background: #fff;
+  background: #0e0e10;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+/* P5: MODO OSCURO (default del sitio): dot crema con difference. */
+html.theme-site-dark .cursor-dot {
+  background: #f4f4f0;
+  box-shadow: none;
+  mix-blend-mode: difference;
+}
+html.theme-site-dark .cursor-dot.is-hover {
+  background: #0e0e10;
+  box-shadow: none;
 }
 .cursor-label {
   position: fixed;
@@ -643,4 +653,168 @@ html.theme-site-dark .cursor-dot.is-hover {
 /* Grano más presente en la sección cinética oscura */
 body.theme-dark .bg-noise {
   opacity: 0.08;
+}
+
+/* ============================================================
+   NAVEGACIÓN GUIADA POR PANTALLAS (experiencia VIP)
+   ============================================================ */
+
+/* El deck contiene todas las pantallas apiladas; el body NO hace scroll. */
+.screen-deck {
+  /* Cada slot es absoluto y ocupa todo el viewport */
+}
+.screen-slot {
+  will-change: transform, opacity;
+}
+.screen-slot[data-active="true"] {
+  animation: screen-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes screen-enter {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.985);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+/* Flechas de navegación */
+.screen-arrow {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--pill-border);
+  background: rgba(220, 226, 240, 0.18);
+  backdrop-filter: blur(10px) saturate(130%);
+  -webkit-backdrop-filter: blur(10px) saturate(130%);
+  color: var(--ink);
+  cursor: pointer;
+}
+html.theme-site-dark .screen-arrow {
+  background: rgba(244, 244, 240, 0.08);
+}
+.screen-arrow:hover {
+  border-color: var(--ink);
+}
+.screen-arrow-label {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-space-mono);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.screen-arrow:hover .screen-arrow-label {
+  opacity: 0.85;
+}
+
+/* Indicador lateral de pantallas (dots verticales discretos) */
+.screen-dots {
+  position: fixed;
+  top: 50%;
+  right: 1.5rem;
+  transform: translateY(-50%);
+  z-index: 54;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.screen-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: 0.25;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+.screen-dot.is-active {
+  opacity: 1;
+  transform: scale(1.4);
+}
+
+/* Sub-navegación de proyectos (flechas laterales grandes) */
+.project-subnav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--pill-border);
+  background: rgba(220, 226, 240, 0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+html.theme-site-dark .project-subnav {
+  background: rgba(244, 244, 240, 0.08);
+}
+.project-subnav:hover {
+  border-color: var(--ink);
+  transform: translateY(-50%) scale(1.1);
+}
+.project-subnav-left {
+  left: 1.5rem;
+}
+.project-subnav-right {
+  right: 1.5rem;
+}
+@media (min-width: 768px) {
+  .project-subnav-left {
+    left: 2.5rem;
+  }
+  .project-subnav-right {
+    right: 2.5rem;
+  }
+}
+
+/* Animaciones de entrada para keyword y panel de proyecto */
+.project-kw-enter {
+  animation: project-kw-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes project-kw-in {
+  from {
+    opacity: 0;
+    transform: translateY(40px) skewY(3deg);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) skewY(0);
+    filter: blur(0px);
+  }
+}
+.project-panel-enter {
+  animation: project-panel-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+@keyframes project-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

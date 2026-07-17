@@ -1,40 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { scrollToSection } from "@/lib/use-smooth-scroll";
+import { useScreenNav } from "@/lib/use-screen-nav";
 
 /**
- * BackToTop — botón flotante (esquina inferior-derecha) que aparece
- * tras hacer scroll > 80vh. Flecha pixelada hacia arriba.
- * Se oculta en touch para no estorbar.
+ * BackToTop — botón flotante translúcido (no tapa texto) que vuelve al inicio.
+ * P5: usa screen-nav (goTo(0)) en lugar de Lenis. Aparece si no estamos en la
+ * primera pantalla.
  */
 export default function BackToTop() {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => {
-      setShow(window.scrollY > window.innerHeight * 0.8);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const toTop = () => {
-    const lenis = (window as unknown as { __lenis?: { scrollTo: (t: HTMLElement, o?: object) => void } }).__lenis;
-    if (lenis) {
-      lenis.scrollTo(0, { duration: 1.2 });
-    } else {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
+  const { current, goTo } = useScreenNav();
+  const show = current !== 0;
 
   return (
     <button
-      onClick={toTop}
+      onClick={() => goTo(0)}
       aria-label="Volver arriba"
-      data-cursor="ARRIBA"
-      className="fixed bottom-5 right-5 z-40 w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-500 hover:scale-110"
+      data-cursor="INICIO"
+      className="fixed bottom-5 left-5 z-40 w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-500 hover:scale-110"
       style={{
         borderColor: "rgba(14,14,16,0.25)",
         background: "rgba(220,226,240,0.35)",

@@ -2,22 +2,22 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SERVICES } from "@/lib/portfolio-content";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
+import { useScreenNav } from "@/lib/use-screen-nav";
 
 /**
  * Servicios y stack — statement display + 3 columnas con pill chips.
- * Incluye el mensaje final "YA SEA QUE NECESITES..." (puntos 10 y 12):
- * sube suavemente con reveal de máscara + leve parallax.
+ * Incluye el mensaje final "YA SEA QUE NECESITES..." (puntos 10 y 12).
+ * Animaciones onEnter (replayTick del screen-nav) en lugar de ScrollTrigger.
  */
 export default function Services() {
   const ref = useRef<HTMLElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const reduced = usePrefersReducedMotion();
+  const { replayTick } = useScreenNav();
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
       if (reduced) return;
       // Statement reveal por línea (mask reveal elegante)
@@ -31,11 +31,11 @@ export default function Services() {
             duration: 1,
             ease: "power4.out",
             stagger: 0.1,
-            scrollTrigger: { trigger: ref.current, start: "top 75%" },
+            delay: 0.15,
           }
         );
       }
-      // Subtitle sube suavemente con leve parallax (punto 12)
+      // Subtitle sube suavemente (punto 12)
       if (subtitleRef.current) {
         gsap.fromTo(
           subtitleRef.current,
@@ -45,7 +45,7 @@ export default function Services() {
             y: 0,
             duration: 1.1,
             ease: "power3.out",
-            scrollTrigger: { trigger: subtitleRef.current, start: "top 85%" },
+            delay: 0.5,
           }
         );
       }
@@ -61,21 +61,25 @@ export default function Services() {
             duration: 0.6,
             ease: "power3.out",
             stagger: 0.05,
-            scrollTrigger: { trigger: ref.current, start: "top 60%" },
+            delay: 0.3,
           }
         );
       }
     }, ref);
     return () => ctx.revert();
-  }, [reduced]);
+  }, [reduced, replayTick]);
 
   return (
-    <section ref={ref} className="py-24 md:py-36" aria-label="Servicios y stack">
+    <section
+      ref={ref}
+      className="h-[100svh] overflow-y-auto py-16 md:py-20"
+      aria-label="Servicios y stack"
+    >
       <div className="container-edge">
         {/* Statement */}
         <h2
           className="svc-statement display max-w-[18ch]"
-          style={{ fontSize: "clamp(2rem, 7vw, 6rem)" }}
+          style={{ fontSize: "clamp(2rem, 6vw, 5rem)" }}
         >
           {SERVICES.statement.map((line, i) => (
             <span key={i} className="reveal-mask block">
@@ -88,7 +92,7 @@ export default function Services() {
         {SERVICES.subtitle && (
           <p
             ref={subtitleRef}
-            className="mt-8 md:mt-10 max-w-[52ch] text-[14px] md:text-[16px] leading-relaxed"
+            className="mt-6 md:mt-8 max-w-[52ch] text-[14px] md:text-[16px] leading-relaxed"
             style={{ color: "var(--ink)", opacity: 0.85 }}
           >
             {SERVICES.subtitle}
@@ -96,10 +100,10 @@ export default function Services() {
         )}
 
         {/* Columnas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16 mt-14 md:mt-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mt-10 md:mt-14">
           {SERVICES.columns.map((col) => (
             <div key={col.chip}>
-              <div className="mb-6">
+              <div className="mb-4">
                 <span className="pill">{col.chip}</span>
               </div>
               {/* Lista de texto plano, sin divisores */}
