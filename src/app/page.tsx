@@ -198,7 +198,7 @@ function ScreenSlot({
 }) {
   return (
     <div
-      className="screen-slot absolute inset-0 h-[100svh] w-full overflow-hidden"
+      className="screen-slot absolute inset-0 h-[100svh] w-full overflow-y-auto overflow-x-hidden"
       data-screen-index={index}
       data-active={phase === "enter" ? "true" : undefined}
       data-phase={phase}

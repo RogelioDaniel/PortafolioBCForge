@@ -90,8 +90,6 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [replayTick, setReplayTick] = useState(0);
   const lockRef = useRef(false);
-  const touchStartY = useRef<number | null>(null);
-  const touchStartX = useRef<number | null>(null);
   const subNavRef = useRef<SubNav | null>(null);
 
   const total = SCREENS.length;
@@ -154,37 +152,11 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
   const next = useCallback(() => advance(1), [advance]);
   const prev = useCallback(() => advance(-1), [advance]);
 
-  // Bloqueo del scroll nativo + interceptación de gestos
+  // Navegación SOLO por teclado dedicado (flechas, PageUp/Down, Home/End).
+  // El scroll con rueda/trackpad/touch queda LIBRE para revisar contenido
+  // fuera de vista; las flechas (ScreenNav) son las únicas que cambian de
+  // pantalla. No bloqueamos el overflow del body.
   useEffect(() => {
-    // Bloquear scroll del body permanentemente
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overscrollBehavior = "none";
-
-    // Wheel / trackpad → next/prev.
-    // Excepción: si el cursor está sobre un contenedor scrollable marcado
-    // ([data-screen-scroll]) que aún no llegó a su borde, dejar el scroll nativo.
-    const onWheel = (e: WheelEvent) => {
-      const scroller = (e.target as HTMLElement | null)?.closest?.(
-        "[data-screen-scroll]"
-      ) as HTMLElement | null;
-      if (scroller) {
-        const atTop = scroller.scrollTop <= 0;
-        const atBottom =
-          scroller.scrollTop + scroller.clientHeight >=
-          scroller.scrollHeight - 1;
-        if ((e.deltaY < 0 && !atTop) || (e.deltaY > 0 && !atBottom)) {
-          return; // dejar que el contenedor haga scroll nativo
-        }
-      }
-      e.preventDefault();
-      if (lockRef.current) return;
-      if (Math.abs(e.deltaY) < 12 && Math.abs(e.deltaX) < 12) return;
-      if (e.deltaY > 0 || e.deltaX > 0) next();
-      else if (e.deltaY < 0 || e.deltaX < 0) prev();
-    };
-
     // Teclado: flechas, PageUp/Down, Home/End
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -212,40 +184,10 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Touch: swipe vertical/horizontal
-    const onTouchStart = (e: TouchEvent) => {
-      touchStartY.current = e.touches[0].clientY;
-      touchStartX.current = e.touches[0].clientX;
-    };
-    const onTouchEnd = (e: TouchEvent) => {
-      if (touchStartY.current === null || touchStartX.current === null) return;
-      const dy = touchStartY.current - e.changedTouches[0].clientY;
-      const dx = touchStartX.current - e.changedTouches[0].clientX;
-      const threshold = 45;
-      if (Math.abs(dy) > threshold && Math.abs(dy) > Math.abs(dx)) {
-        if (dy > 0) next();
-        else prev();
-      } else if (Math.abs(dx) > threshold) {
-        if (dx > 0) next();
-        else prev();
-      }
-      touchStartY.current = null;
-      touchStartX.current = null;
-    };
-
-    window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("keydown", onKey);
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
 
     return () => {
-      document.body.style.overflow = prevOverflow;
-      document.documentElement.style.overflow = "";
-      document.body.style.overscrollBehavior = "";
-      window.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKey);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchend", onTouchEnd);
     };
   }, [next, prev, goTo, total]);
 
