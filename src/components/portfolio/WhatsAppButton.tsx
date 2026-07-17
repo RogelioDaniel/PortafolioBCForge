@@ -14,7 +14,7 @@ export default function WhatsAppButton() {
       rel="noopener noreferrer"
       aria-label="Escríbenos por WhatsApp"
       data-cursor="WHATSAPP"
-      className="wa-fab fixed right-4 bottom-24 md:bottom-28 z-[56] flex items-center justify-center rounded-full"
+      className="wa-fab fixed right-4 bottom-36 md:bottom-40 z-[56] flex items-center justify-center rounded-full"
     >
       <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
         <path

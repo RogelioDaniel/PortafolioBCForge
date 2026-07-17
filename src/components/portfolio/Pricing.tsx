@@ -53,8 +53,8 @@ export default function Pricing() {
     >
       <div className="pricing-layout container-edge w-full min-h-[100svh] flex flex-col justify-start">
         {/* Encabezado */}
-        <div className="mb-8 md:mb-10 max-w-[46ch]">
-          <span className="price-head section-label block mb-4">
+        <div className="mb-6 md:mb-8 max-w-[46ch]">
+          <span className="price-head section-label block mb-3">
             {PRICING.eyebrow}
           </span>
           <h2
@@ -64,7 +64,7 @@ export default function Pricing() {
             <AudioTitleWave variant="spark" />
             {PRICING.title.join(" ")}
           </h2>
-          <p className="price-head mt-4 text-[13px] md:text-[15px] leading-relaxed opacity-80 max-w-[42ch]">
+          <p className="price-head mt-3 text-[13px] md:text-[15px] leading-relaxed opacity-80 max-w-[42ch]">
             {PRICING.intro}
           </p>
         </div>

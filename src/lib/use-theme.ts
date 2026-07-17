@@ -18,9 +18,8 @@ const STORAGE_KEY = "rogelio-portfolio-theme";
 
 function getTheme(): Theme {
   if (typeof window === "undefined") return "dark";
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "dark" || stored === "light") return stored;
-  // Default: DARK (la identidad del sitio ahora es oscura)
+  // P5: la página arranca SIEMPRE en dark mode, sin importar preferencia previa.
+  // El usuario puede togglear a claro durante la sesión; la preferencia se persiste.
   return "dark";
 }
 
@@ -74,17 +73,12 @@ export function useTheme() {
 }
 
 // Script inline para evitar FOUC — se ejecuta antes que React.
-// P5: aplica dark por defecto si no hay preferencia guardada.
+// P5: la página arranca SIEMPRE en dark mode, sin importar preferencia previa.
 export const themeInitScript = `
 (function(){
   try {
-    var t = localStorage.getItem('${STORAGE_KEY}');
-    if (t === 'light') {
-      // explícitamente claro: no añadimos la clase
-    } else {
-      // default o dark explícito → modo oscuro
-      document.documentElement.classList.add('theme-site-dark');
-    }
+    // Forzar dark mode al iniciar, ignorando cualquier preferencia guardada.
+    document.documentElement.classList.add('theme-site-dark');
   } catch(e){
     document.documentElement.classList.add('theme-site-dark');
   }
