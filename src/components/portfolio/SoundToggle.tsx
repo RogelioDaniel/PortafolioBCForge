@@ -10,6 +10,7 @@ import { getAmbient } from "@/lib/ambient-sound";
  */
 export default function SoundToggle() {
   const [on, setOn] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   useEffect(() => {
     const ambient = getAmbient();
@@ -19,7 +20,12 @@ export default function SoundToggle() {
     };
   }, []);
 
-  const toggle = () => getAmbient()?.toggle();
+  const toggle = () => {
+    setHasInteracted(true);
+    getAmbient()?.toggle();
+  };
+
+  const shouldInvite = !on && !hasInteracted;
 
   return (
     <button
@@ -27,6 +33,8 @@ export default function SoundToggle() {
       aria-pressed={on}
       aria-label={on ? "Silenciar música" : "Reproducir música"}
       data-cursor={on ? "SILENCIAR" : "SONIDO"}
+      data-on={on ? "true" : "false"}
+      data-invite={shouldInvite ? "true" : "false"}
       className="sound-toggle fixed bottom-5 left-5 z-40 w-11 h-11 rounded-full border flex items-center justify-center transition-all duration-300 hover:scale-110"
       style={{
         borderColor: "var(--pill-border)",
@@ -34,6 +42,15 @@ export default function SoundToggle() {
         backdropFilter: "blur(8px)",
       }}
     >
+      {shouldInvite && (
+        <>
+          <span className="sound-invite-ring sound-invite-ring--one" aria-hidden="true" />
+          <span className="sound-invite-ring sound-invite-ring--two" aria-hidden="true" />
+          <span className="sound-invite-label" aria-hidden="true">
+            Activa el ritmo
+          </span>
+        </>
+      )}
       <SpeakerPixel on={on} />
       <span
         className="absolute -right-1 -top-1 w-2.5 h-2.5 rounded-full transition-opacity"

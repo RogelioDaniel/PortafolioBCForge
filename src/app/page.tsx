@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Preloader from "@/components/portfolio/Preloader";
 import BackgroundGlow from "@/components/portfolio/BackgroundGlow";
 import Cursor from "@/components/portfolio/Cursor";
@@ -96,46 +96,86 @@ function ScreenStage({
   direction: "next" | "prev" | null;
   reduced: boolean;
 }) {
-  const [outgoing, setOutgoing] = useState<number | null>(null);
-  const prevCurrent = useRef(current);
+  const [stage, setStage] = useState(() => ({
+    displayedCurrent: current,
+    outgoing: null as number | null,
+    transitionDirection: direction,
+  }));
+
+  // Ajuste de estado durante render: React reconcilia la key de la pantalla
+  // anterior como "outgoing" sin desmontarla entre ambos estados.
+  if (current !== stage.displayedCurrent) {
+    setStage({
+      displayedCurrent: current,
+      outgoing: reduced ? null : stage.displayedCurrent,
+      transitionDirection: direction,
+    });
+  }
+
+  const displayedCurrent = stage.displayedCurrent;
+  const outgoing = reduced ? null : stage.outgoing;
+  const transitionDirection = stage.transitionDirection;
 
   useEffect(() => {
-    if (current === prevCurrent.current) return;
-    const leaving = prevCurrent.current;
-    prevCurrent.current = current;
-    if (reduced) {
-      setOutgoing(null);
-      return;
-    }
-    setOutgoing(leaving);
-    const t = window.setTimeout(() => setOutgoing(null), 640);
+    if (outgoing === null) return;
+    const isProjectReveal =
+      outgoing === 0 &&
+      displayedCurrent === 1 &&
+      transitionDirection === "next";
+    const t = window.setTimeout(() => {
+      setStage((value) =>
+        value.outgoing === outgoing ? { ...value, outgoing: null } : value
+      );
+    }, isProjectReveal ? 820 : 640);
     return () => window.clearTimeout(t);
-  }, [current, reduced]);
+  }, [displayedCurrent, outgoing, transitionDirection]);
+
+  const isProjectReveal =
+    !reduced &&
+    outgoing === 0 &&
+    displayedCurrent === 1 &&
+    transitionDirection === "next";
 
   return (
     <div className="screen-deck fixed inset-0 z-[1]">
-      {outgoing !== null && outgoing !== current && (
+      {outgoing !== null && outgoing !== displayedCurrent && (
         <ScreenSlot
           key={`in-${outgoing}`}
           index={outgoing}
           phase="exit"
-          direction={direction}
+          direction={transitionDirection}
           dark={SCREENS[outgoing]?.dark}
           reduced={reduced}
+          transition={isProjectReveal ? "project-reveal" : undefined}
         >
           {renderScreen(SCREENS[outgoing].id)}
         </ScreenSlot>
       )}
       <ScreenSlot
-        key={`in-${current}`}
-        index={current}
+        key={`in-${displayedCurrent}`}
+        index={displayedCurrent}
         phase="enter"
-        direction={direction}
-        dark={SCREENS[current]?.dark}
+        direction={transitionDirection}
+        dark={SCREENS[displayedCurrent]?.dark}
         reduced={reduced}
+        transition={isProjectReveal ? "project-reveal" : undefined}
       >
-        {renderScreen(SCREENS[current].id)}
+        {renderScreen(SCREENS[displayedCurrent].id)}
       </ScreenSlot>
+      {isProjectReveal && <ProjectRevealTransition />}
+    </div>
+  );
+}
+
+function ProjectRevealTransition() {
+  return (
+    <div className="project-reveal-transition" aria-hidden="true">
+      <span className="project-reveal-flare" />
+      <span className="project-reveal-beam" />
+      <span className="project-reveal-caption">
+        <span>Selected work</span>
+        <strong>01</strong>
+      </span>
     </div>
   );
 }
@@ -190,6 +230,7 @@ function ScreenSlot({
   direction,
   dark,
   reduced,
+  transition,
   children,
 }: {
   index: number;
@@ -197,6 +238,7 @@ function ScreenSlot({
   direction: "next" | "prev" | null;
   dark?: boolean;
   reduced: boolean;
+  transition?: "project-reveal";
   children: React.ReactNode;
 }) {
   return (
@@ -207,6 +249,7 @@ function ScreenSlot({
       data-phase={phase}
       data-dir={direction ?? "next"}
       data-dark={dark ? "true" : "false"}
+      data-transition={transition}
       style={{
         zIndex: phase === "enter" ? 2 : 1,
         pointerEvents: phase === "enter" ? "auto" : "none",

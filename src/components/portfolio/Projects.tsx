@@ -29,7 +29,7 @@ export default function Projects() {
   const activeRef = useRef(0);
   const progressRef = useRef(0);
   const [active, setActive] = useState(0);
-  const [panelTick, setPanelTick] = useState(0);
+  const [panelTick, setPanelTick] = useState(1);
   const tweenRef = useRef<gsap.core.Tween | null>(null);
 
   const lastIndex = PROJECTS.length - 1;
@@ -98,8 +98,6 @@ export default function Projects() {
   useEffect(() => {
     activeRef.current = 0;
     progressRef.current = 0;
-    setActive(0);
-    setPanelTick((t) => t + 1);
     startReveal(0, 0.2);
     return () => {
       tweenRef.current?.kill();
