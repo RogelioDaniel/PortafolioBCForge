@@ -85,7 +85,8 @@ export default function HeroScene({
       group: THREE.Group;
       basePos: THREE.Vector3;
       rotSpeed: THREE.Vector3;
-      floatPhase: number;
+      floatPhaseX: number;
+      floatPhaseY: number;
       floatAmp: number;
       baseScale: number;
     };
@@ -112,6 +113,8 @@ export default function HeroScene({
       group.scale.setScalar(scale);
       group.rotation.y = Math.random() * 0.6 - 0.3;
       scene.add(group);
+      
+      const initialPhase = Math.random() * Math.PI * 2;
       floaters.push({
         group,
         basePos: new THREE.Vector3(x, y, z),
@@ -120,7 +123,8 @@ export default function HeroScene({
           (Math.random() - 0.5) * 0.003 + 0.0015,
           (Math.random() - 0.5) * 0.0015
         ),
-        floatPhase: Math.random() * Math.PI * 2,
+        floatPhaseX: initialPhase,
+        floatPhaseY: initialPhase,
         floatAmp: 0.12 + Math.random() * 0.12,
         baseScale: scale,
       });
@@ -216,7 +220,6 @@ export default function HeroScene({
     );
     io.observe(mount);
 
-    const startTime = performance.now();
     const minimumFrameTime = 1000 / (isTouch ? 30 : 40);
     let lastFrameAt = 0;
     const animate = (timestamp: number) => {
@@ -229,12 +232,15 @@ export default function HeroScene({
         running = false;
         return;
       }
-      if (timestamp - lastFrameAt < minimumFrameTime) {
+      if (lastFrameAt > 0 && timestamp - lastFrameAt < minimumFrameTime) {
         raf = window.requestAnimationFrame(animate);
         return;
       }
-      lastFrameAt = timestamp;
-      const t = (timestamp - startTime) / 1000;
+      
+      const now = timestamp;
+      const prev = lastFrameAt > 0 ? lastFrameAt : now - 16.6;
+      lastFrameAt = now;
+      const dt = Math.min(0.1, (now - prev) / 1000);
 
       mouse.x += (target.x - mouse.x) * 0.05;
       mouse.y += (target.y - mouse.y) * 0.05;
@@ -248,9 +254,14 @@ export default function HeroScene({
         f.group.rotation.x += f.rotSpeed.x * (1 + audioBands.mid * 1.8);
         f.group.rotation.y += f.rotSpeed.y * (1 + audioBands.mid * 1.8);
         f.group.rotation.z += f.rotSpeed.z * (1 + audioBands.treble * 1.5);
+        
+        // Accumulate phase dynamically using dt instead of absolute time t
+        f.floatPhaseY += dt * (0.6 + audioBands.mid * 0.3);
+        f.floatPhaseX += dt * (isTouch ? 0.34 : 0.4);
+
         f.group.position.y =
           f.basePos.y +
-          Math.sin(t * (0.6 + audioBands.mid * 0.3) + f.floatPhase) *
+          Math.sin(f.floatPhaseY) *
             f.floatAmp *
             (1 + band * 0.7);
         const horizontalTravel = isTouch
@@ -260,7 +271,7 @@ export default function HeroScene({
           : f.floatAmp * 0.5;
         f.group.position.x =
           f.basePos.x +
-          Math.cos(t * (isTouch ? 0.34 : 0.4) + f.floatPhase) *
+          Math.cos(f.floatPhaseX) *
             horizontalTravel;
       });
 
