@@ -105,14 +105,14 @@ export default function Marquee() {
   const Star = () => (
     <span
       aria-hidden="true"
-      className="inline-block mx-6 md:mx-10 align-middle"
+      className="marquee-star inline-block mx-6 md:mx-10 align-middle spin-slow"
       style={{
-        width: 10,
-        height: 10,
-        background: "currentColor",
+        width: 14,
+        height: 14,
+        background: "var(--ink)",
         clipPath:
           "polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)",
-        opacity: 0.5,
+        opacity: 0.4,
       }}
     />
   );
@@ -120,10 +120,20 @@ export default function Marquee() {
   return (
     <section
       ref={ref}
-      className="py-10 md:py-14 overflow-hidden border-y"
+      className="marquee-section py-12 md:py-16 overflow-hidden border-y relative"
       style={{ borderColor: "var(--line)" }}
       aria-label="Habilidades"
     >
+      {/* Glow decorativo de fondo */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, var(--bg-glow) 0%, transparent 60%)",
+          opacity: 0.3,
+        }}
+      />
       {/* Fila superior */}
       <div className="relative whitespace-nowrap">
         <div
@@ -133,7 +143,7 @@ export default function Marquee() {
           {ITEMS_TOP.map((it, i) => (
             <span key={i} className="inline-flex items-center">
               <span
-                className="display"
+                className="marquee-word display transition-all duration-300"
                 style={{ fontSize: "clamp(2.5rem, 7vw, 5.5rem)" }}
               >
                 {it}
@@ -144,7 +154,7 @@ export default function Marquee() {
           {ITEMS_TOP.map((it, i) => (
             <span key={`d-${i}`} className="inline-flex items-center">
               <span
-                className="display"
+                className="marquee-word display transition-all duration-300"
                 style={{ fontSize: "clamp(2.5rem, 7vw, 5.5rem)" }}
               >
                 {it}
@@ -156,7 +166,7 @@ export default function Marquee() {
       </div>
 
       {/* Fila inferior (dirección opuesta, outline style) */}
-      <div className="relative whitespace-nowrap mt-2 md:mt-4">
+      <div className="relative whitespace-nowrap mt-3 md:mt-5">
         <div
           ref={bottomTrack}
           className="inline-flex items-center will-change-transform"
@@ -164,7 +174,7 @@ export default function Marquee() {
           {ITEMS_BOTTOM.map((it, i) => (
             <span key={i} className="inline-flex items-center">
               <span
-                className="display"
+                className="marquee-word display"
                 style={{
                   fontSize: "clamp(2.5rem, 7vw, 5.5rem)",
                   WebkitTextStroke: "1.5px var(--ink)",
@@ -179,7 +189,7 @@ export default function Marquee() {
           {ITEMS_BOTTOM.map((it, i) => (
             <span key={`d-${i}`} className="inline-flex items-center">
               <span
-                className="display"
+                className="marquee-word display"
                 style={{
                   fontSize: "clamp(2.5rem, 7vw, 5.5rem)",
                   WebkitTextStroke: "1.5px var(--ink)",

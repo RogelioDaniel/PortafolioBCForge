@@ -511,3 +511,136 @@ html.theme-site-dark .cursor-dot.is-hover {
 .page-shell > main {
   flex: 1 0 auto;
 }
+
+/* ============================================================
+   Accessibility helper — texto solo para lectores de pantalla
+   ============================================================ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================================
+   ESCENAS SVG DE PROYECTOS
+   ============================================================ */
+.scene-svg {
+  filter: drop-shadow(0 12px 28px rgba(14, 14, 16, 0.18));
+  user-select: none;
+}
+
+/* --- Burger: brinco idle (cuando .burger-idle tiene .is-bouncing) --- */
+.burger-idle.is-bouncing {
+  transform-box: fill-box;
+  transform-origin: 50% 90%;
+  animation: burger-idle-bounce 2.15s ease-in-out infinite;
+}
+@keyframes burger-idle-bounce {
+  0%,
+  18%,
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  32% {
+    transform: translateY(-16px) rotate(-1.35deg) scale(1.025, 0.975);
+  }
+  48% {
+    transform: translateY(3px) rotate(1.15deg) scale(0.99, 1.02);
+  }
+  62% {
+    transform: translateY(-6px) rotate(0deg) scale(1.01, 0.99);
+  }
+  76% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+/* Cursor pointer sobre la hamburguesa interactiva */
+.burger-scene .burger-layer,
+.burger-scene .burger-arms,
+.burger-scene .burger-idle {
+  cursor: pointer;
+}
+
+/* ============================================================
+   INDICADOR DE CLICK PULSANTE (sobre escenas de proyecto)
+   ============================================================ */
+.click-hint {
+  animation: click-hint-pulse 1.8s ease-in-out infinite;
+}
+.click-hint-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  animation: click-hint-dot 1.4s ease-in-out infinite;
+}
+@keyframes click-hint-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes click-hint-dot {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.4);
+    box-shadow: 0 0 0 6px transparent;
+    opacity: 0.6;
+  }
+}
+
+/* ============================================================
+   MARQUEE LUXURY — glow en hover + separador giratorio
+   ============================================================ */
+.marquee-word {
+  transition: text-shadow 0.4s ease, opacity 0.4s ease, transform 0.4s ease;
+}
+.marquee-word:hover {
+  text-shadow: 0 0 24px rgba(243, 216, 205, 0.6),
+    0 0 48px rgba(243, 216, 205, 0.3);
+}
+
+/* ============================================================
+   KINETIC SECTION FANCY — glow radial pulsante
+   ============================================================ */
+.kinetic-glow {
+  background: radial-gradient(
+    circle at var(--glow-x, 50%) var(--glow-y, 50%),
+    rgba(243, 216, 205, 0.18) 0%,
+    rgba(123, 63, 242, 0.08) 30%,
+    transparent 60%
+  );
+  animation: kinetic-glow-pulse 6s ease-in-out infinite;
+}
+@keyframes kinetic-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+/* Grano más presente en la sección cinética oscura */
+body.theme-dark .bg-noise {
+  opacity: 0.08;
+}

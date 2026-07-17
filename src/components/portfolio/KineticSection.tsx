@@ -46,14 +46,14 @@ export default function KineticSection() {
       words.forEach((w, i) => {
         if (i === 0) {
           tl.call(flipOn, [], 0);
-          gsap.set(w, { autoAlpha: 1, yPercent: 0 });
+          gsap.set(w, { autoAlpha: 1, yPercent: 0, filter: "blur(0px)" });
         } else {
-          gsap.set(w, { autoAlpha: 0, yPercent: 70 });
+          gsap.set(w, { autoAlpha: 0, yPercent: 70, filter: "blur(12px)" });
           // Salida completa de la palabra anterior ANTES de entrar la nueva
-          // (evita superposición ilegible durante el scrub)
           tl.to(words[i - 1], {
             yPercent: -70,
             autoAlpha: 0,
+            filter: "blur(12px)",
             duration: 0.42,
             ease: "power3.in",
           });
@@ -62,7 +62,8 @@ export default function KineticSection() {
             {
               yPercent: 0,
               autoAlpha: 1,
-              duration: 0.42,
+              filter: "blur(0px)",
+              duration: 0.5,
               ease: "power3.out",
             },
             ">-0.05"
@@ -93,6 +94,28 @@ export default function KineticSection() {
           ref={pinRef}
           className="sticky top-0 h-[100svh] w-full flex items-center justify-center overflow-hidden"
         >
+          {/* Glow radial pulsante (fancy) */}
+          <div
+            aria-hidden="true"
+            className="kinetic-glow absolute inset-0 pointer-events-none"
+          />
+          {/* Líneas HUD decorativas */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none kinetic-hud"
+          >
+            {/* Esquinas tipo bracket */}
+            <span className="absolute top-8 left-6 md:top-12 md:left-12 w-6 h-6 border-l border-t border-white/30" />
+            <span className="absolute top-8 right-6 md:top-12 md:right-12 w-6 h-6 border-r border-t border-white/30" />
+            <span className="absolute bottom-8 left-6 md:bottom-12 md:left-12 w-6 h-6 border-l border-b border-white/30" />
+            <span className="absolute bottom-8 right-6 md:bottom-12 md:right-12 w-6 h-6 border-r border-b border-white/30" />
+            {/* Línea horizontal tenue que cruza */}
+            <span className="absolute top-1/2 left-0 right-0 h-px bg-white/10" />
+            {/* Dots indicadores */}
+            <span className="absolute top-1/2 left-6 w-1.5 h-1.5 rounded-full bg-white/40" />
+            <span className="absolute top-1/2 right-6 w-1.5 h-1.5 rounded-full bg-white/40" />
+          </div>
+
           {/* Capa de palabras */}
           <div className="relative w-full h-full flex items-center justify-center">
             {KINETIC_WORDS.map((w) => (
@@ -102,7 +125,8 @@ export default function KineticSection() {
                 style={{
                   fontSize: "clamp(2.6rem, 14.5vw, 13rem)",
                   color: "#f4f4f4",
-                  willChange: "transform, opacity",
+                  textShadow: "0 0 40px rgba(243,216,205,0.25)",
+                  willChange: "transform, opacity, filter",
                 }}
               >
                 {w}
@@ -118,7 +142,7 @@ export default function KineticSection() {
           </div>
 
           {/* Etiqueta esquina */}
-          <div className="absolute top-8 left-6 md:top-12 md:left-12 z-10">
+          <div className="absolute top-8 left-6 md:top-12 md:left-12 z-10 pl-8">
             <span
               className="mono text-[11px]"
               style={{ color: "rgba(255,255,255,0.5)" }}

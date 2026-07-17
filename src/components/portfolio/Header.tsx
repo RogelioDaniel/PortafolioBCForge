@@ -15,13 +15,18 @@ export default function Header() {
   const ref = useRef<HTMLElement>(null);
   const lastY = useRef(0);
   const [hidden, setHidden] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
   const [transition, setTransition] = useState<null | string>(null);
   const logoRef = useMagnetic<HTMLAnchorElement>(0.25);
 
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
-      if (y > 120 && y > lastY.current) {
+      // El header solo aparece tras pasar el hero (100% del viewport)
+      const isPastHero = y > window.innerHeight * 0.9;
+      setPastHero(isPastHero);
+      // Auto-hide al bajar, reveal al subir (solo cuando ya pasamos el hero)
+      if (isPastHero && y > 120 && y > lastY.current) {
         setHidden(true);
       } else {
         setHidden(false);
@@ -55,9 +60,11 @@ export default function Header() {
     <>
       <header
         ref={ref}
-        className="fixed top-0 left-0 right-0 z-50 transition-transform duration-500"
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-700"
         style={{
           transform: hidden ? "translateY(-100%)" : "translateY(0)",
+          opacity: pastHero ? 1 : 0,
+          pointerEvents: pastHero ? "auto" : "none",
         }}
       >
         <div className="container-edge flex items-center justify-between py-5 md:py-6">

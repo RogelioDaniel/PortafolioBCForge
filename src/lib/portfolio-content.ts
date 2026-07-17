@@ -23,9 +23,11 @@ export const SITE = {
 };
 
 export const HERO = {
-  lines: ["CÓDIGO", "Y DISEÑO QUE", "ELEVAN TU PRESENCIA"],
+  lines: ["CÓDIGO", "Y DISEÑO QUE", "ELEVAN TU MARCA"],
   bio: "Desarrollador front-end creando sitios web, experiencias y productos que hacen que la gente deje de hacer scroll.",
 };
+
+export type SceneKind = "burger" | "lego" | "icecream" | "glass";
 
 export type Project = {
   keyword: string;
@@ -33,11 +35,9 @@ export type Project = {
   description: string;
   tags: string[];
   url: string;
-  // tipo de primitiva 3D
-  shape: "sphere" | "torus" | "cube" | "octahedron";
-  color: number;
-  metalness: number;
-  roughness: number;
+  liveUrl: string; // URL real del proyecto en producción
+  scene: SceneKind; // tipo de escena SVG
+  accent: string; // color de acento del proyecto (hex)
   // Detalle para el modal
   year: string;
   role: string;
@@ -50,137 +50,139 @@ export type Project = {
 
 export const PROJECTS: Project[] = [
   {
-    keyword: "INMERSIVO",
-    name: "Aurora Studio",
+    keyword: "CARNE VIVA",
+    name: "Carne Viva",
     description:
-      "Sitio inmersivo 3D para un estudio de arquitectura. Recorridos virtuales en tiempo real con WebGL, iluminación dinámica y transiciones cinematográficas entre espacios.",
-    tags: ["Inmersivo", "3D", "WebGL"],
+      "Hamburguesería con identidad explosiva. Una hamburguesa cartoon que brinca, te mira y se desarma capa por capa al hacer scroll. Carácter, humor y motion design en cada pixel.",
+    tags: ["Branding", "Motion", "Scroll"],
     url: "#",
-    shape: "sphere",
-    color: 0xd4a24c, // dorado
-    metalness: 0.9,
-    roughness: 0.15,
-    year: "2024",
+    liveUrl: "https://hamburguesas-five.vercel.app/",
+    scene: "burger",
+    accent: "#e8542a",
+    year: "2025",
+    role: "Front-end + Motion",
+    client: "Carne Viva",
+    duration: "5 semanas",
+    gallery: [
+      "Hamburguesa mascot que brinca y reacciona al cursor",
+      "Desarme de capas sincronizado con scroll",
+      "Recetas que se construyen ingrediente por ingrediente",
+    ],
+    highlights: [
+      "Personaje SVG animado que brinca idle y se desarma con scroll",
+      "Recetas como combinaciones de casa, no lotería de ingredientes",
+      "Identidad caricaturesca con humor y carácter",
+      "Animación de capas con Framer Motion + CSS keyframes",
+    ],
+    results: [
+      { label: "Tiempo en página", value: "+180%" },
+      { label: "Engagement", value: "Alto" },
+      { label: "Recetas", value: "4" },
+    ],
+  },
+  {
+    keyword: "BLOQUE",
+    name: "BLOQE",
+    description:
+      "Escuela de educación inicial donde cada bloque cuenta una historia. Bloques Lego isométricos que se arman y desarman con el scroll. Educación visual, bloque a bloque.",
+    tags: ["SVG", "Educativo", "3D Iso"],
+    url: "#",
+    liveUrl: "https://vercel.com/rogeliodaniels-projects/bloqe",
+    scene: "lego",
+    accent: "#f5b82e",
+    year: "2025",
     role: "Front-end + 3D",
-    client: "Aurora Arquitectos",
-    duration: "4 meses",
+    client: "BLOQE",
+    duration: "8 semanas",
     gallery: [
-      "Vista del recorrido 3D del lobby principal",
-      "Configurador de materiales en tiempo real",
-      "Transición cinematográfica entre plantas",
+      "Castillo de bloques que se construye con el scroll",
+      "Sistema de voxels a Lego con agrupado greedy meshing",
+      "Render isométrico SVG con sombreado de 3 caras",
     ],
     highlights: [
-      "Recorridos virtuales renderizados en tiempo real con WebGL",
-      "Sistema de iluminación dinámico basado en hora del día",
-      "Transiciones cinematográficas entre espacios",
-      "Optimización para dispositivos móviles (60fps en mid-range)",
+      "Motor de voxels a bloques Lego hecho desde cero",
+      "9 generadores de estructuras procedurales (castillo, escuela, ABC)",
+      "Render isométrico SVG + CSS transforms (sin WebGL, ligero en móvil)",
+      "Animación de armado/desarmado controlada por scroll",
     ],
     results: [
-      { label: "Tiempo en página", value: "+240%" },
-      { label: "Leads cualificados", value: "+180%" },
-      { label: "Lighthouse Perf", value: "94" },
+      { label: "Generadores", value: "9" },
+      { label: "Paletas", value: "10" },
+      { label: "Peso", value: "Ligero" },
     ],
   },
   {
-    keyword: "INTERACTIVO",
-    name: "Nebula Commerce",
+    keyword: "HELADO NUBE",
+    name: "Helado Nube",
     description:
-      "E-commerce de productos tecnológicos con experiencias interactivas por producto, configurador en vivo y checkout sin fricción. Aumentó la conversión un 38%.",
-    tags: ["Interactivo", "E-commerce", "React"],
+      "Heladería artesanal de lujo desde 1962. Cremas fluyentes, tema reactivo por sabor y un mascot de helado que te sigue con la mirada. El lujo se sirve despacio.",
+    tags: ["Editorial", "WebGL", "Luxury"],
     url: "#",
-    shape: "torus",
-    color: 0x7b3ff2, // púrpura
-    metalness: 0.6,
-    roughness: 0.3,
-    year: "2024",
-    role: "Front-end lead",
-    client: "Nebula Tech",
-    duration: "6 meses",
+    liveUrl: "https://helados-coral.vercel.app/",
+    scene: "icecream",
+    accent: "#a73f55",
+    year: "2025",
+    role: "Front-end + Shaders",
+    client: "Helado Nube",
+    duration: "7 semanas",
     gallery: [
-      "Configurador de producto en vivo",
-      "Checkout optimizado sin fricción",
-      "Vista 360° interactiva del producto",
+      "Intro WebGL de crema que inunda y se retira",
+      "Tema del sitio que cambia según el sabor activo",
+      "Mascot de helado que sigue el cursor",
     ],
     highlights: [
-      "Configurador de producto interactivo en tiempo real",
-      "Checkout optimizado (1-página, sin registro obligatoria)",
-      "Vista 360° de productos con zoom progresivo",
-      "Integración con inventario en tiempo real",
+      "Shader WebGL de crema con ruido fbm y cintas de color",
+      "6 temas cromáticos reactivos al sabor seleccionado",
+      "Cortina de crema que cubre y revela en navegación",
+      "Carrito con checkout por WhatsApp",
     ],
     results: [
-      { label: "Conversión", value: "+38%" },
-      { label: "Ticket medio", value: "+22%" },
-      { label: "Tasa de rebote", value: "-31%" },
+      { label: "Sabores", value: "6" },
+      { label: "Estilo", value: "Luxury" },
+      { label: "Desde", value: "1962" },
     ],
   },
   {
-    keyword: "A MEDIDA",
-    name: "Milenio Dashboard",
+    keyword: "PRISMA",
+    name: "PRISMA Vidriería",
     description:
-      "Plataforma SaaS a medida para gestión de medios. Panel en tiempo real, visualización de datos complejos y arquitectura multi-tenant escalable.",
-    tags: ["A medida", "SaaS", "Data-viz"],
+      "Vidriería de autor desde 1998. Vidrio que se estrella y se reconstruye. Atelier de precisión con telemetría HUD, cobre y obsidiana. Cada panel, una obra.",
+    tags: ["HUD", "Shaders", "Atelier"],
     url: "#",
-    shape: "cube",
-    color: 0x2e6bff, // azul
-    metalness: 0.3,
-    roughness: 0.1,
-    year: "2023",
-    role: "Full-stack",
-    client: "Grupo Milenio",
-    duration: "8 meses",
+    liveUrl: "https://vercel.com/rogeliodaniels-projects/vidrieria",
+    scene: "glass",
+    accent: "#b87333",
+    year: "2025",
+    role: "Front-end + 3D",
+    client: "PRISMA",
+    duration: "9 semanas",
     gallery: [
-      "Dashboard principal con widgets configurables",
-      "Visualización de datos en tiempo real",
-      "Sistema de roles multi-tenant",
+      "Panel de vidrio que se fractura en 280 esquirlas",
+      "Reconstrucción inversa antes de revelar el hero",
+      "Carrusel con 6 transiciones de vidrio distintas",
     ],
     highlights: [
-      "Arquitectura multi-tenant escalable (12,000+ usuarios)",
-      "Visualización de datos complejos con D3 + WebGL",
-      "Sistema de permisos granular por rol",
-      "API GraphQL con subscriptions en tiempo real",
+      "Fractura procedural radial con geometría de un solo draw call",
+      "Reconstrucción inversa del panel tras el impacto",
+      "Carrusel de materiales con 6 efectos de transición",
+      "Chat en vivo + presencia + cotizador en tiempo real",
     ],
     results: [
-      { label: "Usuarios activos", value: "12K+" },
-      { label: "Uptime", value: "99.9%" },
-      { label: "Query time", value: "-65%" },
-    ],
-  },
-  {
-    keyword: "ENTERPRISE",
-    name: "Helios Enterprise",
-    description:
-      "Portal empresarial para 12,000+ usuarios. Diseño system, accesibilidad AA, integraciones con SSO y rendimiento optimizado en mercados emergentes.",
-    tags: ["Enterprise", "Accesibilidad", "SSO"],
-    url: "#",
-    shape: "octahedron",
-    color: 0xe8e8ec,
-    metalness: 0.1,
-    roughness: 0.6,
-    year: "2023",
-    role: "Tech lead",
-    client: "Helios Corp",
-    duration: "12 meses",
-    gallery: [
-      "Portal principal con diseño system unificado",
-      "Flujo de autenticación SSO accesible",
-      "Panel de administración multi-rol",
-    ],
-    highlights: [
-      "Design system con 200+ componentes documentados",
-      "Accesibilidad WCAG 2.1 AA auditada",
-      "Integración SSO (SAML + OIDC) para 12,000+ usuarios",
-      "Rendimiento optimizado para mercados emergentes (3G)",
-    ],
-    results: [
-      { label: "Adopción", value: "94%" },
-      { label: "Tickets soporte", value: "-58%" },
-      { label: "Score a11y", value: "AA" },
+      { label: "Esquirlas", value: "280" },
+      { label: "Transiciones", value: "6" },
+      { label: "Desde", value: "1998" },
     ],
   },
 ];
 
 export const SERVICES = {
-  statement: ["YA SEA QUE NECESITES UN", "SITIO WEB, UNA APP O", "EXPERIENCIAS INTERACTIVAS."],
+  statement: [
+    "YA SEA QUE NECESITES",
+    "RENOVAR TU PÁGINA O",
+    "CREAR TU CONCEPTO DE NEGOCIO.",
+  ],
+  subtitle:
+    "Estos son algunos de los proyectos que he lanzado. Lo importante: que tus clientes sientan que pueden hacer o actualizar su página y su concepto de negocio con nosotros.",
   columns: [
     {
       chip: "Servicios",

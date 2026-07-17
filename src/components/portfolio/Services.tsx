@@ -8,17 +8,19 @@ import { usePrefersReducedMotion } from "@/lib/motion-hooks";
 
 /**
  * Servicios y stack — statement display + 3 columnas con pill chips.
- * Filas entran con stagger 0.05s al hacer scroll.
+ * Incluye el mensaje final "YA SEA QUE NECESITES..." (puntos 10 y 12):
+ * sube suavemente con reveal de máscara + leve parallax.
  */
 export default function Services() {
   const ref = useRef<HTMLElement>(null);
+  const subtitleRef = useRef<HTMLParagraphElement>(null);
   const reduced = usePrefersReducedMotion();
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
       if (reduced) return;
-      // Statement reveal por línea
+      // Statement reveal por línea (mask reveal elegante)
       const lines = ref.current?.querySelectorAll(".svc-statement .reveal-inner");
       if (lines) {
         gsap.fromTo(
@@ -30,6 +32,20 @@ export default function Services() {
             ease: "power4.out",
             stagger: 0.1,
             scrollTrigger: { trigger: ref.current, start: "top 75%" },
+          }
+        );
+      }
+      // Subtitle sube suavemente con leve parallax (punto 12)
+      if (subtitleRef.current) {
+        gsap.fromTo(
+          subtitleRef.current,
+          { opacity: 0, y: 40 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1.1,
+            ease: "power3.out",
+            scrollTrigger: { trigger: subtitleRef.current, start: "top 85%" },
           }
         );
       }
@@ -68,6 +84,17 @@ export default function Services() {
           ))}
         </h2>
 
+        {/* Subtitle / mensaje final — sube suavemente (puntos 10 y 12) */}
+        {SERVICES.subtitle && (
+          <p
+            ref={subtitleRef}
+            className="mt-8 md:mt-10 max-w-[52ch] text-[14px] md:text-[16px] leading-relaxed"
+            style={{ color: "var(--ink)", opacity: 0.85 }}
+          >
+            {SERVICES.subtitle}
+          </p>
+        )}
+
         {/* Columnas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16 mt-14 md:mt-20">
           {SERVICES.columns.map((col) => (
@@ -75,7 +102,7 @@ export default function Services() {
               <div className="mb-6">
                 <span className="pill">{col.chip}</span>
               </div>
-              {/* Lista de texto plano, sin divisores (como la referencia) */}
+              {/* Lista de texto plano, sin divisores */}
               <ul className="flex flex-col gap-2">
                 {col.items.map((item) => (
                   <li key={item} className="svc-row cursor-default">

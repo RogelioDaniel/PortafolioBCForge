@@ -34,14 +34,21 @@ export default function BackToTop() {
       onClick={toTop}
       aria-label="Volver arriba"
       data-cursor="ARRIBA"
-      className="fixed bottom-5 right-5 z-40 w-11 h-11 rounded-full border flex items-center justify-center transition-all duration-500 hover:scale-110"
+      className="fixed bottom-5 right-5 z-40 w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-500 hover:scale-110"
       style={{
-        borderColor: "var(--pill-border)",
-        background: "var(--bg-light)",
-        backdropFilter: "blur(8px)",
-        opacity: show ? 1 : 0,
+        borderColor: "rgba(14,14,16,0.25)",
+        background: "rgba(220,226,240,0.35)",
+        backdropFilter: "blur(12px) saturate(140%)",
+        WebkitBackdropFilter: "blur(12px) saturate(140%)",
+        opacity: show ? 0.55 : 0,
         transform: show ? "translateY(0) scale(1)" : "translateY(20px) scale(0.8)",
         pointerEvents: show ? "auto" : "none",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.opacity = "1";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.opacity = "0.55";
       }}
     >
       <svg

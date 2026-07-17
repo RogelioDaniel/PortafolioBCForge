@@ -3,22 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import ProjectsSceneManager from "./three/ProjectsSceneManager";
-import ProjectModal from "./ProjectModal";
+import ProjectScenes from "./scenes/ProjectScenes";
 import { PROJECTS, type Project } from "@/lib/portfolio-content";
-import { useMagnetic, usePrefersReducedMotion } from "@/lib/motion-hooks";
+import { usePrefersReducedMotion } from "@/lib/motion-hooks";
 
 /**
  * Proyectos destacados — scroll storytelling (EL corazón del sitio).
  * Sección pinneada (pin: true, scrub: 1, ~400vh para 4 proyectos).
  * Por cada proyecto:
  *  - palabra clave gigante centrada (display condensado ~14vw)
- *  - objeto 3D central (ProjectsSceneManager) que rota con scroll
+ *  - escena SVG central (ProjectScenes) que reacciona al scroll
  *  - chip Website + tags mono abajo-izquierda
  *  - nombre + descripción abajo-derecha
- *  - botón pill negro "VER PROYECTO →" centro-abajo
- * Transición: palabra sale hacia arriba con skew, nueva entra desde abajo;
- * objeto 3D hace crossfade/morph; textos laterales fade-slide (0.6s, power3.inOut).
+ *  - botón pill negro "VER PROYECTO →" centro-abajo (abre URL real en nueva pestaña)
+ *
+ * FIX scroll rápido (amontonamiento): las transiciones usan overwrite:true,
+ * duración corta y, si la velocidad de scroll es muy alta, se fuerza el
+ * estado final inmediatamente para que no se solapen textos.
+ * En el ÚLTIMO proyecto, un mensaje final sube suavemente invitando a contactar.
  */
 export default function Projects() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -26,9 +28,16 @@ export default function Projects() {
   const activeRef = useRef(0);
   const progressRef = useRef(0);
   const [active, setActive] = useState(0);
-  const [modalProject, setModalProject] = useState<Project | null>(null);
   const reduced = usePrefersReducedMotion();
-  const btnRef = useMagnetic<HTMLAnchorElement>(0.4);
+  const btnRefs = useRef<Array<HTMLAnchorElement | null>>([]);
+  const finalMsgRef = useRef<HTMLDivElement>(null);
+
+  // ref callback helper (usa callback ref para no crear refs nuevos por render)
+  const setBtnRef =
+    (i: number) =>
+    (el: HTMLAnchorElement | null): void => {
+      btnRefs.current[i] = el;
+    };
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -37,13 +46,14 @@ export default function Projects() {
       const keywords = gsap.utils.toArray<HTMLElement>(".project-keyword");
 
       if (reduced) {
-        // Sin pin: mostrar todo en flujo
         panels.forEach((p) => gsap.set(p, { opacity: 1, y: 0 }));
         return;
       }
 
-      // Pin de la sección
       const total = panels.length;
+      let lastProgress = 0;
+      let lastTime = performance.now();
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
@@ -59,11 +69,22 @@ export default function Projects() {
               Math.floor(self.progress / seg)
             );
             if (idx !== activeRef.current) {
+              // Detectar velocidad de scroll: si es muy rápida, forzar estado inmediato
+              const now = performance.now();
+              const dt = now - lastTime;
+              const dp = Math.abs(self.progress - lastProgress);
+              const velocity = dt > 0 ? dp / dt : 0;
+              const isFast = velocity > 0.0025; // umbral empírico
+              lastTime = now;
+              lastProgress = self.progress;
+
               activeRef.current = idx;
-              updateActive(idx);
+              updateActive(idx, isFast);
               setActive(idx);
+            } else {
+              lastTime = performance.now();
+              lastProgress = self.progress;
             }
-            // progreso local del proyecto activo (0..1)
             const localP = gsap.utils.clamp(
               0,
               1,
@@ -74,30 +95,73 @@ export default function Projects() {
         },
       });
 
-      function updateActive(idx: number) {
+      function updateActive(idx: number, instant = false) {
+        const dur = instant ? 0.001 : 0.4;
         panels.forEach((p, i) => {
           const kw = keywords[i];
           if (i === idx) {
             gsap.to(p, {
               autoAlpha: 1,
-              duration: 0.6,
+              duration: dur,
               ease: "power3.inOut",
+              overwrite: true,
             });
             if (kw) {
               gsap.fromTo(
                 kw,
                 { yPercent: 120, skewY: 4 },
-                { yPercent: 0, skewY: 0, duration: 0.7, ease: "power3.out" }
+                {
+                  yPercent: 0,
+                  skewY: 0,
+                  duration: Math.max(0.001, dur * 1.2),
+                  ease: "power3.out",
+                  overwrite: true,
+                }
               );
             }
           } else if (i < idx) {
-            gsap.set(p, { autoAlpha: 0, y: -20 });
-            if (kw) gsap.set(kw, { yPercent: -120, skewY: -4 });
+            gsap.to(p, {
+              autoAlpha: 0,
+              y: -20,
+              duration: dur,
+              ease: "power3.inOut",
+              overwrite: true,
+            });
+            if (kw)
+              gsap.set(kw, { yPercent: -120, skewY: -4, overwrite: true });
           } else {
-            gsap.set(p, { autoAlpha: 0, y: 20 });
-            if (kw) gsap.set(kw, { yPercent: 120, skewY: 4 });
+            gsap.to(p, {
+              autoAlpha: 0,
+              y: 20,
+              duration: dur,
+              ease: "power3.inOut",
+              overwrite: true,
+            });
+            if (kw) gsap.set(kw, { yPercent: 120, skewY: 4, overwrite: true });
           }
         });
+
+        // Mensaje final: visible solo en el último proyecto y según progreso
+        if (finalMsgRef.current) {
+          const isLast = idx === total - 1;
+          if (isLast) {
+            const localP = gsap.utils.clamp(
+              0,
+              1,
+              (progressRef.current - idx * (1 / total)) / (1 / total)
+            );
+            const showT = Math.max(0, (localP - 0.5) / 0.5);
+            gsap.to(finalMsgRef.current, {
+              autoAlpha: showT,
+              y: (1 - showT) * 30,
+              duration: instant ? 0.001 : 0.4,
+              ease: "power2.out",
+              overwrite: true,
+            });
+          } else {
+            gsap.set(finalMsgRef.current, { autoAlpha: 0, y: 30 });
+          }
+        }
       }
 
       // Estado inicial
@@ -107,9 +171,21 @@ export default function Projects() {
       keywords.forEach((kw, i) => {
         gsap.set(kw, { yPercent: i === 0 ? 0 : 120, skewY: i === 0 ? 0 : 4 });
       });
+      if (finalMsgRef.current) {
+        gsap.set(finalMsgRef.current, { autoAlpha: 0, y: 30 });
+      }
     }, sectionRef);
     return () => ctx.revert();
   }, [reduced]);
+
+  // Abrir la URL real del proyecto en nueva pestaña
+  const openProject = (project: Project) => {
+    if (project.liveUrl && project.liveUrl !== "#") {
+      window.open(project.liveUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const lastIndex = PROJECTS.length - 1;
 
   return (
     <section
@@ -118,14 +194,12 @@ export default function Projects() {
       className="relative"
       aria-label="Proyectos destacados"
     >
-      {/* Altura total = 100% * número de proyectos */}
       <div style={{ height: reduced ? "auto" : `${PROJECTS.length * 100}vh` }}>
         <div
           ref={pinRef}
           className="sticky top-0 h-[100svh] w-full overflow-hidden flex items-center justify-center"
         >
-          {/* Palabra clave gigante centrada — negro sólido, DEBAJO del canvas:
-              el objeto 3D pasa por delante de las letras (look de la referencia) */}
+          {/* Palabra clave gigante centrada — DEBAJO del canvas */}
           <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
             <div className="relative w-full h-full">
               {PROJECTS.map((p) => (
@@ -148,12 +222,33 @@ export default function Projects() {
             </div>
           </div>
 
-          {/* Escena 3D central — sobre el texto */}
-          <ProjectsSceneManager
+          {/* Escenas SVG centrales — sobre el texto */}
+          <ProjectScenes
             projects={PROJECTS}
             activeRef={activeRef}
             progressRef={progressRef}
           />
+
+          {/* Mensaje final (último proyecto) — sube suavemente */}
+          <div
+            ref={finalMsgRef}
+            className="absolute z-[5] left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 mt-[22vh] text-center pointer-events-none"
+            style={{ width: "min(90vw, 520px)" }}
+          >
+            <p
+              className="display"
+              style={{
+                fontSize: "clamp(1rem, 2.4vw, 1.8rem)",
+                color: "var(--ink)",
+                lineHeight: 1.1,
+              }}
+            >
+              ¿NECESITAS RENOVAR TU PÁGINA O CREAR TU CONCEPTO DE NEGOCIO?
+            </p>
+            <p className="mono text-[11px] mt-3 opacity-70">
+              HAGÁMOSLO JUNTOS →
+            </p>
+          </div>
 
           {/* Paneles de contenido por proyecto (tags / nombre / desc / botón) */}
           {PROJECTS.map((p, i) => (
@@ -166,7 +261,8 @@ export default function Projects() {
               <div className="container-edge pt-24 md:pt-28">
                 <div className="flex items-center gap-3">
                   <span className="mono text-[11px] opacity-60">
-                    {String(i + 1).padStart(2, "0")} / {String(PROJECTS.length).padStart(2, "0")}
+                    {String(i + 1).padStart(2, "0")} /{" "}
+                    {String(PROJECTS.length).padStart(2, "0")}
                   </span>
                   <span
                     className="block h-px flex-1 max-w-[120px]"
@@ -181,28 +277,39 @@ export default function Projects() {
                   className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-end"
                   style={{ pointerEvents: "auto" }}
                 >
-                  {/* Tags: un solo pill + texto mono separado por " / " (referencia) */}
+                  {/* Tags */}
                   <div className="md:col-span-4 flex flex-wrap items-center gap-3">
-                    <span className="pill">Website</span>
+                    <span
+                      className="pill"
+                      style={{ borderColor: p.accent, color: p.accent }}
+                    >
+                      Website
+                    </span>
                     <span className="mono text-[11px] opacity-70">
                       {p.tags.join(" / ")}
                     </span>
                   </div>
 
-                  {/* Botón centro */}
+                  {/* Botón centro — abre URL real en nueva pestaña */}
                   <div className="md:col-span-4 flex justify-start md:justify-center">
-                    <button
-                      ref={i === 0 ? btnRef : undefined}
-                      onClick={() => setModalProject(p)}
+                    <a
+                      ref={setBtnRef(i)}
+                      href={p.liveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openProject(p);
+                      }}
                       className="btn-primary"
                       data-cursor="VER"
-                      aria-label={`Ver proyecto ${p.name}`}
+                      aria-label={`Abrir ${p.name} en una nueva pestaña`}
                     >
                       Ver proyecto
                       <span className="btn-arrow" aria-hidden="true">
                         →
                       </span>
-                    </button>
+                    </a>
                   </div>
 
                   {/* Desc derecha */}
@@ -233,7 +340,6 @@ export default function Projects() {
               <button
                 key={p.keyword}
                 onClick={() => {
-                  // Saltar al proyecto i (scroll relativo a la sección)
                   const seg = 1 / PROJECTS.length;
                   const targetProg = i * seg + seg * 0.5;
                   const st = (window as unknown as { __lenis?: { scrollTo: (t: HTMLElement, o?: object) => void } }).__lenis;
@@ -262,7 +368,7 @@ export default function Projects() {
                   className="block h-px transition-all duration-300"
                   style={{
                     width: active === i ? 28 : 12,
-                    background: "var(--ink)",
+                    background: active === i ? p.accent : "var(--ink)",
                   }}
                 />
                 {String(i + 1).padStart(2, "0")}
@@ -271,15 +377,6 @@ export default function Projects() {
           </div>
         </div>
       </div>
-
-      {/* Modal de detalle del proyecto — key remounts on project change */}
-      {modalProject && (
-        <ProjectModal
-          key={modalProject.name}
-          project={modalProject}
-          onClose={() => setModalProject(null)}
-        />
-      )}
     </section>
   );
 }
