@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { KINETIC_WORDS } from "@/lib/portfolio-content";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
@@ -16,13 +16,17 @@ import { PixelArrow } from "./PixelIcons";
  *  - Las palabras se intercambian con flechas (las del screen-nav global).
  *    Al detectar replayTick (entrar a esta pantalla) se resetea a la palabra 0.
  *  - Las flechas grandes laterales permiten navegar entre palabras.
+ *  - Registra sub-nav para que las flechas inferiores se oculten mientras no
+ *    estemos en el último slide, guiando al usuario con la flecha derecha.
  */
 export default function KineticSection() {
   const ref = useRef<HTMLElement>(null);
   const reduced = usePrefersReducedMotion();
-  const { replayTick } = useScreenNav();
+  const { replayTick, registerSubNav, notifySubNavChange } = useScreenNav();
   const [activeWord, setActiveWord] = useState(0);
+  const wordRef = useRef(0);
   const flipAppliedRef = useRef(false);
+  const lastWord = KINETIC_WORDS.length - 1;
 
   // Flip a negro al montar, quitar al desmontar (garantizado)
   useEffect(() => {
@@ -37,7 +41,18 @@ export default function KineticSection() {
   // Resetear a la primera palabra al entrar a la pantalla
   useEffect(() => {
     setActiveWord(0);
+    wordRef.current = 0;
   }, [replayTick]);
+
+  // Sincronizar wordRef con activeWord
+  useEffect(() => {
+    wordRef.current = activeWord;
+  }, [activeWord]);
+
+  // Notificar al screen-nav cuando cambia la palabra (actualiza subNavEdges)
+  useEffect(() => {
+    notifySubNavChange();
+  }, [activeWord, notifySubNavChange]);
 
   // Animar la palabra activa al cambiar
   useEffect(() => {
@@ -69,9 +84,42 @@ export default function KineticSection() {
     });
   }, [activeWord, reduced]);
 
-  const nextWord = () =>
-    setActiveWord((w) => Math.min(KINETIC_WORDS.length - 1, w + 1));
-  const prevWord = () => setActiveWord((w) => Math.max(0, w - 1));
+  const nextWord = useCallback(() =>
+    setActiveWord((w) => {
+      const next = Math.min(lastWord, w + 1);
+      wordRef.current = next;
+      return next;
+    }), [lastWord]);
+  const prevWord = useCallback(() =>
+    setActiveWord((w) => {
+      const prev = Math.max(0, w - 1);
+      wordRef.current = prev;
+      return prev;
+    }), []);
+
+  // Registrar sub-nav: las flechas inferiores navegan palabras dentro
+  // de la sección cinética antes de cruzar a la siguiente pantalla.
+  useEffect(() => {
+    const sub = {
+      screenIndex: 5, // índice de "kinetic" en SCREENS
+      atStart: () => wordRef.current <= 0,
+      atEnd: () => wordRef.current >= lastWord,
+      next: () => {
+        const target = Math.min(lastWord, wordRef.current + 1);
+        wordRef.current = target;
+        setActiveWord(target);
+      },
+      prev: () => {
+        const target = Math.max(0, wordRef.current - 1);
+        wordRef.current = target;
+        setActiveWord(target);
+      },
+    };
+    registerSubNav(sub);
+    return () => registerSubNav(sub, true);
+  }, [registerSubNav, lastWord]);
+
+  const isAtEnd = activeWord >= lastWord;
 
   return (
     <section
@@ -135,9 +183,11 @@ export default function KineticSection() {
       </button>
       <button
         onClick={nextWord}
-        disabled={activeWord === KINETIC_WORDS.length - 1}
+        disabled={isAtEnd}
         aria-label="Palabra siguiente"
-        className="project-subnav project-subnav-right disabled:opacity-0 disabled:pointer-events-none"
+        className={`project-subnav project-subnav-right disabled:opacity-0 disabled:pointer-events-none${
+          !isAtEnd ? " kinetic-arrow-pulse" : ""
+        }`}
         style={{
           borderColor: "rgba(255,255,255,0.3)",
           background: "rgba(255,255,255,0.06)",

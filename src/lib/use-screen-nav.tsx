@@ -59,6 +59,12 @@ export type SubNav = {
   prev: () => void;
 };
 
+/** Estado reactivo de los bordes del sub-nav (para que ScreenNav reaccione) */
+export type SubNavEdges = {
+  atStart: boolean;
+  atEnd: boolean;
+};
+
 type ScreenNavValue = {
   current: number;
   total: number;
@@ -74,6 +80,11 @@ type ScreenNavValue = {
   registerSubNav: (sub: SubNav | null, unregister?: boolean) => void;
   /** Re-anima la pantalla activa (útil para re-disparar animaciones onEnter) */
   replayTick: number;
+  /** Estado reactivo de los bordes del sub-nav activo (null si no hay sub-nav) */
+  subNavEdges: SubNavEdges | null;
+  /** Notifica al provider que el estado interno del sub-nav cambió (p.ej.
+   *  después de navegar internamente con flechas laterales). */
+  notifySubNavChange: () => void;
 };
 
 const ScreenNavContext = createContext<ScreenNavValue | null>(null);
@@ -89,21 +100,46 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
   const [direction, setDirection] = useState<Direction>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [replayTick, setReplayTick] = useState(0);
+  const [subNavEdges, setSubNavEdges] = useState<SubNavEdges | null>(null);
   const lockRef = useRef(false);
   const subNavRef = useRef<SubNav | null>(null);
+  const currentRef = useRef(current);
+  currentRef.current = current;
 
   const total = SCREENS.length;
+
+  /** Lee los bordes actuales del sub-nav y actualiza el estado reactivo. */
+  const syncEdges = useCallback(() => {
+    const sub = subNavRef.current;
+    if (sub && sub.screenIndex === currentRef.current) {
+      setSubNavEdges({ atStart: sub.atStart(), atEnd: sub.atEnd() });
+    } else {
+      setSubNavEdges(null);
+    }
+  }, []);
 
   const registerSubNav = useCallback(
     (sub: SubNav | null, unregister = false) => {
       if (unregister) {
-        if (subNavRef.current === sub) subNavRef.current = null;
+        if (subNavRef.current === sub) {
+          subNavRef.current = null;
+          setSubNavEdges(null);
+        }
       } else {
         subNavRef.current = sub;
+        // Inicializar bordes si estamos en la pantalla del sub-nav
+        if (sub && sub.screenIndex === currentRef.current) {
+          setSubNavEdges({ atStart: sub.atStart(), atEnd: sub.atEnd() });
+        }
       }
     },
     []
   );
+
+  // Sincronizar bordes cuando cambia la pantalla activa
+  useEffect(() => {
+    syncEdges();
+  }, [current, syncEdges]);
 
   const goTo = useCallback(
     (index: number) => {
@@ -141,12 +177,14 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
           }, 620);
           if (dir === 1) sub.next();
           else sub.prev();
+          // Actualizar bordes tras la navegación interna
+          syncEdges();
           return;
         }
       }
       goTo(current + dir);
     },
-    [goTo, current]
+    [goTo, current, syncEdges]
   );
 
   const next = useCallback(() => advance(1), [advance]);
@@ -203,8 +241,10 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
       prev,
       registerSubNav,
       replayTick,
+      subNavEdges,
+      notifySubNavChange: syncEdges,
     }),
-    [current, total, direction, isTransitioning, goTo, next, prev, registerSubNav, replayTick]
+    [current, total, direction, isTransitioning, goTo, next, prev, registerSubNav, replayTick, subNavEdges, syncEdges]
   );
 
   return (

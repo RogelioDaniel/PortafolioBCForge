@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { getAmbient } from "@/lib/ambient-sound";
 
 /**
  * HeroScene — 3 objetos voxel/low-poly blancos mate que flotan ENTRE las letras.
@@ -20,6 +21,8 @@ export default function HeroScene({
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (reduced) return;
+
     const mount = mountRef.current;
     if (!mount) return;
 
@@ -38,7 +41,7 @@ export default function HeroScene({
       powerPreference: "high-performance",
     });
     renderer.setSize(mount.clientWidth, mount.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     mount.appendChild(renderer.domElement);
 
     const ambient = new THREE.AmbientLight(0xffffff, 0.7);
@@ -55,6 +58,8 @@ export default function HeroScene({
       roughness: 0.65,
       metalness: 0.05,
       flatShading: true,
+      emissive: 0xf3d8cd,
+      emissiveIntensity: 0,
     });
 
     type Floater = {
@@ -63,6 +68,7 @@ export default function HeroScene({
       rotSpeed: THREE.Vector3;
       floatPhase: number;
       floatAmp: number;
+      baseScale: number;
     };
     const floaters: Floater[] = [];
 
@@ -97,6 +103,7 @@ export default function HeroScene({
         ),
         floatPhase: Math.random() * Math.PI * 2,
         floatAmp: 0.12 + Math.random() * 0.12,
+        baseScale: scale,
       });
     };
 
@@ -141,42 +148,88 @@ export default function HeroScene({
       window.addEventListener("mousemove", onMouse);
     }
 
+    const audioBands = { bass: 0, mid: 0, treble: 0 };
+    const unsubscribeAudio = getAmbient()?.subscribeAnalysis((bands) => {
+      audioBands.bass = bands.bass;
+      audioBands.mid = bands.mid;
+      audioBands.treble = bands.treble;
+    });
+
     let visible = true;
+    let running = false;
+    let raf = 0;
+
+    const stop = () => {
+      if (!running) return;
+      window.cancelAnimationFrame(raf);
+      running = false;
+    };
+
+    const start = () => {
+      if (running || !visible || document.hidden) return;
+      running = true;
+      raf = window.requestAnimationFrame(animate);
+    };
+
     const io = new IntersectionObserver(
       ([entry]) => {
         visible = entry.isIntersecting;
+        if (visible) start();
+        else stop();
       },
       { threshold: 0 }
     );
     io.observe(mount);
 
-    let raf = 0;
     const startTime = performance.now();
     const animate = () => {
-      raf = requestAnimationFrame(animate);
-      if (!visible) return;
+      if (!visible || document.hidden) {
+        running = false;
+        return;
+      }
       const t = (performance.now() - startTime) / 1000;
 
       mouse.x += (target.x - mouse.x) * 0.05;
       mouse.y += (target.y - mouse.y) * 0.05;
 
-      floaters.forEach((f) => {
-        f.group.rotation.x += f.rotSpeed.x;
-        f.group.rotation.y += f.rotSpeed.y;
-        f.group.rotation.z += f.rotSpeed.z;
+      floaters.forEach((f, index) => {
+        const band = index === 0 ? audioBands.bass : index === 1 ? audioBands.mid : audioBands.treble;
+        const targetScale = f.baseScale * (1 + band * 0.38);
+        f.group.scale.setScalar(
+          THREE.MathUtils.lerp(f.group.scale.x, targetScale, 0.14)
+        );
+        f.group.rotation.x += f.rotSpeed.x * (1 + audioBands.mid * 1.8);
+        f.group.rotation.y += f.rotSpeed.y * (1 + audioBands.mid * 1.8);
+        f.group.rotation.z += f.rotSpeed.z * (1 + audioBands.treble * 1.5);
         f.group.position.y =
-          f.basePos.y + Math.sin(t * 0.6 + f.floatPhase) * f.floatAmp;
+          f.basePos.y +
+          Math.sin(t * (0.6 + audioBands.mid * 0.3) + f.floatPhase) *
+            f.floatAmp *
+            (1 + band * 0.7);
         f.group.position.x =
           f.basePos.x + Math.cos(t * 0.4 + f.floatPhase) * f.floatAmp * 0.5;
       });
+
+      matWhite.emissiveIntensity = THREE.MathUtils.lerp(
+        matWhite.emissiveIntensity,
+        audioBands.treble * 0.55,
+        0.16
+      );
 
       camera.position.x += (mouse.x * 1.2 - camera.position.x) * 0.05;
       camera.position.y += (-mouse.y * 0.8 - camera.position.y) * 0.05;
       camera.lookAt(0, 0, 0);
 
       renderer.render(scene, camera);
+      raf = window.requestAnimationFrame(animate);
     };
-    animate();
+
+    const onVisibilityChange = () => {
+      if (document.hidden) stop();
+      else start();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    start();
 
     const onResize = () => {
       const w = mount.clientWidth;
@@ -188,8 +241,10 @@ export default function HeroScene({
     window.addEventListener("resize", onResize);
 
     return () => {
-      cancelAnimationFrame(raf);
+      stop();
       io.disconnect();
+      unsubscribeAudio?.();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("mousemove", onMouse);
       window.removeEventListener("resize", onResize);
       renderer.dispose();

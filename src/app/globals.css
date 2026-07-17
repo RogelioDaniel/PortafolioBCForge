@@ -152,6 +152,10 @@ a {
    Nunca plano: lavanda + glow en movimiento
    ============================================================ */
 .bg-glow {
+  --audio-bass: 0;
+  --audio-mid: 0;
+  --audio-treble: 0;
+  --audio-energy: 0;
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -167,9 +171,114 @@ a {
   will-change: background;
 }
 
+.audio-rhythm {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.bg-glow[data-audio-active="true"] .audio-rhythm {
+  opacity: 1;
+}
+
+.audio-wash {
+  position: absolute;
+  left: var(--glow-x, 30%);
+  top: var(--glow-y, 25%);
+  width: min(66vw, 64rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(247, 154, 106, 0.44) 0%,
+    rgba(247, 154, 106, 0.12) 38%,
+    transparent 70%
+  );
+  filter: blur(14px);
+  opacity: calc(0.04 + var(--audio-bass) * 0.36);
+  transform: translate(-50%, -50%) scale(calc(0.7 + var(--audio-bass) * 0.7));
+  transition: transform 90ms ease-out, opacity 120ms ease-out;
+}
+
+.audio-rail {
+  position: absolute;
+  display: block;
+  width: clamp(5rem, 13vw, 13rem);
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(45, 31, 70, 0.78) 0 6px,
+    transparent 6px 10px
+  );
+  opacity: calc(0.03 + var(--audio-mid) * 0.62);
+  transform: scaleX(calc(0.4 + var(--audio-mid) * 0.9));
+  transition: transform 110ms ease-out, opacity 110ms ease-out;
+}
+
+.audio-rail--one {
+  top: 19%;
+  left: 7%;
+  transform-origin: left center;
+}
+
+.audio-rail--two {
+  top: 71%;
+  right: 9%;
+  transform-origin: right center;
+}
+
+.audio-rail--three {
+  top: 38%;
+  right: 21%;
+  width: clamp(3rem, 8vw, 8rem);
+  transform-origin: right center;
+}
+
+.audio-spark {
+  position: absolute;
+  display: block;
+  width: clamp(3px, 0.45vw, 7px);
+  aspect-ratio: 1;
+  background: #fff6d8;
+  box-shadow: 0 0 10px rgba(255, 246, 216, 0.55);
+  opacity: calc(0.02 + var(--audio-treble) * var(--spark-strength) * 0.9);
+  transform: translate(-50%, -50%) scale(
+    calc(0.35 + var(--audio-treble) * var(--spark-strength) * 1.7)
+  );
+  transition: transform 70ms ease-out, opacity 90ms ease-out;
+}
+
 /* Durante el theme flip a negro, el glow durazno se apaga */
 body.theme-dark .bg-glow {
   opacity: 0;
+}
+
+body.theme-dark .bg-glow[data-audio-active="true"] {
+  opacity: 0.82;
+}
+
+html.theme-site-dark .audio-rail {
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(216, 193, 255, 0.86) 0 6px,
+    transparent 6px 10px
+  );
+}
+
+html.theme-site-dark .audio-wash {
+  background: radial-gradient(
+    circle,
+    rgba(171, 123, 255, 0.35) 0%,
+    rgba(171, 123, 255, 0.08) 42%,
+    transparent 70%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audio-rhythm {
+    display: none;
+  }
 }
 
 /* Textura de grano sutil (noise) — da profundidad premium al fondo lavanda.
@@ -883,5 +992,36 @@ html.theme-site-dark .project-subnav {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Pulso elegante para la flecha derecha de la sección cinética.
+   Glow suave que parpadea para guiar al usuario. */
+.kinetic-arrow-pulse {
+  animation: kinetic-nav-pulse 2.2s ease-in-out infinite;
+}
+@keyframes kinetic-nav-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 18px 4px rgba(243, 216, 205, 0.35), 0 0 6px 1px rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+/* Reveal suave cuando la flecha inferior reaparece al llegar al borde del sub-nav */
+.screen-arrow-reveal {
+  animation: screen-arrow-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes screen-arrow-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }

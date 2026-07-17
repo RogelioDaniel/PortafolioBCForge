@@ -5,7 +5,7 @@ import { getAmbient } from "@/lib/ambient-sound";
 
 /**
  * SoundToggle — botón flotante (esquina inferior-izquierda) que persiste
- * tras el preloader. Refleja y controla el ambient sound global.
+ * tras el preloader. Refleja y controla la música global.
  * Usa el motivo pixel/voxel: un altavoz pixelado mini.
  */
 export default function SoundToggle() {
@@ -14,7 +14,9 @@ export default function SoundToggle() {
   useEffect(() => {
     const ambient = getAmbient();
     const unsub = ambient?.subscribe((v) => setOn(v));
-    return () => unsub?.();
+    return () => {
+      unsub?.();
+    };
   }, []);
 
   const toggle = () => getAmbient()?.toggle();
@@ -23,7 +25,7 @@ export default function SoundToggle() {
     <button
       onClick={toggle}
       aria-pressed={on}
-      aria-label={on ? "Silenciar ambiente" : "Reproducir ambiente"}
+      aria-label={on ? "Silenciar música" : "Reproducir música"}
       data-cursor={on ? "SILENCIAR" : "SONIDO"}
       className="fixed bottom-5 left-5 z-40 w-11 h-11 rounded-full border flex items-center justify-center transition-all duration-300 hover:scale-110"
       style={{

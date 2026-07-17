@@ -117,7 +117,7 @@ function ScreenStage({
     <div className="screen-deck fixed inset-0 z-[1]">
       {outgoing !== null && outgoing !== current && (
         <ScreenSlot
-          key={`out-${outgoing}`}
+          key={`in-${outgoing}`}
           index={outgoing}
           phase="exit"
           direction={direction}

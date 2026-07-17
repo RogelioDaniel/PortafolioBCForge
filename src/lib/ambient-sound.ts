@@ -1,154 +1,292 @@
 "use client";
 
-/**
- * AmbientSound — ambiente sonoro sutil generado con Web Audio API.
- * No carga archivos: sintetiza un pad suave (dos osciladores + filtro lowpass
- * + leve LFO de volumen) que evoca el tono lavanda/durazno del sitio.
- *
- * API:
- *   - enable(): crea el AudioContext (debe llamarse desde un gesto del usuario)
- *   - disable(): silencia y suspende
- *   - isEnabled(): estado actual
- *   - subscribe(cb): notifica cambios (para sincronizar UI)
- *
- * Se expone en window.__ambient para que el Preloader, Header y otros lo usen.
- */
+export type AudioBands = {
+  bass: number;
+  mid: number;
+  treble: number;
+  energy: number;
+};
 
-type Cb = (enabled: boolean) => void;
+type EnabledCallback = (enabled: boolean) => void;
+type AnalysisCallback = (bands: AudioBands) => void;
+
+const EMPTY_BANDS: AudioBands = { bass: 0, mid: 0, treble: 0, energy: 0 };
+const TRACK_URL = "/sounds/kontraa-unlock-me-amapiano-music-149058.mp3";
 
 class AmbientSound {
   private ctx: AudioContext | null = null;
+  private audio: HTMLAudioElement | null = null;
+  private source: MediaElementAudioSourceNode | null = null;
   private master: GainNode | null = null;
-  private nodes: AudioNode[] = [];
-  private lfo: OscillatorNode | null = null;
-  private lfoGain: GainNode | null = null;
+  private analyser: AnalyserNode | null = null;
+  private frequencyData: Uint8Array<ArrayBuffer> | null = null;
   private enabled = false;
-  private subs = new Set<Cb>();
+  private wantsPlayback = false;
+  private analysisFrame: number | null = null;
+  private stopTimer: number | null = null;
+  private visibilityListening = false;
+  private bands: AudioBands = { ...EMPTY_BANDS };
+  private subscribers = new Set<EnabledCallback>();
+  private analysisSubscribers = new Set<AnalysisCallback>();
 
   isEnabled() {
     return this.enabled;
   }
 
-  subscribe(cb: Cb) {
-    this.subs.add(cb);
-    return () => this.subs.delete(cb);
+  subscribe(callback: EnabledCallback) {
+    this.subscribers.add(callback);
+    callback(this.enabled);
+    return () => {
+      this.subscribers.delete(callback);
+    };
+  }
+
+  subscribeAnalysis(callback: AnalysisCallback) {
+    this.analysisSubscribers.add(callback);
+    callback(this.bands);
+    return () => {
+      this.analysisSubscribers.delete(callback);
+    };
   }
 
   private notify() {
-    this.subs.forEach((cb) => cb(this.enabled));
+    this.subscribers.forEach((callback) => callback(this.enabled));
   }
 
+  private notifyAnalysis() {
+    this.analysisSubscribers.forEach((callback) => callback(this.bands));
+  }
+
+  private createAudioGraph() {
+    if (!this.ctx) {
+      const AudioContextConstructor =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
+      this.ctx = new AudioContextConstructor();
+    }
+
+    if (this.source && this.master && this.analyser && this.audio) return;
+
+    const audio = new Audio(TRACK_URL);
+    audio.loop = true;
+    audio.preload = "auto";
+    audio.addEventListener("error", this.handleAudioError);
+
+    const source = this.ctx.createMediaElementSource(audio);
+    const master = this.ctx.createGain();
+    const analyser = this.ctx.createAnalyser();
+
+    master.gain.value = 0;
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.84;
+
+    source.connect(master);
+    master.connect(analyser);
+    analyser.connect(this.ctx.destination);
+
+    this.audio = audio;
+    this.source = source;
+    this.master = master;
+    this.analyser = analyser;
+    this.frequencyData = new Uint8Array(analyser.frequencyBinCount);
+  }
+
+  private readonly handleAudioError = () => {
+    if (!this.wantsPlayback && !this.enabled) return;
+    this.wantsPlayback = false;
+    this.enabled = false;
+    this.stopAnalysis();
+    this.notify();
+    console.warn("AmbientSound: no se pudo cargar la pista de música.");
+  };
+
   async enable() {
-    if (this.enabled) return;
+    if (this.enabled || this.wantsPlayback) return;
+    this.wantsPlayback = true;
+
     try {
-      if (!this.ctx) {
-        const Ctx =
-          window.AudioContext ||
-          (window as unknown as { webkitAudioContext: typeof AudioContext })
-            .webkitAudioContext;
-        this.ctx = new Ctx();
+      this.createAudioGraph();
+      if (!this.ctx || !this.master || !this.audio) return;
+
+      if (this.stopTimer !== null) {
+        window.clearTimeout(this.stopTimer);
+        this.stopTimer = null;
       }
+
       if (this.ctx.state === "suspended") {
         await this.ctx.resume();
       }
-      const ctx = this.ctx;
 
-      // Master gain (fade-in suave)
-      this.master = ctx.createGain();
-      this.master.gain.setValueAtTime(0, ctx.currentTime);
-      this.master.gain.linearRampToValueAtTime(
-        0.06,
-        ctx.currentTime + 1.5
-      );
-      this.master.connect(ctx.destination);
+      const now = this.ctx.currentTime;
+      this.master.gain.cancelScheduledValues(now);
+      this.master.gain.setValueAtTime(this.master.gain.value, now);
+      this.master.gain.linearRampToValueAtTime(0.16, now + 0.45);
 
-      // Filtro lowpass — tono cálido
-      const filter = ctx.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(900, ctx.currentTime);
-      filter.Q.setValueAtTime(0.6, ctx.currentTime);
-      filter.connect(this.master);
-      this.nodes.push(filter);
-
-      // Dos osciladores formando un intervalo abierto (pad)
-      const freqs = [110, 164.81]; // A2 + E3 (quinta justa)
-      freqs.forEach((f, i) => {
-        const osc = ctx.createOscillator();
-        osc.type = i === 0 ? "sine" : "triangle";
-        osc.frequency.setValueAtTime(f, ctx.currentTime);
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(i === 0 ? 0.5 : 0.28, ctx.currentTime);
-        osc.connect(g);
-        g.connect(filter);
-        osc.start();
-        this.nodes.push(osc, g);
-      });
-
-      // LFO de volumen muy lento (respiración)
-      this.lfo = ctx.createOscillator();
-      this.lfo.frequency.setValueAtTime(0.08, ctx.currentTime);
-      this.lfoGain = ctx.createGain();
-      this.lfoGain.gain.setValueAtTime(0.02, ctx.currentTime);
-      this.lfo.connect(this.lfoGain);
-      this.lfoGain.connect(this.master.gain);
-      this.lfo.start();
+      await this.audio.play();
+      if (!this.wantsPlayback) {
+        this.audio.pause();
+        return;
+      }
 
       this.enabled = true;
       this.notify();
-    } catch (e) {
-      // Audio no disponible — fail silencioso
-      console.warn("AmbientSound: no se pudo iniciar", e);
+      this.startAnalysis();
+    } catch (error) {
+      if (this.wantsPlayback) {
+        console.warn("AmbientSound: no se pudo iniciar", error);
+      }
+      this.wantsPlayback = false;
+      this.enabled = false;
+      this.stopAnalysis();
+      this.notify();
     }
   }
 
   async disable() {
-    if (!this.enabled || !this.ctx) return;
-    const ctx = this.ctx;
-    // Fade-out
-    if (this.master) {
-      this.master.gain.cancelScheduledValues(ctx.currentTime);
-      this.master.gain.setValueAtTime(
-        this.master.gain.value,
-        ctx.currentTime
-      );
-      this.master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.6);
+    this.wantsPlayback = false;
+    this.stopAnalysis();
+
+    if (this.stopTimer !== null) {
+      window.clearTimeout(this.stopTimer);
+      this.stopTimer = null;
     }
-    setTimeout(() => {
-      this.nodes.forEach((n) => {
-        try {
-          if ("stop" in n && typeof (n as OscillatorNode).stop === "function") {
-            (n as OscillatorNode).stop();
-          }
-          n.disconnect();
-        } catch {
-          /* noop */
-        }
-      });
-      this.nodes = [];
-      try {
-        this.lfo?.stop();
-        this.lfoGain?.disconnect();
-      } catch {
-        /* noop */
+
+    if (!this.ctx || !this.master) {
+      this.audio?.pause();
+      if (this.enabled) {
+        this.enabled = false;
+        this.notify();
       }
-      this.lfo = null;
-      this.lfoGain = null;
-      this.ctx?.suspend();
-    }, 700);
-    this.enabled = false;
-    this.notify();
+      return;
+    }
+
+    const now = this.ctx.currentTime;
+    this.master.gain.cancelScheduledValues(now);
+    this.master.gain.setValueAtTime(this.master.gain.value, now);
+    this.master.gain.linearRampToValueAtTime(0, now + 0.28);
+
+    if (this.enabled) {
+      this.enabled = false;
+      this.notify();
+    }
+
+    this.stopTimer = window.setTimeout(() => {
+      if (this.wantsPlayback) return;
+      this.audio?.pause();
+      void this.ctx?.suspend();
+      this.stopTimer = null;
+    }, 320);
   }
 
   toggle() {
-    if (this.enabled) this.disable();
-    else this.enable();
+    if (this.enabled || this.wantsPlayback) {
+      void this.disable();
+      return;
+    }
+    void this.enable();
+  }
+
+  private startAnalysis() {
+    if (
+      !this.enabled ||
+      !this.ctx ||
+      !this.analyser ||
+      !this.frequencyData ||
+      document.hidden ||
+      this.analysisFrame !== null
+    ) {
+      return;
+    }
+
+    if (!this.visibilityListening) {
+      document.addEventListener("visibilitychange", this.handleVisibilityChange);
+      this.visibilityListening = true;
+    }
+
+    const tick = () => {
+      this.analysisFrame = null;
+      if (!this.enabled || document.hidden || !this.analyser || !this.frequencyData) {
+        return;
+      }
+
+      this.analyser.getByteFrequencyData(this.frequencyData);
+      const nextBands = {
+        bass: this.readBand(32, 150),
+        mid: this.readBand(150, 2_000),
+        treble: this.readBand(2_000, 9_000),
+      };
+
+      this.bands = {
+        bass: this.smooth(this.bands.bass, nextBands.bass, 0.42),
+        mid: this.smooth(this.bands.mid, nextBands.mid, 0.3),
+        treble: this.smooth(this.bands.treble, nextBands.treble, 0.36),
+        energy: 0,
+      };
+      this.bands.energy = Math.min(
+        1,
+        this.bands.bass * 0.52 +
+          this.bands.mid * 0.32 +
+          this.bands.treble * 0.16
+      );
+      this.notifyAnalysis();
+      this.analysisFrame = window.requestAnimationFrame(tick);
+    };
+
+    this.analysisFrame = window.requestAnimationFrame(tick);
+  }
+
+  private stopAnalysis(keepVisibilityListener = false) {
+    if (this.analysisFrame !== null) {
+      window.cancelAnimationFrame(this.analysisFrame);
+      this.analysisFrame = null;
+    }
+    if (this.visibilityListening && !keepVisibilityListener) {
+      document.removeEventListener("visibilitychange", this.handleVisibilityChange);
+      this.visibilityListening = false;
+    }
+    this.bands = { ...EMPTY_BANDS };
+    this.notifyAnalysis();
+  }
+
+  private readonly handleVisibilityChange = () => {
+    if (document.hidden) {
+      this.stopAnalysis(true);
+      return;
+    }
+    this.startAnalysis();
+  };
+
+  private readBand(startHz: number, endHz: number) {
+    if (!this.ctx || !this.analyser || !this.frequencyData) return 0;
+
+    const binWidth = this.ctx.sampleRate / this.analyser.fftSize;
+    const firstBin = Math.max(0, Math.floor(startHz / binWidth));
+    const lastBin = Math.min(
+      this.frequencyData.length - 1,
+      Math.ceil(endHz / binWidth)
+    );
+
+    let total = 0;
+    for (let index = firstBin; index <= lastBin; index += 1) {
+      total += this.frequencyData[index];
+    }
+
+    return total / Math.max(1, lastBin - firstBin + 1) / 255;
+  }
+
+  private smooth(current: number, next: number, amount: number) {
+    return current + (next - current) * amount;
   }
 }
 
-// Singleton expuesto en window
-const w = typeof window !== "undefined" ? (window as unknown as { __ambient?: AmbientSound }) : undefined;
-if (w && !w.__ambient) {
-  w.__ambient = new AmbientSound();
+const globalWindow =
+  typeof window !== "undefined"
+    ? (window as unknown as { __ambient?: AmbientSound })
+    : undefined;
+
+if (globalWindow && !globalWindow.__ambient) {
+  globalWindow.__ambient = new AmbientSound();
 }
 
 export function getAmbient() {

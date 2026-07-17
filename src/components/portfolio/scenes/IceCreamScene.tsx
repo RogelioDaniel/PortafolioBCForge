@@ -11,9 +11,10 @@ import type { SceneProps } from "./scene-shared";
  * Inspirado en el shader de crema de Helado Nube, pero en SVG/CSS puro.
  *
  * Animación con scroll:
- *  - p=0: cortina cubre todo el texto
- *  - p→0.5: la cortina baja descubriendo "HELADO"
- *  - p→1: la cortina termina de bajar y un goteo de crema cuelga
+ *  - p=0: sin cortina, texto visible
+ *  - p→0.5: la cortina baja cubriendo "HELADO"
+ *  - p→1: la cortina baja completamente, luego se disuelve suavemente
+ *    dejando un residuo cremoso en la parte inferior con gotas elegantes.
  * La cortina tiene gradiente con vetas, ondas en el borde inferior y brillo.
  */
 export default function IceCreamScene({
@@ -24,9 +25,12 @@ export default function IceCreamScene({
 }: SceneProps) {
   const rootRef = useRef<SVGSVGElement>(null);
   const curtainRef = useRef<SVGPathElement>(null);
+  const residueRef = useRef<SVGPathElement>(null);
   const dripRef = useRef<SVGPathElement>(null);
   const drip2Ref = useRef<SVGPathElement>(null);
+  const drip3Ref = useRef<SVGPathElement>(null);
   const sheenRef = useRef<SVGRectElement>(null);
+  const glowRef = useRef<SVGEllipseElement>(null);
 
   useEffect(() => {
     let raf = 0;
@@ -36,52 +40,114 @@ export default function IceCreamScene({
       const active = activeRef.current;
       if (active !== 2) return;
 
-      // La cortina baja: en p=0 cubre todo (y=0..440), en p=1 solo queda un charco arriba
+      const t = performance.now() / 1000;
+
+      // La cortina baja: en p=0 no hay cortina, en p=0.85 llega abajo
       const reveal = Math.min(1, p / 0.85); // 0..1
-      // Posición superior del borde inferior de la cortina
-      const curtainBottomY = reveal * 440; // baja de 0 a 440
+      const curtainBottomY = reveal * 440;
+
+      // Fase de disolución suave (p > 0.85): la cortina se funde elegantemente
+      const dissolveStart = 0.82;
+      const dissolveEnd = 1.0;
+      const dissolveT = p < dissolveStart ? 0 : Math.min(1, (p - dissolveStart) / (dissolveEnd - dissolveStart));
+      // Suavizar con ease-out cuadrático
+      const dissolveEased = 1 - (1 - dissolveT) * (1 - dissolveT);
 
       // Onda sinusoidal en el borde inferior de la cortina (realismo)
-      const waveAmp = 14;
+      const waveAmp = 14 + dissolveEased * 8; // ondas más amplias al disolverse
       const waveFreq = 0.035;
-      const t = performance.now() / 1000;
+      const waveSpeed = 1.5 + dissolveEased * 0.5;
       let pathD = `M0 0 L360 0 L360 ${curtainBottomY} `;
-      // Borde inferior con ondas
       for (let x = 360; x >= 0; x -= 8) {
-        const wave = Math.sin(x * waveFreq + t * 1.5) * waveAmp;
+        const wave = Math.sin(x * waveFreq + t * waveSpeed) * waveAmp;
         const y = curtainBottomY + wave;
         pathD += `L${x} ${y.toFixed(1)} `;
       }
       pathD += "Z";
       if (curtainRef.current) {
         curtainRef.current.setAttribute("d", pathD);
-        curtainRef.current.style.opacity = reveal < 1 ? "1" : "0.15";
+        // Transición suave de opacidad: de 1.0 a 0.0 durante la disolución
+        const curtainOp = 1 - dissolveEased * 1.0;
+        curtainRef.current.style.opacity = curtainOp.toFixed(3);
+      }
+
+      // Residuo cremoso en la parte inferior — aparece cuando la cortina se disuelve
+      if (residueRef.current) {
+        const residueShow = dissolveEased;
+        const rY = 400; // posición del residuo (cerca del fondo)
+        const rAmp = 6 + Math.sin(t * 0.8) * 3;
+        let rPath = `M0 440 L0 ${rY} `;
+        for (let x = 0; x <= 360; x += 10) {
+          const wave = Math.sin(x * 0.04 + t * 1.2) * rAmp;
+          rPath += `L${x} ${(rY + wave).toFixed(1)} `;
+        }
+        rPath += `L360 440 Z`;
+        residueRef.current.setAttribute("d", rPath);
+        residueRef.current.style.opacity = (residueShow * 0.35).toFixed(3);
       }
 
       // Goteo central que cuelga cuando la cortina ya bajó bastante
       const dripShow = Math.max(0, (p - 0.4) / 0.6);
-      const dripLen = dripShow * 70;
+      // Las gotas persisten con suave ondulación al final
+      const dripPersist = dissolveEased > 0.5 ? 1 : dripShow;
+      const dripSway = Math.sin(t * 2) * 3 * dissolveEased;
+      const dripLen = dripPersist * 70;
+
       if (dripRef.current) {
+        const cx = 175 + dripSway;
         dripRef.current.setAttribute(
           "d",
-          `M175 ${curtainBottomY - 5} Q170 ${curtainBottomY + dripLen * 0.5} 178 ${curtainBottomY + dripLen} Q183 ${curtainBottomY + dripLen + 6} 172 ${curtainBottomY + dripLen + 12} Q162 ${curtainBottomY + dripLen + 6} 168 ${curtainBottomY + dripLen} Z`
+          `M${cx} ${curtainBottomY - 5} Q${cx - 5} ${curtainBottomY + dripLen * 0.5} ${cx + 3} ${curtainBottomY + dripLen} Q${cx + 8} ${curtainBottomY + dripLen + 6} ${cx - 3} ${curtainBottomY + dripLen + 12} Q${cx - 13} ${curtainBottomY + dripLen + 6} ${cx - 7} ${curtainBottomY + dripLen} Z`
         );
-        dripRef.current.style.opacity = dripShow.toFixed(2);
+        // Las gotas se mantienen visibles al final con un pulso suave
+        const dripOp = dissolveEased > 0.8
+          ? 0.6 + Math.sin(t * 1.5) * 0.15
+          : dripShow;
+        dripRef.current.style.opacity = dripOp.toFixed(3);
       }
       if (drip2Ref.current) {
-        const dripLen2 = dripShow * 50;
+        const dripLen2 = dripPersist * 50;
+        const cx2 = 205 + dripSway * 0.7;
         drip2Ref.current.setAttribute(
           "d",
-          `M205 ${curtainBottomY - 5} Q201 ${curtainBottomY + dripLen2 * 0.5} 207 ${curtainBottomY + dripLen2} Q211 ${curtainBottomY + dripLen2 + 4} 203 ${curtainBottomY + dripLen2 + 9} Q196 ${curtainBottomY + dripLen2 + 4} 200 ${curtainBottomY + dripLen2} Z`
+          `M${cx2} ${curtainBottomY - 5} Q${cx2 - 4} ${curtainBottomY + dripLen2 * 0.5} ${cx2 + 2} ${curtainBottomY + dripLen2} Q${cx2 + 6} ${curtainBottomY + dripLen2 + 4} ${cx2 - 2} ${curtainBottomY + dripLen2 + 9} Q${cx2 - 9} ${curtainBottomY + dripLen2 + 4} ${cx2 - 5} ${curtainBottomY + dripLen2} Z`
         );
-        drip2Ref.current.style.opacity = (dripShow * 0.7).toFixed(2);
+        const drip2Op = dissolveEased > 0.8
+          ? 0.4 + Math.sin(t * 1.8 + 1) * 0.1
+          : dripShow * 0.7;
+        drip2Ref.current.style.opacity = drip2Op.toFixed(3);
+      }
+      // Tercera gota decorativa (aparece solo al final, más pequeña)
+      if (drip3Ref.current) {
+        if (dissolveEased > 0.3) {
+          const dripLen3 = dissolveEased * 35;
+          const cx3 = 145 + dripSway * 0.5;
+          drip3Ref.current.setAttribute(
+            "d",
+            `M${cx3} ${curtainBottomY - 3} Q${cx3 - 3} ${curtainBottomY + dripLen3 * 0.5} ${cx3 + 2} ${curtainBottomY + dripLen3} Q${cx3 + 5} ${curtainBottomY + dripLen3 + 3} ${cx3 - 1} ${curtainBottomY + dripLen3 + 7} Q${cx3 - 7} ${curtainBottomY + dripLen3 + 3} ${cx3 - 3} ${curtainBottomY + dripLen3} Z`
+          );
+          const drip3Op = (dissolveEased - 0.3) * 0.5 + Math.sin(t * 2.2 + 2) * 0.08;
+          drip3Ref.current.style.opacity = Math.max(0, drip3Op).toFixed(3);
+        } else {
+          drip3Ref.current.style.opacity = "0";
+        }
       }
 
       // Brillo/sheen que se desliza (realismo de líquido)
       if (sheenRef.current) {
         const sheenY = (t * 30) % 440;
         sheenRef.current.setAttribute("y", sheenY.toFixed(1));
-        sheenRef.current.style.opacity = (reveal < 0.9 ? 0.25 : 0).toFixed(2);
+        // El brillo se desvanece suavemente junto con la cortina
+        const sheenOp = reveal < 0.9 ? 0.25 : 0.25 * (1 - dissolveEased);
+        sheenRef.current.style.opacity = sheenOp.toFixed(3);
+      }
+
+      // Glow cálido que se intensifica al final (transferencia visual al botón)
+      if (glowRef.current) {
+        const glowOp = 0.08 + dissolveEased * 0.12;
+        const glowRy = 120 + dissolveEased * 40;
+        glowRef.current.setAttribute("ry", glowRy.toFixed(0));
+        glowRef.current.style.opacity = glowOp.toFixed(3);
       }
     };
     animate();
@@ -117,13 +183,18 @@ export default function IceCreamScene({
           <stop offset="40%" stopColor="#d99890" stopOpacity="0.3" />
           <stop offset="60%" stopColor="transparent" />
         </linearGradient>
+        {/* Gradiente del residuo cremoso */}
+        <linearGradient id="cream-residue" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={accent} stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#fbeae0" stopOpacity="0.2" />
+        </linearGradient>
       </defs>
 
       {/* Capa clickable */}
       <rect x="0" y="0" width="360" height="440" fill="transparent" aria-hidden="true" />
 
-      {/* Glow cálido detrás */}
-      <ellipse cx="180" cy="220" rx="170" ry="120" fill={accent} opacity="0.08" />
+      {/* Glow cálido detrás — se intensifica al final de la animación */}
+      <ellipse ref={glowRef} cx="180" cy="320" rx="170" ry="120" fill={accent} opacity="0.08" />
 
       {/* TEXTO "HELADO NUBE" — debajo de la cortina (se va revelando) */}
       <g className="icecream-text" textAnchor="middle">
@@ -177,17 +248,22 @@ export default function IceCreamScene({
         opacity="0"
       />
 
+      {/* Residuo cremoso en la parte inferior (aparece al disolverse la cortina) */}
+      <path ref={residueRef} d="M0 440 Z" fill="url(#cream-residue)" opacity="0" />
+
       {/* CORTINA CREMOSA — la animación principal (path dinámico) */}
       <path
         ref={curtainRef}
         d="M0 0 L360 0 L360 0 L0 0 Z"
         fill="url(#cream-grad)"
         opacity="1"
+        style={{ transition: "opacity 0.1s ease-out" }}
       />
 
       {/* Gotas que cuelgan */}
       <path ref={dripRef} d="M0 0 Z" fill="url(#cream-grad)" opacity="0" />
       <path ref={drip2Ref} d="M0 0 Z" fill="url(#cream-grad)" opacity="0" />
+      <path ref={drip3Ref} d="M0 0 Z" fill="url(#cream-grad)" opacity="0" />
     </svg>
   );
 }
