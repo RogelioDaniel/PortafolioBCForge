@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { SERVICES } from "@/lib/portfolio-content";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
 import { useScreenNav } from "@/lib/use-screen-nav";
+import AudioTitleWave from "./AudioTitleWave";
 
 /**
  * Servicios y stack — statement display + 3 columnas con pill chips.
@@ -82,6 +83,7 @@ export default function Services() {
           className="svc-statement audio-title display max-w-[18ch]"
           style={{ fontSize: "clamp(2rem, 6vw, 5rem)" }}
         >
+          <AudioTitleWave variant="groove" />
           {SERVICES.statement.map((line, i) => (
             <span key={i} className="reveal-mask block">
               <span className="reveal-inner block">{line}</span>

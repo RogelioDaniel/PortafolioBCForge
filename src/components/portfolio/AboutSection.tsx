@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { ABOUT } from "@/lib/portfolio-content";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
 import { useScreenNav } from "@/lib/use-screen-nav";
+import AudioTitleWave from "./AudioTitleWave";
 
 /**
  * AboutSection — sección "Sobre mí" dedicada.
@@ -110,6 +111,7 @@ export default function AboutSection() {
               className="about-title audio-title display"
               style={{ fontSize: "clamp(2.5rem, 9vw, 8rem)" }}
             >
+              <AudioTitleWave variant="groove" />
               {ABOUT.title.map((line, i) => (
                 <span key={i} className="reveal-mask block">
                   <span className="reveal-inner block">{line}</span>

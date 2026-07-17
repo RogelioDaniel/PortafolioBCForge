@@ -15,7 +15,6 @@ import Projects from "@/components/portfolio/Projects";
 import Services from "@/components/portfolio/Services";
 import Pricing from "@/components/portfolio/Pricing";
 import WhatsAppButton from "@/components/portfolio/WhatsAppButton";
-import Marquee from "@/components/portfolio/Marquee";
 import KineticSection from "@/components/portfolio/KineticSection";
 import AboutSection from "@/components/portfolio/AboutSection";
 import FAQ from "@/components/portfolio/FAQ";
@@ -267,12 +266,6 @@ function renderScreen(
       return <Services />;
     case "precios":
       return <Pricing />;
-    case "marquee":
-      return (
-        <div className="h-full flex items-center">
-          <Marquee />
-        </div>
-      );
     case "kinetic":
       return <KineticSection />;
     case "sobre-mi":

@@ -6,6 +6,7 @@ import HeroScene from "./three/HeroScene";
 import { PixelChevron } from "./PixelIcons";
 import { HERO } from "@/lib/portfolio-content";
 import { useIsTouch, usePrefersReducedMotion } from "@/lib/motion-hooks";
+import AudioTitleWave from "./AudioTitleWave";
 
 /**
  * Hero (100vh) — MINIMALISTA Y ELEGANTE.
@@ -141,6 +142,7 @@ export default function Hero({
             className="hero-title audio-title display"
             style={{ fontSize: "clamp(3rem, 12.5vw, 12.5rem)" }}
           >
+            <AudioTitleWave variant="bass" />
             {/* Accessible text (hidden visually) */}
             <span className="sr-only">{HERO.lines.join(" ")}</span>
             {HERO.lines.map((line, i) => (

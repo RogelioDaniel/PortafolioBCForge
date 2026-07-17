@@ -7,10 +7,11 @@ import type { SceneProps } from "./scene-shared";
 const DESKTOP_FPS = 28;
 const TOUCH_FPS = 24;
 const DESKTOP_DPR = 1.2;
-const PAPER_WIDTH = 1.22;
-const PAPER_HEIGHT = 1.72;
-const CRUMPLE_END = 0.455;
-const SWAP_END = 0.494;
+const PAPER_WIDTH = 1.12;
+const PAPER_HEIGHT = 1.56;
+const ENTRY_END = 0.12;
+const CRUMPLE_END = 0.46;
+const HOLD_END = 0.58;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
@@ -66,99 +67,11 @@ function drawCoffeeBean(
   context.restore();
 }
 
-/** Portada inspirada en la identidad editorial de Café Tonalli. */
-function createCoverCanvas() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 640;
-  canvas.height = 896;
-  const context = canvas.getContext("2d");
-  if (!context) return canvas;
-
-  const ink = "#1d2059";
-  const cream = "#fff4cf";
-  const yellow = "#f2c84b";
-  const clay = "#9a4933";
-
-  context.fillStyle = cream;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-
-  context.fillStyle = ink;
-  context.fillRect(0, 0, canvas.width, 118);
-  context.fillRect(0, 752, canvas.width, 144);
-
-  context.fillStyle = yellow;
-  context.beginPath();
-  context.arc(480, 282, 126, 0, Math.PI * 2);
-  context.fill();
-
-  context.fillStyle = clay;
-  context.beginPath();
-  context.arc(480, 282, 78, 0, Math.PI * 2);
-  context.fill();
-  context.fillStyle = cream;
-  context.beginPath();
-  context.arc(480, 282, 47, 0, Math.PI * 2);
-  context.fill();
-  context.fillStyle = ink;
-  context.beginPath();
-  context.arc(480, 282, 18, 0, Math.PI * 2);
-  context.fill();
-
-  context.fillStyle = cream;
-  context.font = "700 32px Arial, sans-serif";
-  context.letterSpacing = "5px";
-  context.fillText("CAFÉ TONALLI", 48, 74);
-
-  context.fillStyle = ink;
-  context.font = "900 92px Arial, sans-serif";
-  context.letterSpacing = "-5px";
-  context.fillText("CAFÉ", 44, 252);
-  context.fillText("DE", 44, 344);
-  context.fillText("ORIGEN", 44, 436);
-
-  context.fillStyle = clay;
-  context.fillRect(48, 480, 238, 10);
-  context.fillStyle = ink;
-  context.font = "700 26px Arial, sans-serif";
-  context.letterSpacing = "3px";
-  context.fillText("MÉXICO EN CADA TAZA", 48, 535);
-
-  context.lineWidth = 12;
-  context.strokeStyle = ink;
-  context.beginPath();
-  context.moveTo(405, 500);
-  context.lineTo(405, 625);
-  context.quadraticCurveTo(405, 682, 478, 682);
-  context.quadraticCurveTo(552, 682, 552, 625);
-  context.lineTo(552, 500);
-  context.closePath();
-  context.stroke();
-  context.beginPath();
-  context.arc(566, 572, 48, -Math.PI / 2, Math.PI / 2);
-  context.stroke();
-
-  context.strokeStyle = clay;
-  context.lineWidth = 9;
-  for (let index = 0; index < 3; index += 1) {
-    context.beginPath();
-    const x = 438 + index * 40;
-    context.moveTo(x, 474);
-    context.bezierCurveTo(x - 18, 438, x + 20, 418, x, 382);
-    context.stroke();
-  }
-
-  context.fillStyle = cream;
-  context.font = "700 24px Arial, sans-serif";
-  context.letterSpacing = "4px";
-  context.fillText("CAFETERÍA  ·  RITUAL  ·  COMUNIDAD", 48, 826);
-  return canvas;
-}
-
-/** Segunda página: una comanda/menú que aparece mientras el papel está hecho bola. */
+/** Hoja interior: la comanda que se arruga sin mover el cartel trasero. */
 function createMenuCanvas() {
   const canvas = document.createElement("canvas");
-  canvas.width = 640;
-  canvas.height = 896;
+  canvas.width = 560;
+  canvas.height = 780;
   const context = canvas.getContext("2d");
   if (!context) return canvas;
 
@@ -167,29 +80,24 @@ function createMenuCanvas() {
   const yellow = "#f2c84b";
   const clay = "#9a4933";
 
-  context.fillStyle = ink;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = yellow;
-  context.fillRect(0, 0, 44, canvas.height);
-  context.fillRect(596, 0, 44, canvas.height);
-
-  roundedRect(context, 78, 52, 484, 792, 24);
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  roundedRect(context, 8, 8, canvas.width - 16, canvas.height - 16, 28);
   context.fillStyle = cream;
   context.fill();
 
   context.fillStyle = clay;
-  context.font = "900 64px Arial, sans-serif";
+  context.font = "900 58px Arial, sans-serif";
   context.letterSpacing = "-2px";
-  context.fillText("RITUAL", 116, 150);
+  context.fillText("RITUAL", 56, 118);
   context.fillStyle = ink;
-  context.fillText("TONALLI", 116, 214);
+  context.fillText("TONALLI", 56, 176);
 
   context.fillStyle = yellow;
-  context.fillRect(116, 246, 408, 8);
+  context.fillRect(56, 208, 448, 8);
   context.fillStyle = ink;
-  context.font = "700 22px Arial, sans-serif";
+  context.font = "700 20px Arial, sans-serif";
   context.letterSpacing = "3px";
-  context.fillText("LA COMANDA DE LA CASA", 116, 302);
+  context.fillText("LA COMANDA DE LA CASA", 56, 262);
 
   const rows = [
     ["ESPRESSO SOL", "INTENSO · CACAO"],
@@ -199,28 +107,28 @@ function createMenuCanvas() {
   ];
 
   rows.forEach(([name, note], index) => {
-    const y = 384 + index * 92;
+    const y = 340 + index * 88;
     context.fillStyle = ink;
-    context.font = "800 27px Arial, sans-serif";
+    context.font = "800 25px Arial, sans-serif";
     context.letterSpacing = "1px";
-    context.fillText(name, 116, y);
+    context.fillText(name, 56, y);
     context.fillStyle = clay;
     context.font = "700 15px Arial, sans-serif";
     context.letterSpacing = "2px";
-    context.fillText(note, 116, y + 28);
+    context.fillText(note, 56, y + 27);
     context.fillStyle = index % 2 === 0 ? yellow : clay;
     context.beginPath();
-    context.arc(498, y - 9, 13, 0, Math.PI * 2);
+    context.arc(482, y - 9, 12, 0, Math.PI * 2);
     context.fill();
   });
 
-  drawCoffeeBean(context, 164, 760, 0.62, -0.32, clay);
-  drawCoffeeBean(context, 234, 754, 0.48, 0.45, ink);
+  drawCoffeeBean(context, 92, 698, 0.56, -0.32, clay);
+  drawCoffeeBean(context, 152, 694, 0.43, 0.45, ink);
   context.fillStyle = ink;
-  context.font = "700 18px Arial, sans-serif";
+  context.font = "700 16px Arial, sans-serif";
   context.letterSpacing = "3px";
-  context.fillText("HECHO CON TIEMPO", 320, 754);
-  context.fillText("SERVIDO CON SOL", 320, 784);
+  context.fillText("HECHO CON TIEMPO", 252, 692);
+  context.fillText("SERVIDO CON SOL", 252, 720);
   return canvas;
 }
 
@@ -301,9 +209,7 @@ const VERTEX_SHADER = /* glsl */ `
 const FRAGMENT_SHADER = /* glsl */ `
   precision highp float;
 
-  uniform sampler2D uCoverMap;
-  uniform sampler2D uMenuMap;
-  uniform float uTextureMix;
+  uniform sampler2D uPaperMap;
 
   varying vec2 vUv;
   varying float vCrease;
@@ -311,9 +217,7 @@ const FRAGMENT_SHADER = /* glsl */ `
   varying float vCrumple;
 
   void main() {
-    vec4 cover = texture2D(uCoverMap, vUv);
-    vec4 menu = texture2D(uMenuMap, vUv);
-    vec4 paper = mix(cover, menu, uTextureMix);
+    vec4 paper = texture2D(uPaperMap, vUv);
 
     float deformation = smoothstep(0.02, 0.64, vCrumple);
     float creaseShadow = smoothstep(0.54, 1.0, vCrease) * deformation;
@@ -334,35 +238,39 @@ const FRAGMENT_SHADER = /* glsl */ `
 
 function readPaperPose(progress: number, reducedMotion: boolean) {
   const p = clamp01(progress);
-  const textureMix = smoothstep(CRUMPLE_END, SWAP_END, p);
 
   if (reducedMotion) {
     return {
       crumple: 0,
-      textureMix: p < (CRUMPLE_END + SWAP_END) * 0.5 ? 0 : 1,
+      entry: 1,
     };
   }
+
+  const entry = easeInOutCubic(clamp01(p / ENTRY_END));
+  if (p <= ENTRY_END) return { crumple: 0, entry };
 
   if (p <= CRUMPLE_END) {
     return {
-      crumple: easeInOutCubic(p / CRUMPLE_END),
-      textureMix,
+      crumple: easeInOutCubic(
+        (p - ENTRY_END) / (CRUMPLE_END - ENTRY_END)
+      ),
+      entry,
     };
   }
-  if (p < SWAP_END) {
-    return { crumple: 1, textureMix };
+  if (p < HOLD_END) {
+    return { crumple: 1, entry };
   }
 
   return {
-    crumple: 1 - easeInOutCubic((p - SWAP_END) / (1 - SWAP_END)),
-    textureMix,
+    crumple: 1 - easeInOutCubic((p - HOLD_END) / (1 - HOLD_END)),
+    entry,
   };
 }
 
 /**
- * Café Tonalli: una portada de papel se arruga, cambia de página mientras está
- * hecha bola y vuelve a desplegarse como una comanda. Es una sola malla y un
- * solo draw call; no captura el DOM del proyecto externo.
+ * Café Tonalli: el cartel editorial permanece fijo y sólo su comanda interior
+ * se arruga, sostiene la bola y vuelve a desplegarse. Una malla, una textura y
+ * un draw call; no captura el DOM del proyecto externo.
  */
 export default function CafePaperScene({
   activeRef,
@@ -375,6 +283,9 @@ export default function CafePaperScene({
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+    const fallbackPaper = mount.querySelector<HTMLElement>(
+      "[data-cafe-menu-fallback]"
+    );
 
     const initialRect = mount.getBoundingClientRect();
     const sceneIndex = activeRef.current;
@@ -527,22 +438,19 @@ export default function CafePaperScene({
     geometry.setAttribute("aDelay", new THREE.BufferAttribute(delays, 1));
     geometry.setAttribute("aCrease", new THREE.BufferAttribute(creases, 1));
 
-    const coverTexture = createTexture(createCoverCanvas());
     const menuTexture = createTexture(createMenuCanvas());
     const material = new THREE.ShaderMaterial({
       uniforms: {
-        uCoverMap: { value: coverTexture },
-        uMenuMap: { value: menuTexture },
-        uTextureMix: { value: 0 },
+        uPaperMap: { value: menuTexture },
         uCrumple: { value: 0 },
         uTime: { value: 0 },
       },
       vertexShader: VERTEX_SHADER,
       fragmentShader: FRAGMENT_SHADER,
       side: THREE.DoubleSide,
-      transparent: false,
+      transparent: true,
       depthTest: true,
-      depthWrite: true,
+      depthWrite: false,
     });
     const paper = new THREE.Mesh(geometry, material);
     paper.frustumCulled = false;
@@ -556,15 +464,11 @@ export default function CafePaperScene({
       camera.bottom = -1;
       camera.updateProjectionMatrix();
       const scale = Math.min(
-        1.55 / PAPER_HEIGHT,
-        (aspect * 2 * 0.82) / PAPER_WIDTH
+        1.76 / PAPER_HEIGHT,
+        (aspect * 2 * 0.9) / PAPER_WIDTH
       );
-      // En móvil deja aire entre la descripción y el CTA inferior. El póster
-      // conserva protagonismo sin invadir los controles persistentes.
-      paper.scale.setScalar(
-        Math.max(0.42, scale * (width <= 820 ? 0.88 : 1))
-      );
-      paper.position.y = width <= 820 ? -0.07 : 0;
+      paper.scale.setScalar(Math.max(0.48, scale));
+      paper.position.y = 0;
     };
     resizePaper();
 
@@ -587,7 +491,7 @@ export default function CafePaperScene({
     const poseSignature = () => {
       const pose = readPaperPose(progressRef.current, reducedMotion);
       return `${Math.round(pose.crumple * 360)}|${Math.round(
-        pose.textureMix * 180
+        pose.entry * 180
       )}|${reducedMotion ? 1 : 0}`;
     };
 
@@ -620,19 +524,26 @@ export default function CafePaperScene({
 
       const pose = readPaperPose(progressRef.current, reducedMotion);
       const crumple = Math.round(pose.crumple * 360) / 360;
-      const textureMix = Math.round(pose.textureMix * 180) / 180;
+      const entry = Math.round(pose.entry * 180) / 180;
       const isMovingPaper = !reducedMotion && crumple > 0.002;
       const timeBucket = isMovingPaper
         ? Math.floor(timestamp / frameInterval)
         : 0;
-      const signature = `${crumple}|${textureMix}|${timeBucket}`;
+      const signature = `${crumple}|${entry}|${timeBucket}`;
       lastPoseSignature = poseSignature();
 
       if (force || signature !== lastSignature) {
         lastSignature = signature;
         material.uniforms.uCrumple.value = crumple;
-        material.uniforms.uTextureMix.value = textureMix;
         material.uniforms.uTime.value = timeBucket / targetFps;
+        const entranceScale = 0.93 + entry * 0.07;
+        const baseScale = Math.min(
+          1.76 / PAPER_HEIGHT,
+          ((width / height) * 2 * 0.9) / PAPER_WIDTH
+        );
+        paper.scale.setScalar(Math.max(0.48, baseScale) * entranceScale);
+        paper.position.y = (1 - entry) * -0.055;
+        paper.rotation.z = (1 - entry) * -0.018;
         renderer.render(scene, camera);
       }
 
@@ -748,12 +659,14 @@ export default function CafePaperScene({
       readyFrame = window.requestAnimationFrame(() => {
         renderer.domElement.dataset.ready = "true";
         renderer.domElement.style.opacity = "1";
+        if (fallbackPaper) fallbackPaper.style.opacity = "0";
       });
       syncLoop();
     } catch {
-      // Un fallo tardío de shader conserva visible el póster HTML.
+      // Un fallo tardío de shader conserva visible la comanda HTML.
       renderer.domElement.style.opacity = "0";
       renderer.domElement.dataset.ready = "false";
+      if (fallbackPaper) fallbackPaper.style.opacity = "1";
     }
 
     return () => {
@@ -774,10 +687,10 @@ export default function CafePaperScene({
       scene.remove(paper);
       geometry.dispose();
       material.dispose();
-      coverTexture.dispose();
       menuTexture.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
+      if (fallbackPaper) fallbackPaper.style.opacity = "1";
       if (renderer.domElement.parentNode === mount) {
         mount.removeChild(renderer.domElement);
       }
@@ -793,7 +706,6 @@ export default function CafePaperScene({
 
   return (
     <div
-      ref={mountRef}
       className="absolute inset-0 z-[2] flex cursor-pointer items-center justify-center"
       onClick={onOpen}
       onKeyDown={onKeyDown}
@@ -806,7 +718,7 @@ export default function CafePaperScene({
         className="relative overflow-hidden rounded-[3px]"
         style={{
           aspectRatio: "5 / 7",
-          background: "#fff4cf",
+          background: "#1d2059",
           boxShadow:
             "0 28px 65px rgba(0,0,0,.34), 0 0 0 1px rgba(255,244,207,.18)",
           width: "min(72vw, 490px)",
@@ -814,48 +726,163 @@ export default function CafePaperScene({
       >
         <div
           style={{
-            background: "#1d2059",
             color: "#fff4cf",
             fontFamily: "Arial, sans-serif",
             fontSize: "clamp(1rem, 2.2vw, 1.7rem)",
             fontWeight: 800,
             letterSpacing: ".18em",
-            padding: "7% 8%",
+            left: "8%",
+            position: "absolute",
+            top: "5.5%",
+            zIndex: 1,
           }}
         >
           CAFÉ TONALLI
         </div>
         <div
+          aria-hidden="true"
           style={{
-            color: "#1d2059",
-            fontFamily: "Arial, sans-serif",
-            fontSize: "clamp(2.1rem, 7vw, 5.4rem)",
-            fontWeight: 900,
-            letterSpacing: "-.07em",
-            lineHeight: 0.84,
-            padding: "12% 8% 0",
+            background: "#fff4cf",
+            bottom: "13%",
+            left: 0,
+            position: "absolute",
+            right: 0,
+            top: "16%",
           }}
-        >
-          CAFÉ
-          <br />
-          DE ORIGEN
-        </div>
+        />
         <div
+          aria-hidden="true"
+          style={{
+            background: "#f2c84b",
+            bottom: "9%",
+            left: "9%",
+            position: "absolute",
+            top: "12%",
+            width: "5.8%",
+            zIndex: 2,
+          }}
+        />
+        <div
+          aria-hidden="true"
+          style={{
+            background: "#f2c84b",
+            bottom: "9%",
+            position: "absolute",
+            right: "9%",
+            top: "12%",
+            width: "5.8%",
+            zIndex: 2,
+          }}
+        />
+        <div
+          aria-hidden="true"
           style={{
             background: "#9a4933",
             bottom: 0,
+            left: 0,
+            position: "absolute",
+            right: 0,
+            top: "86%",
+          }}
+        />
+        <div
+          style={{
+            bottom: "4.4%",
             color: "#fff4cf",
             fontFamily: "Arial, sans-serif",
             fontSize: "clamp(.55rem, 1.4vw, .9rem)",
             fontWeight: 800,
-            left: 0,
+            left: "8%",
             letterSpacing: ".2em",
-            padding: "8%",
             position: "absolute",
-            right: 0,
+            zIndex: 4,
           }}
         >
           MÉXICO EN CADA TAZA
+        </div>
+
+        <div
+          ref={mountRef}
+          className="absolute"
+          style={{
+            bottom: "10%",
+            left: "14%",
+            right: "14%",
+            top: "14%",
+            zIndex: 3,
+          }}
+        >
+          <div
+            data-cafe-menu-fallback
+            className="absolute inset-0 overflow-hidden rounded-[clamp(10px,2.2vw,22px)]"
+            style={{
+              background: "#fff4cf",
+              color: "#1d2059",
+              fontFamily: "Arial, sans-serif",
+              padding: "10% 9% 8%",
+              transition: "opacity 180ms ease-out",
+            }}
+          >
+            <div
+              style={{
+                color: "#9a4933",
+                fontSize: "clamp(1rem, 4vw, 2.7rem)",
+                fontWeight: 900,
+                letterSpacing: "-.035em",
+                lineHeight: 0.9,
+              }}
+            >
+              RITUAL
+              <div style={{ color: "#1d2059" }}>TONALLI</div>
+            </div>
+            <div
+              style={{
+                background: "#f2c84b",
+                height: 4,
+                margin: "8% 0 6%",
+              }}
+            />
+            <div
+              style={{
+                fontSize: "clamp(.42rem, 1.25vw, .72rem)",
+                fontWeight: 800,
+                letterSpacing: ".12em",
+              }}
+            >
+              LA COMANDA DE LA CASA
+            </div>
+            <div style={{ marginTop: "10%" }}>
+              {[
+                ["ESPRESSO SOL", "INTENSO · CACAO"],
+                ["TONALLI LATTE", "MIEL · CANELA"],
+                ["CAFÉ DE OLLA", "PILONCILLO · ANÍS"],
+                ["COLD BREW", "CÍTRICOS · CACAO"],
+              ].map(([name, note]) => (
+                <div key={name} style={{ marginBottom: "7.5%" }}>
+                  <div
+                    style={{
+                      fontSize: "clamp(.55rem, 1.7vw, 1rem)",
+                      fontWeight: 900,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {name}
+                  </div>
+                  <div
+                    style={{
+                      color: "#9a4933",
+                      fontSize: "clamp(.35rem, .9vw, .58rem)",
+                      fontWeight: 800,
+                      letterSpacing: ".12em",
+                      marginTop: ".3em",
+                    }}
+                  >
+                    {note}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

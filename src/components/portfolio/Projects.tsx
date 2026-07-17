@@ -88,13 +88,13 @@ export default function Projects() {
         onComplete: complete,
       });
     } else if (scene === "glass") {
-      // Un único ciclo completo: fractura en la primera mitad y reconstrucción
-      // en la segunda. Después queda estable para reaccionar sólo a la música.
+      // Tres fases legibles: apertura, suspensión y reconstrucción. La curva
+      // vive en GlassSceneWebGL para conservar tiempos uniformes aquí.
       tweenRef.current = gsap.to(obj, {
         v: 1,
-        duration: 3.4,
+        duration: 4.6,
         delay,
-        ease: "power2.inOut",
+        ease: "none",
         onUpdate: write,
         onComplete: complete,
       });

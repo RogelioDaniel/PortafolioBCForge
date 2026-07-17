@@ -38,7 +38,6 @@ export const SCREENS: Screen[] = [
   { id: "proyectos", label: "Proyectos" },
   { id: "servicios", label: "Servicios" },
   { id: "precios", label: "Precios" },
-  { id: "marquee", label: "Stack" },
   { id: "kinetic", label: "Manifiesto", dark: true },
   { id: "sobre-mi", label: "Nosotros" },
   { id: "contacto", label: "Contacto" },

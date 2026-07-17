@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { FAQ as FAQ_DATA } from "@/lib/portfolio-content";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
+import AudioTitleWave from "./AudioTitleWave";
 
 /**
  * FAQ — sección de preguntas frecuentes (acordeón).
@@ -87,6 +88,7 @@ export default function FAQ() {
               className="faq-title audio-title display max-w-full"
               style={{ fontSize: "clamp(2.5rem, 5.2vw, 5.5rem)" }}
             >
+              <AudioTitleWave variant="bass" />
               {FAQ_DATA.title.map((line, i) => (
                 <span key={i} className="reveal-mask block">
                   <span className="reveal-inner block">{line}</span>

@@ -8,11 +8,18 @@ import type { SceneProps } from "./scene-shared";
 const GLASS_DESKTOP_FPS = 24;
 const GLASS_TOUCH_FPS = 20;
 const GLASS_DESKTOP_DPR = 1.2;
+const GLASS_BREAK_END = 0.34;
+const GLASS_FLOAT_END = 0.67;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
 const quantizeUnit = (value: number, steps: number) =>
   Math.round(clamp01(value) * steps) / steps;
+
+const smoothUnit = (value: number) => {
+  const t = clamp01(value);
+  return t * t * (3 - 2 * t);
+};
 
 /**
  * GlassSceneWebGL — panel de vidrio que se FRACTURA desde un punto de impacto
@@ -142,6 +149,7 @@ attribute vec3 aEdgeMask;
 uniform float uShatter;
 uniform vec2 uImpact;
 uniform float uDance;
+uniform float uFloat;
 uniform float uTime;
 
 varying vec3 vBary;
@@ -168,7 +176,8 @@ void main() {
   vec3 axis = normalize(aRandom + vec3(0.0, 0.0, 0.6));
   // Aun reconstruido, cada celda conserva un pulso mínimo. Al fracturarse,
   // la misma banda abre progresivamente todo el recorrido.
-  float danceGate = mix(0.18, 1.0, s) * uDance;
+  float movement = clamp(uDance + uFloat, 0.0, 1.0);
+  float danceGate = mix(0.18, 1.0, s) * movement;
   float dancePhase =
     uTime * (2.4 + aRandom.x * 1.8) +
     aRandom.y * 6.2831853;
@@ -330,6 +339,7 @@ export default function GlassSceneWebGL({
         uCopper: { value: new THREE.Color(0xd18a45) },
         uOpacity: { value: 1 },
         uDance: { value: 0 },
+        uFloat: { value: 0 },
         uTime: { value: 0 },
         uEdgePulse: { value: 0 },
       },
@@ -371,16 +381,26 @@ export default function GlassSceneWebGL({
       !document.hidden &&
       activeRef.current === 3;
 
-    const readShatter = () => {
-      if (activeRef.current !== 3) return 0;
+    const readShatterPhase = () => {
+      if (activeRef.current !== 3) return { shatter: 0, float: 0 };
       const p = clamp01(progressRef.current);
-      if (p < 0.5) {
-        return (p / 0.5) ** 1.3;
+      if (p < GLASS_BREAK_END) {
+        const t = p / GLASS_BREAK_END;
+        return {
+          shatter: t ** 1.25,
+          float: 0.36 * smoothUnit((p - 0.22) / 0.12),
+        };
+      }
+      if (p < GLASS_FLOAT_END) {
+        return { shatter: 1, float: 0.36 };
       }
 
-      // Reconstrucción dirigida exclusivamente por progressRef.
-      const k = (p - 0.5) / 0.5;
-      return Math.pow(1 - k, 3);
+      const t = (p - GLASS_FLOAT_END) / (1 - GLASS_FLOAT_END);
+      const reconstruction = smoothUnit(t);
+      return {
+        shatter: 1 - reconstruction,
+        float: 0.36 * (1 - reconstruction),
+      };
     };
 
     const renderFrame = (timestamp: number, force = false) => {
@@ -399,7 +419,11 @@ export default function GlassSceneWebGL({
       }
       lastRenderAt = timestamp;
 
-      const shatter = quantizeUnit(readShatter(), 180);
+      const phase = readShatterPhase();
+      const shatter = quantizeUnit(phase.shatter, 180);
+      const floatMotion = reducedMotion
+        ? 0
+        : quantizeUnit(phase.float, 48);
       const dance =
         musicEnabled && !reducedMotion
           ? quantizeUnit(audioBands.dance, 36)
@@ -412,10 +436,11 @@ export default function GlassSceneWebGL({
         musicEnabled &&
         !reducedMotion &&
         (dance > 0.02 || edgePulse > 0.02);
-      const timeBucket = musicMotionActive
+      const floatMotionActive = floatMotion > 0.01;
+      const timeBucket = musicMotionActive || floatMotionActive
         ? Math.floor(timestamp / frameInterval)
         : 0;
-      const signature = `${shatter}|${dance}|${edgePulse}|${timeBucket}`;
+      const signature = `${shatter}|${floatMotion}|${dance}|${edgePulse}|${timeBucket}`;
       if (!force && signature === lastRenderSignature) return;
       lastRenderSignature = signature;
 
@@ -425,10 +450,13 @@ export default function GlassSceneWebGL({
       if (mat.uniforms.uDance.value !== dance) {
         mat.uniforms.uDance.value = dance;
       }
+      if (mat.uniforms.uFloat.value !== floatMotion) {
+        mat.uniforms.uFloat.value = floatMotion;
+      }
       if (mat.uniforms.uEdgePulse.value !== edgePulse) {
         mat.uniforms.uEdgePulse.value = edgePulse;
       }
-      if (musicMotionActive) {
+      if (musicMotionActive || floatMotionActive) {
         const quantizedTime = (timeBucket % (frameRate * 1024)) / frameRate;
         if (mat.uniforms.uTime.value !== quantizedTime) {
           mat.uniforms.uTime.value = quantizedTime;
@@ -438,10 +466,21 @@ export default function GlassSceneWebGL({
       renderer.render(scene, camera);
     };
 
-    const animate = (timestamp: number) => renderFrame(timestamp);
+    const animate = (timestamp: number) => {
+      renderFrame(timestamp);
+      if (
+        progressRef.current >= 0.999 &&
+        !musicEnabled &&
+        loopRunning
+      ) {
+        renderer.setAnimationLoop(null);
+        loopRunning = false;
+      }
+    };
 
     function syncRenderLoop() {
-      const shouldRender = canRender();
+      const shouldRender =
+        canRender() && (progressRef.current < 0.999 || musicEnabled);
       if (shouldRender === loopRunning) return;
 
       loopRunning = shouldRender;

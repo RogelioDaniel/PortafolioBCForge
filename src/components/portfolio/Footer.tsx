@@ -3,6 +3,7 @@
 import { SITE } from "@/lib/portfolio-content";
 import { PixelSpark } from "./PixelIcons";
 import Newsletter from "./Newsletter";
+import AudioTitleWave from "./AudioTitleWave";
 
 /**
  * Footer sobre lavanda:
@@ -28,6 +29,7 @@ export default function Footer() {
               className="audio-title display"
               style={{ fontSize: "clamp(2rem, 6vw, 5rem)" }}
             >
+              <AudioTitleWave variant="groove" />
               TOMEMOS
               <br />
               UN CAFÉ.

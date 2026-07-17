@@ -1,11 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { gsap } from "gsap";
 import { KINETIC_WORDS } from "@/lib/portfolio-content";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
-import { useScreenNav } from "@/lib/use-screen-nav";
+import { SCREENS, useScreenNav } from "@/lib/use-screen-nav";
 import { PixelArrow } from "./PixelIcons";
+import { KineticSandTransition } from "./KineticSandTransition";
+import AudioTitleWave from "./AudioTitleWave";
+
+type WordTransition = {
+  from: number;
+  to: number;
+  id: number;
+};
 
 /**
  * Sección cinética oscura — EXPERIENCIA GUIADA POR BOTONES.
@@ -24,7 +31,11 @@ export default function KineticSection() {
   const reduced = usePrefersReducedMotion();
   const { registerSubNav, notifySubNavChange } = useScreenNav();
   const [activeWord, setActiveWord] = useState(0);
+  const [transition, setTransition] = useState<WordTransition | null>(null);
   const wordRef = useRef(0);
+  const transitionRef = useRef(false);
+  const transitionIdRef = useRef(0);
+  const transitionTargetRef = useRef(0);
   const flipAppliedRef = useRef(false);
   const lastWord = KINETIC_WORDS.length - 1;
 
@@ -48,70 +59,64 @@ export default function KineticSection() {
     notifySubNavChange();
   }, [activeWord, notifySubNavChange]);
 
-  // Animar la palabra activa al cambiar
-  useEffect(() => {
-    if (reduced) return;
-    const words = ref.current?.querySelectorAll<HTMLElement>(".kinetic-word");
-    if (!words) return;
-    words.forEach((w, i) => {
-      if (i === activeWord) {
-        gsap.fromTo(
-          w,
-          { yPercent: 70, autoAlpha: 0, filter: "blur(12px)" },
-          {
-            yPercent: 0,
-            autoAlpha: 1,
-            filter: "blur(0px)",
-            duration: 0.55,
-            ease: "power3.out",
-          }
-        );
-      } else {
-        gsap.to(w, {
-          yPercent: i < activeWord ? -70 : 70,
-          autoAlpha: 0,
-          filter: "blur(12px)",
-          duration: 0.4,
-          ease: "power3.in",
-        });
-      }
-    });
-  }, [activeWord, reduced]);
+  const requestWord = useCallback(
+    (target: number) => {
+      const next = Math.max(0, Math.min(lastWord, target));
+      const current = wordRef.current;
+      if (next === current || transitionRef.current) return;
 
-  const nextWord = useCallback(() =>
-    setActiveWord((w) => {
-      const next = Math.min(lastWord, w + 1);
-      wordRef.current = next;
-      return next;
-    }), [lastWord]);
-  const prevWord = useCallback(() =>
-    setActiveWord((w) => {
-      const prev = Math.max(0, w - 1);
-      wordRef.current = prev;
-      return prev;
-    }), []);
+      if (reduced) {
+        wordRef.current = next;
+        setActiveWord(next);
+        return;
+      }
+
+      transitionRef.current = true;
+      const id = transitionIdRef.current + 1;
+      transitionIdRef.current = id;
+      transitionTargetRef.current = next;
+      setTransition({ from: current, to: next, id });
+    },
+    [lastWord, reduced]
+  );
+
+  const finishTransition = useCallback((runId: number) => {
+    if (transitionIdRef.current !== runId) return;
+    const target = transitionTargetRef.current;
+    wordRef.current = target;
+    setActiveWord(target);
+    setTransition(null);
+    transitionRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (!reduced || !transition) return;
+    finishTransition(transition.id);
+  }, [finishTransition, reduced, transition]);
+
+  const nextWord = useCallback(
+    () => requestWord(wordRef.current + 1),
+    [requestWord]
+  );
+  const prevWord = useCallback(
+    () => requestWord(wordRef.current - 1),
+    [requestWord]
+  );
 
   // Registrar sub-nav: las flechas inferiores navegan palabras dentro
   // de la sección cinética antes de cruzar a la siguiente pantalla.
   useEffect(() => {
+    const kineticIndex = SCREENS.findIndex((screen) => screen.id === "kinetic");
     const sub = {
-      screenIndex: 5, // índice de "kinetic" en SCREENS
+      screenIndex: kineticIndex,
       atStart: () => wordRef.current <= 0,
       atEnd: () => wordRef.current >= lastWord,
-      next: () => {
-        const target = Math.min(lastWord, wordRef.current + 1);
-        wordRef.current = target;
-        setActiveWord(target);
-      },
-      prev: () => {
-        const target = Math.max(0, wordRef.current - 1);
-        wordRef.current = target;
-        setActiveWord(target);
-      },
+      next: () => requestWord(wordRef.current + 1),
+      prev: () => requestWord(wordRef.current - 1),
     };
     registerSubNav(sub);
     return () => registerSubNav(sub, true);
-  }, [registerSubNav, lastWord]);
+  }, [registerSubNav, lastWord, requestWord]);
 
   const isAtEnd = activeWord >= lastWord;
 
@@ -120,6 +125,8 @@ export default function KineticSection() {
       ref={ref}
       className="kinetic-section relative h-[100svh] w-full flex items-center justify-center overflow-hidden"
       aria-label="Manifiesto cinético"
+      aria-busy={transition ? "true" : "false"}
+      data-sand-transition={transition ? "true" : undefined}
     >
       {/* Glow radial pulsante (fancy) */}
       <div
@@ -139,25 +146,42 @@ export default function KineticSection() {
 
       {/* Capa de palabras */}
       <div className="relative w-full h-full flex items-center justify-center">
-        {KINETIC_WORDS.map((w, i) => (
-          <span
-            key={w}
-            className="kinetic-word audio-title absolute display whitespace-nowrap"
-            style={{
-              fontSize: "clamp(2.6rem, 13vw, 12rem)",
-              color: "#f4f4f4",
-              visibility: i === activeWord ? "visible" : "hidden",
-            }}
-          >
-            {w}
-          </span>
-        ))}
+        <span
+          className="kinetic-word audio-title absolute z-[1] display whitespace-nowrap"
+          data-kinetic-live-word
+          aria-hidden="true"
+          style={{
+            fontSize: "clamp(2.6rem, 13vw, 12rem)",
+            color: "#f4f4f4",
+            opacity: transition ? 0 : 1,
+            transition: transition
+              ? "opacity 150ms linear"
+              : "opacity 120ms ease-out",
+          }}
+        >
+          <AudioTitleWave variant="bass" />
+          {KINETIC_WORDS[activeWord]}
+        </span>
+
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          {KINETIC_WORDS[transition?.to ?? activeWord]}
+        </span>
+
+        {transition && (
+          <KineticSandTransition
+            fromText={KINETIC_WORDS[transition.from]}
+            toText={KINETIC_WORDS[transition.to]}
+            direction={transition.to > transition.from ? 1 : -1}
+            runId={transition.id}
+            onComplete={finishTransition}
+          />
+        )}
       </div>
 
       {/* Flechas laterales para navegar entre palabras */}
       <button
         onClick={prevWord}
-        disabled={activeWord === 0}
+        disabled={activeWord === 0 || Boolean(transition)}
         aria-label="Palabra anterior"
         className="project-subnav project-subnav-left disabled:opacity-0 disabled:pointer-events-none"
         style={{
@@ -176,7 +200,7 @@ export default function KineticSection() {
       </button>
       <button
         onClick={nextWord}
-        disabled={isAtEnd}
+        disabled={isAtEnd || Boolean(transition)}
         aria-label="Palabra siguiente"
         className={`project-subnav project-subnav-right disabled:opacity-0 disabled:pointer-events-none${
           !isAtEnd ? " kinetic-arrow-pulse" : ""

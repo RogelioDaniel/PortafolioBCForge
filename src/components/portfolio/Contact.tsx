@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CONTACT, SITE } from "@/lib/portfolio-content";
 import { useMagnetic } from "@/lib/motion-hooks";
 import { toast } from "sonner";
+import AudioTitleWave from "./AudioTitleWave";
 
 /**
  * Contacto — formulario minimalista:
@@ -58,6 +59,7 @@ export default function Contact() {
               className="audio-title display"
               style={{ fontSize: "clamp(2.5rem, 8vw, 7rem)" }}
             >
+              <AudioTitleWave variant="spark" />
               HABLEMOS
             </h2>
             <p className="mt-6 text-[15px] max-w-[34ch]">

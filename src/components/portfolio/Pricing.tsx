@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { PRICING, WHATSAPP_NUMBER } from "@/lib/portfolio-content";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
+import AudioTitleWave from "./AudioTitleWave";
 
 /**
  * Pricing — pantalla de precios (una vista, sin scroll interno en desktop).
@@ -50,9 +51,9 @@ export default function Pricing() {
       className="relative h-[100svh] w-full overflow-y-auto overflow-x-hidden"
       aria-label="Precios"
     >
-      <div className="container-edge w-full min-h-[100svh] flex flex-col justify-center py-24 md:py-16">
+      <div className="pricing-layout container-edge w-full min-h-[100svh] flex flex-col justify-start">
         {/* Encabezado */}
-        <div className="mb-8 md:mb-12 max-w-[46ch]">
+        <div className="mb-8 md:mb-10 max-w-[46ch]">
           <span className="price-head section-label block mb-4">
             {PRICING.eyebrow}
           </span>
@@ -60,6 +61,7 @@ export default function Pricing() {
             className="price-head audio-title display"
             style={{ fontSize: "clamp(2.4rem, 7vw, 5.5rem)" }}
           >
+            <AudioTitleWave variant="spark" />
             {PRICING.title.join(" ")}
           </h2>
           <p className="price-head mt-4 text-[13px] md:text-[15px] leading-relaxed opacity-80 max-w-[42ch]">
@@ -68,11 +70,11 @@ export default function Pricing() {
         </div>
 
         {/* Planes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
           {PRICING.tiers.map((tier) => (
             <div
               key={tier.name}
-              className="price-card relative rounded-2xl border p-6 md:p-7 flex flex-col"
+              className="price-card relative rounded-2xl border p-6 md:p-6 flex flex-col"
               style={{
                 borderColor: tier.popular ? "var(--ink)" : "var(--pill-border)",
                 background: tier.popular
