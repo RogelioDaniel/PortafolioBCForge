@@ -100,7 +100,8 @@ function buildShardGeometry(impact: THREE.Vector2, paneW: number, paneH: number,
       const delay = k / RINGS;
       const branch = rng() < 0.18 ? 1 : 0;
       if (k === 0) {
-        pushTri(impact.clone(), b, c, [0, 0, 1], 0);
+        // impact es Vector2: usar Vector3 con z=0 (antes p.z era undefined → NaN)
+        pushTri(new THREE.Vector3(impact.x, impact.y, 0), b, c, [0, 0, 1], 0);
       } else if (branch) {
         pushTri(a, b, c, [1, 1, 1], delay);
         pushTri(b, c, d, [1, 1, 1], delay);
@@ -219,13 +220,13 @@ export default function GlassSceneWebGL({
     const mount = mountRef.current;
     if (!mount) return;
 
+    // GUARD anti-NaN: nunca dividir por 0. Si el contenedor aún no tiene
+    // tamaño (montaje temprano), usar el viewport como respaldo.
+    let W = mount.clientWidth || window.innerWidth;
+    let H = mount.clientHeight || window.innerHeight;
+
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      50,
-      mount.clientWidth / mount.clientHeight,
-      0.1,
-      100
-    );
+    const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
     camera.position.z = 6;
 
     const renderer = new THREE.WebGLRenderer({
@@ -233,13 +234,13 @@ export default function GlassSceneWebGL({
       antialias: true,
       powerPreference: "high-performance",
     });
-    renderer.setSize(mount.clientWidth, mount.clientHeight);
+    renderer.setSize(W, H);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     mount.appendChild(renderer.domElement);
 
     // Dimensiones del panel que cubre el viewport
     const vH = 2 * camera.position.z * Math.tan((50 * Math.PI) / 180 / 2);
-    const vW = vH * (mount.clientWidth / mount.clientHeight);
+    const vW = vH * (W / H);
     const paneW = vW * 0.9;
     const paneH = vH * 0.9;
 
@@ -283,8 +284,11 @@ export default function GlassSceneWebGL({
     );
     io.observe(mount);
 
+    // RAF con id estable: el cleanup cancela SIEMPRE el frame pendiente
+    // (antes solo cancelaba el primero → loop fantasma sobre un renderer muerto).
+    let rafId = 0;
     const animate = () => {
-      const raf = requestAnimationFrame(animate);
+      rafId = requestAnimationFrame(animate);
       if (!visible) return;
       const p = progressRef.current;
       const active = activeRef.current;
@@ -301,21 +305,20 @@ export default function GlassSceneWebGL({
       if (active !== 3) shatter = 0;
       mat.uniforms.uShatter.value = shatter;
       renderer.render(scene, camera);
-      return raf;
     };
-    const rafId = animate();
+    animate();
 
     const onResize = () => {
-      const w = mount.clientWidth;
-      const h = mount.clientHeight;
-      camera.aspect = w / h;
+      W = mount.clientWidth || window.innerWidth;
+      H = mount.clientHeight || window.innerHeight;
+      camera.aspect = W / H;
       camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      renderer.setSize(W, H);
     };
     window.addEventListener("resize", onResize);
 
     return () => {
-      cancelAnimationFrame(typeof rafId === "number" ? rafId : 0);
+      cancelAnimationFrame(rafId);
       renderer.domElement.removeEventListener("click", onClick);
       window.removeEventListener("resize", onResize);
       io.disconnect();

@@ -34,7 +34,7 @@ export default function Header() {
       <div className="container-edge flex items-center justify-between py-5 md:py-6">
         <button
           onClick={() => goTo(0)}
-          className="text-[15px] font-medium tracking-tight lowercase transition-opacity hover:opacity-70"
+          className="text-[16px] font-semibold tracking-tight transition-opacity hover:opacity-70"
           style={{ fontFamily: "var(--font-inter)" }}
           aria-label="Volver al inicio"
         >

@@ -36,13 +36,28 @@ export const SCREENS: Screen[] = [
   { id: "top", label: "Inicio" },
   { id: "proyectos", label: "Proyectos" },
   { id: "servicios", label: "Servicios" },
+  { id: "precios", label: "Precios" },
   { id: "marquee", label: "Stack" },
   { id: "kinetic", label: "Manifiesto", dark: true },
-  { id: "sobre-mi", label: "Sobre mí" },
+  { id: "sobre-mi", label: "Nosotros" },
   { id: "contacto", label: "Contacto" },
 ];
 
 type Direction = "next" | "prev" | null;
+
+/**
+ * SubNav — una pantalla (p.ej. Proyectos) puede registrar una sub-navegación
+ * interna. Mientras esté registrada Y sea la pantalla activa, las flechas /
+ * teclado / rueda avanzan PRIMERO dentro de la pantalla (proyecto → proyecto)
+ * y solo cruzan a la siguiente pantalla cuando llegan al borde.
+ */
+export type SubNav = {
+  screenIndex: number;
+  atStart: () => boolean;
+  atEnd: () => boolean;
+  next: () => void;
+  prev: () => void;
+};
 
 type ScreenNavValue = {
   current: number;
@@ -53,6 +68,10 @@ type ScreenNavValue = {
   goTo: (index: number) => void;
   next: () => void;
   prev: () => void;
+  /** Registra la sub-navegación de la pantalla activa. Para limpiar, pasa el
+   *  MISMO objeto con unregister=true (solo se limpia si sigue siendo el actual,
+   *  evitando que una pantalla saliente borre el registro de la entrante). */
+  registerSubNav: (sub: SubNav | null, unregister?: boolean) => void;
   /** Re-anima la pantalla activa (útil para re-disparar animaciones onEnter) */
   replayTick: number;
 };
@@ -73,8 +92,20 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
   const lockRef = useRef(false);
   const touchStartY = useRef<number | null>(null);
   const touchStartX = useRef<number | null>(null);
+  const subNavRef = useRef<SubNav | null>(null);
 
   const total = SCREENS.length;
+
+  const registerSubNav = useCallback(
+    (sub: SubNav | null, unregister = false) => {
+      if (unregister) {
+        if (subNavRef.current === sub) subNavRef.current = null;
+      } else {
+        subNavRef.current = sub;
+      }
+    },
+    []
+  );
 
   const goTo = useCallback(
     (index: number) => {
@@ -97,8 +128,31 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
     [total]
   );
 
-  const next = useCallback(() => goTo(current + 1), [goTo, current]);
-  const prev = useCallback(() => goTo(current - 1), [goTo, current]);
+  // advance(dir): primero intenta la sub-navegación de la pantalla activa
+  // (proyecto → proyecto); si está en el borde, cruza a la pantalla vecina.
+  const advance = useCallback(
+    (dir: 1 | -1) => {
+      const sub = subNavRef.current;
+      if (sub && sub.screenIndex === current) {
+        const canSub = dir === 1 ? !sub.atEnd() : !sub.atStart();
+        if (canSub) {
+          if (lockRef.current) return;
+          lockRef.current = true;
+          window.setTimeout(() => {
+            lockRef.current = false;
+          }, 620);
+          if (dir === 1) sub.next();
+          else sub.prev();
+          return;
+        }
+      }
+      goTo(current + dir);
+    },
+    [goTo, current]
+  );
+
+  const next = useCallback(() => advance(1), [advance]);
+  const prev = useCallback(() => advance(-1), [advance]);
 
   // Bloqueo del scroll nativo + interceptación de gestos
   useEffect(() => {
@@ -108,8 +162,22 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.style.overflow = "hidden";
     document.body.style.overscrollBehavior = "none";
 
-    // Wheel / trackpad → next/prev
+    // Wheel / trackpad → next/prev.
+    // Excepción: si el cursor está sobre un contenedor scrollable marcado
+    // ([data-screen-scroll]) que aún no llegó a su borde, dejar el scroll nativo.
     const onWheel = (e: WheelEvent) => {
+      const scroller = (e.target as HTMLElement | null)?.closest?.(
+        "[data-screen-scroll]"
+      ) as HTMLElement | null;
+      if (scroller) {
+        const atTop = scroller.scrollTop <= 0;
+        const atBottom =
+          scroller.scrollTop + scroller.clientHeight >=
+          scroller.scrollHeight - 1;
+        if ((e.deltaY < 0 && !atTop) || (e.deltaY > 0 && !atBottom)) {
+          return; // dejar que el contenedor haga scroll nativo
+        }
+      }
       e.preventDefault();
       if (lockRef.current) return;
       if (Math.abs(e.deltaY) < 12 && Math.abs(e.deltaX) < 12) return;
@@ -191,9 +259,10 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
       goTo,
       next,
       prev,
+      registerSubNav,
       replayTick,
     }),
-    [current, total, direction, isTransitioning, goTo, next, prev, replayTick]
+    [current, total, direction, isTransitioning, goTo, next, prev, registerSubNav, replayTick]
   );
 
   return (

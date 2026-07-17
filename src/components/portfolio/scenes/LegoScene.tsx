@@ -218,17 +218,9 @@ export default function LegoScene({
       ref={rootRef}
       viewBox="-180 -120 360 320"
       className="scene-svg lego-scene h-auto w-full cursor-pointer"
-      role="button"
-      tabIndex={0}
-      aria-label="Construcción de bloques Lego — click para abrir el sitio"
+      aria-label="Construcción de bloques Lego — abrir el sitio"
       onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
-      style={{ maxWidth: "min(70vw, 360px)" }}
+      style={{ maxWidth: "min(70vw, 360px)", outline: "none" }}
     >
       {/* Capa clickable */}
       <rect
@@ -241,7 +233,7 @@ export default function LegoScene({
       />
 
       {/* Baseplate sutil */}
-      <ellipse cx="0" cy="115" rx="135" ry="36" fill="var(--ink)" opacity="0.08" />
+      <ellipse cx="0" cy="115" rx="135" ry="36" fill="#1b1b1b" opacity="0.08" />
 
       <g ref={bricksContainerRef} transform="translate(-20 55)">
         {bricks.map((brick) => (
@@ -313,7 +305,7 @@ function BrickShape({ brick }: { brick: Brick }) {
           rx={STUD * 0.3}
           ry={STUD * 0.16}
           fill={shade(color, 1.08)}
-          stroke="var(--ink)"
+          stroke="#1b1b1b"
           strokeWidth="1"
           opacity="0.95"
         />
@@ -323,9 +315,9 @@ function BrickShape({ brick }: { brick: Brick }) {
 
   return (
     <g data-brick-id={id} className="lego-brick">
-      <path d={toPath(sidePts)} fill={shade(color, 0.68)} stroke="var(--ink)" strokeWidth="1.3" strokeLinejoin="round" />
-      <path d={toPath(frontPts)} fill={shade(color, 0.9)} stroke="var(--ink)" strokeWidth="1.3" strokeLinejoin="round" />
-      <path d={toPath(topPts)} fill={shade(color, 1.12)} stroke="var(--ink)" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d={toPath(sidePts)} fill={shade(color, 0.68)} stroke="#1b1b1b" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d={toPath(frontPts)} fill={shade(color, 0.9)} stroke="#1b1b1b" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d={toPath(topPts)} fill={shade(color, 1.12)} stroke="#1b1b1b" strokeWidth="1.3" strokeLinejoin="round" />
       {studs}
     </g>
   );

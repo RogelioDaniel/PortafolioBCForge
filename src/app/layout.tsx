@@ -37,22 +37,23 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "rogelio·dev — Código y diseño que elevan tu presencia digital",
+  title: "BCForge — Sitios web que elevan tu negocio",
   description:
-    "Portafolio de Rogelio Daniel, desarrollador front-end especializado en sitios web 3D, experiencias interactivas y productos digitales inmersivos.",
+    "BCForge, consultora de desarrollo web en México. Creamos páginas web, tiendas en línea y experiencias interactivas desde $3,000 MXN.",
   keywords: [
-    "portafolio",
-    "desarrollador front-end",
-    "Three.js",
-    "GSAP",
-    "web 3D",
-    "experiencias interactivas",
+    "BCForge",
+    "páginas web México",
+    "desarrollo web",
+    "tienda en línea",
+    "sitios web",
+    "diseño web",
+    "landing page",
   ],
-  authors: [{ name: "Rogelio Daniel" }],
+  authors: [{ name: "BCForge" }],
   openGraph: {
-    title: "rogelio·dev — Portafolio",
+    title: "BCForge — Sitios web que elevan tu negocio",
     description:
-      "Código y diseño que elevan tu presencia digital. Sitios web 3D, experiencias y productos interactivos.",
+      "Consultora de desarrollo web en México. Páginas, tiendas en línea y experiencias interactivas desde $3,000 MXN.",
     type: "website",
   },
 };

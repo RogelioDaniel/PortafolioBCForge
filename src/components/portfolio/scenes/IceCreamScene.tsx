@@ -93,17 +93,9 @@ export default function IceCreamScene({
       ref={rootRef}
       viewBox="0 0 360 440"
       className="scene-svg icecream-scene h-auto w-full cursor-pointer"
-      role="button"
-      tabIndex={0}
-      aria-label="Helado Nube — cortina cremosa, click para abrir el sitio"
+      aria-label="Helado Nube — abrir el sitio"
       onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
-      style={{ maxWidth: "min(75vw, 420px)" }}
+      style={{ maxWidth: "min(75vw, 420px)", outline: "none" }}
     >
       <defs>
         {/* Gradiente de crema con vetas (rosa/fresa de Helado Nube) */}

@@ -3,26 +3,37 @@
  * Cambia aquí los textos y se actualizan en todo el sitio.
  */
 
+// Canales de contacto de BCForge
+export const WHATSAPP_NUMBER = "525617075485"; // +52 1 55/56... formato wa.me
+export const WHATSAPP_MSG = "Hola BCForge, quiero información sobre una página web.";
+export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  WHATSAPP_MSG
+)}`;
+export const FACEBOOK_URL =
+  "https://www.facebook.com/profile.php?id=61590245424775";
+
 export const SITE = {
-  logo: "rogelio·dev",
+  logo: "BCForge",
   email: "rogeliodanielrg@gmail.com",
-  city: "Guadalajara, México",
+  city: "México",
+  whatsapp: WHATSAPP_URL,
+  whatsappDisplay: "56 1707 5485",
+  facebook: FACEBOOK_URL,
   social: [
-    { label: "LinkedIn", href: "https://linkedin.com" },
-    { label: "GitHub", href: "https://github.com" },
-    { label: "Instagram", href: "https://instagram.com" },
-    { label: "X", href: "https://x.com" },
+    { label: "WhatsApp", href: WHATSAPP_URL },
+    { label: "Facebook", href: FACEBOOK_URL },
   ],
   nav: [
     { label: "Proyectos", target: "#proyectos" },
-    { label: "Sobre mí", target: "#sobre-mi" },
+    { label: "Precios", target: "#precios" },
+    { label: "Nosotros", target: "#sobre-mi" },
     { label: "Contacto", target: "#contacto" },
   ],
 };
 
 export const HERO = {
-  lines: ["CÓDIGO", "Y DISEÑO QUE", "ELEVAN TU MARCA"],
-  bio: "Desarrollador front-end creando sitios web, experiencias y productos que hacen que la gente deje de hacer scroll.",
+  lines: ["SITIOS WEB", "QUE ELEVAN TU", "NEGOCIO"],
+  bio: "BCForge — consultora de desarrollo web. Creamos sitios, tiendas en línea y experiencias interactivas que hacen crecer tu negocio.",
 };
 
 export type SceneKind = "burger" | "lego" | "icecream" | "glass";
@@ -180,7 +191,7 @@ export const SERVICES = {
     "CREAR TU CONCEPTO DE NEGOCIO.",
   ],
   subtitle:
-    "Estos son algunos de los proyectos que he lanzado. Lo importante: que tus clientes sientan que pueden hacer o actualizar su página y su concepto de negocio con nosotros.",
+    "Estos son algunos de los proyectos que hemos lanzado. Lo importante: que sientas que puedes crear o actualizar tu página y tu concepto de negocio con nosotros.",
   columns: [
     {
       chip: "Servicios",
@@ -228,11 +239,11 @@ export const KINETIC_WORDS = [
 export const MANIFESTO = [
   {
     title: "EL GRAN TRABAJO NO SUCEDE SIN UN GRAN EQUIPO.",
-    body: "Creo en la colaboración cercana con diseñadores, estrategas y clientes. Las mejores ideas nacen del diálogo, no del aislamiento. Cada proyecto es una conversación que se convierte en interfaz.",
+    body: "En BCForge creemos en la colaboración cercana contigo. Las mejores ideas nacen del diálogo, no del aislamiento. Cada proyecto es una conversación que se convierte en tu sitio web.",
   },
   {
     title: "INNOVAR — CON UN TOQUE HUMANO.",
-    body: "La tecnología debe servir a las personas, no al revés. Busco el equilibrio entre la experimentación técnica y la empatía por quien usa lo que construyo. Detrás de cada pixel hay una decisión humana.",
+    body: "La tecnología debe servir a las personas, no al revés. Buscamos el equilibrio entre la experimentación técnica y la empatía por quien usa lo que construimos. Detrás de cada pixel hay una decisión humana.",
   },
 ];
 
@@ -251,45 +262,95 @@ export const ACHIEVEMENTS = {
 };
 
 export const CONTACT = {
-  budgets: ["<1K", "1K–5K", "5K+"],
+  budgets: ["$3K–6K", "$6K–15K", "$15K+"],
+};
+
+// Precios — sección nueva (MXN). Páginas sencillas desde $3,000.
+export const PRICING = {
+  eyebrow: "[ PRECIOS ]",
+  title: ["PRECIOS", "CLAROS."],
+  intro:
+    "Sin sorpresas. Elige el punto de partida y lo ajustamos a tu negocio. Precios en pesos mexicanos (MXN).",
+  tiers: [
+    {
+      name: "Página sencilla",
+      price: "$3,000",
+      unit: "MXN",
+      tagline: "Ideal para presentar tu negocio",
+      features: [
+        "Landing de una sección",
+        "Diseño a medida y responsivo",
+        "Formulario o botón de WhatsApp",
+        "Optimizada para móvil",
+      ],
+      popular: false,
+    },
+    {
+      name: "Sitio profesional",
+      price: "$6,500",
+      unit: "MXN",
+      tagline: "El favorito de los negocios",
+      features: [
+        "Hasta 5 secciones o páginas",
+        "Animaciones e interacciones",
+        "SEO básico y velocidad",
+        "Catálogo, blog o galería",
+      ],
+      popular: true,
+    },
+    {
+      name: "Tienda / A medida",
+      price: "$15,000",
+      unit: "MXN",
+      tagline: "E-commerce o experiencia única",
+      features: [
+        "Tienda en línea o panel admin",
+        "Integraciones y pagos",
+        "Experiencias 3D / interactivas",
+        "Todo a la medida de tu marca",
+      ],
+      popular: false,
+    },
+  ],
+  note: "Todos incluyen dominio y hosting el primer año, y 30 días de soporte. ¿No sabes cuál elegir? Escríbenos por WhatsApp y te asesoramos gratis.",
 };
 
 export const ABOUT = {
-  eyebrow: "[ SOBRE MÍ ]",
-  title: ["DISEÑO", "CON CÓDIGO.", "CONSTRUYO", "CON ALMA."],
+  eyebrow: "[ SOBRE BCFORGE ]",
+  title: ["DISEÑO", "CON CÓDIGO.", "CONSTRUIMOS", "TU MARCA."],
   intro:
-    "Soy Rogelio Daniel, desarrollador front-end especializado en experiencias web inmersivas. Combinando diseño obsesivo y código limpio, construyo sitios que la gente recuerda.",
-  body: "Llevo más de 8 años creando productos digitales para startups y empresas en LATOM, EU y EE.UU. Mi obsesión: que cada interacción se sienta intencional, cada animación tenga propósito, y cada pixel cargue significado. Cuando no estoy codeando, estoy explorando shaders, montando en bici o tomando café de especialidad.",
+    "BCForge es una consultora de desarrollo web. Combinamos diseño obsesivo y código limpio para construir sitios que la gente recuerda — y que hacen crecer tu negocio.",
+  body: "Trabajamos con negocios y emprendedores de todo México creando páginas web, tiendas en línea y experiencias interactivas. Desde una landing sencilla hasta un producto a medida: cada proyecto se entrega con intención, rendimiento y soporte cercano.",
   stats: [
-    { value: "8+", label: "Años de experiencia" },
-    { value: "60+", label: "Proyectos lanzados" },
-    { value: "14", label: "Países atendidos" },
-    { value: "∞", label: "Tazas de café" },
+    { value: "30+", label: "Proyectos lanzados" },
+    { value: "100%", label: "Personalizado" },
+    { value: "24h", label: "Tiempo de respuesta" },
+    { value: "MX", label: "En todo el país" },
   ],
   timeline: [
     {
-      year: "2025",
-      role: "Front-end Lead",
-      org: "Estudio independiente",
-      desc: "Liderando proyectos 3D y experiencias inmersivas para clientes globales.",
+      year: "01",
+      role: "Descubrimiento",
+      org: "Entendemos tu negocio",
+      desc: "Una llamada para conocer tus objetivos, tu público y qué necesitas lograr con tu sitio.",
     },
     {
-      year: "2022",
-      role: "Senior Front-end",
-      org: "Agencia digital",
-      desc: "Especialización en WebGL, GSAP y scroll storytelling. 3 SOTD en Awwwards.",
+      year: "02",
+      role: "Diseño",
+      org: "Dirección de arte a medida",
+      desc: "Definimos identidad, estructura y estilo. Nada de plantillas genéricas: tu marca, tu voz.",
     },
     {
-      year: "2019",
-      role: "Front-end Developer",
-      org: "Startup SaaS",
-      desc: "Construcción de design systems y dashboards de data-viz en tiempo real.",
+      year: "03",
+      role: "Desarrollo",
+      org: "Código limpio y rápido",
+      desc: "Construimos con las mejores herramientas, cuidando velocidad, SEO y experiencia móvil.",
     },
     {
-      year: "2017",
-      role: "Junior Developer",
-      org: "Primeros pasos",
-      desc: "Empezando con HTML, CSS y JS vanilla. Descubrí GSAP y nunca volví atrás.",
+      year: "04",
+      role: "Lanzamiento",
+      org: "En línea y con soporte",
+      desc: "Publicamos, medimos y te acompañamos 30 días. Después, planes de mantenimiento opcionales.",
     },
   ],
 };
@@ -323,33 +384,33 @@ export const TESTIMONIALS = [
 
 export const FAQ = {
   eyebrow: "[ PREGUNTAS FRECUENTES ]",
-  title: ["¿DUDAS?", "RESPONDO."],
+  title: ["¿DUDAS?", "RESPONDEMOS."],
   intro:
-    "Las preguntas que más recibo. Si tienes una que no está aquí, escríbeme y te respondo personalmente.",
+    "Las preguntas que más nos hacen. Si tienes una que no está aquí, escríbenos por WhatsApp y te respondemos personalmente.",
   items: [
     {
-      q: "¿Cuánto tarda un proyecto típico?",
-      a: "Depende del alcance: una landing page inmersiva toma 2-3 semanas, un sitio 3D completo 6-10 semanas, y un producto SaaS 3-6 meses. Tras una llamada de descubrimiento te doy un estimado preciso.",
+      q: "¿Cuánto cuesta una página web?",
+      a: "Una página sencilla arranca desde $3,000 MXN. Un sitio profesional de varias secciones desde $6,500 MXN, y una tienda en línea o proyecto a medida desde $15,000 MXN. Te damos un precio exacto tras una llamada corta.",
     },
     {
-      q: "¿Trabajas con clientes de cualquier país?",
-      a: "Sí. Trabajo remoto desde Guadalajara, México, para clientes en toda LATAM, EE.UU. y Europa. Me adapto a tu zona horaria para reuniones y comunicación asíncrona.",
+      q: "¿Cuánto tarda un proyecto?",
+      a: "Una landing sencilla toma 1-2 semanas, un sitio profesional 3-5 semanas, y una tienda o proyecto a medida de 6 semanas en adelante. Tras conocer tu proyecto te damos una fecha clara.",
+    },
+    {
+      q: "¿Trabajan en toda la República?",
+      a: "Sí. Somos remotos y trabajamos con negocios de todo México. Coordinamos todo por WhatsApp, llamada o videollamada, a tu horario.",
     },
     {
       q: "¿Incluye diseño o solo desarrollo?",
-      a: "Ambos. Lidero el diseño visual y la dirección de arte, y también escribo todo el código. Si ya tienes diseño, lo implemento con fidelidad pixel-perfect. Si no, lo creamos juntos.",
+      a: "Ambos. Nosotros diseñamos y programamos tu sitio. Si ya tienes diseño o logo, lo respetamos; si no, lo creamos juntos desde cero.",
     },
     {
-      q: "¿Qué tecnologías utilizas?",
-      a: "Stack core: React/Next.js, TypeScript, Three.js, GSAP y Tailwind. Para backend: Node.js, Prisma y PostgreSQL. Cada proyecto elige las herramientas óptimas, no las de moda.",
-    },
-    {
-      q: "¿Ofreces mantenimiento post-lanzamiento?",
-      a: "Sí. Todos los proyectos incluyen 30 días de soporte gratuito. Después ofrezco planes de mantenimiento mensual (actualizaciones, monitorización, mejoras iterativas).",
+      q: "¿Incluye hosting y dominio?",
+      a: "Sí. Los planes incluyen dominio y hosting el primer año, más 30 días de soporte. Después ofrecemos mantenimiento mensual opcional.",
     },
     {
       q: "¿Cómo es el proceso de pago?",
-      a: "50% al inicio, 50% al entregar. Para proyectos largos, hitos intermedios. Acepto transferencia, PayPal y cripto. Facturación formal disponible.",
+      a: "50% para arrancar y 50% al entregar. Aceptamos transferencia y depósito. Emitimos factura si la necesitas.",
     },
   ],
 };

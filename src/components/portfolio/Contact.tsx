@@ -86,7 +86,7 @@ export default function Contact() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Rogelio Daniel"
+                  placeholder="Tu nombre"
                   className="line-input"
                 />
               </div>

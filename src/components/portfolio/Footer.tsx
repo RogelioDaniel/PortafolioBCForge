@@ -122,9 +122,9 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="hairline mt-14 pt-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-baseline gap-3">
-            <span className="text-[15px] lowercase">{SITE.logo}</span>
+            <span className="text-[16px] font-semibold">{SITE.logo}</span>
             <span className="script text-[20px] text-[var(--ink-soft)]">
-              portafolio
+              consultora web
             </span>
           </div>
           <div className="flex items-center gap-4">

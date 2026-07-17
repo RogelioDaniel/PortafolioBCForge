@@ -37,55 +37,57 @@ export default function BurgerScene({
     const root = rootRef.current;
     if (!root) return;
 
+    // Curvas que ARRANCAN en 0 (hamburguesa armada/junta en reposo) y separan
+    // las capas hacia afuera conforme el progreso sube a 1 (desarme al click).
     const driver = makeScrollDriver(progressRef, [
       // Las capas se desprenden de arriba hacia abajo, en orden staggered
       {
         el: () => topRef.current,
-        x: [[0, -5], [0.1, -12], [0.28, -22]],
-        y: [[0, -58], [0.1, -235], [0.28, -500]],
-        rotate: [[0, -3], [0.1, -8], [0.28, -14]],
-        fadeOut: [0.22, 0.28],
+        x: [[0, 0], [0.5, -18], [1, -34]],
+        y: [[0, 0], [0.5, -260], [1, -560]],
+        rotate: [[0, 0], [0.5, -9], [1, -17]],
+        fadeOut: [0.82, 1],
       },
       {
         el: () => lettuceRef.current,
-        x: [[0, 7], [0.17, 13], [0.35, 18]],
-        y: [[0, -32], [0.17, -220], [0.35, -465]],
-        rotate: [[0, 2], [0.17, 6], [0.35, 11]],
-        fadeOut: [0.29, 0.35],
+        x: [[0, 0], [0.55, 16], [1, 30]],
+        y: [[0, 0], [0.55, -210], [1, -450]],
+        rotate: [[0, 0], [0.55, 7], [1, 13]],
+        fadeOut: [0.84, 1],
       },
       {
         el: () => tomatoRef.current,
-        x: [[0, -8], [0.24, -16], [0.42, -24]],
-        y: [[0, -10], [0.24, -205], [0.42, -430]],
-        rotate: [[0, -2], [0.24, -6], [0.42, -10]],
-        fadeOut: [0.36, 0.42],
+        x: [[0, 0], [0.6, -18], [1, -34]],
+        y: [[0, 0], [0.6, -150], [1, -330]],
+        rotate: [[0, 0], [0.6, -7], [1, -13]],
+        fadeOut: [0.86, 1],
       },
       {
         el: () => cheeseRef.current,
-        x: [[0, 8], [0.31, 15], [0.49, 22]],
-        y: [[0, 18], [0.31, -180], [0.49, -395]],
-        rotate: [[0, 2.5], [0.31, 7], [0.49, 12]],
-        fadeOut: [0.43, 0.49],
+        x: [[0, 0], [0.65, 18], [1, 34]],
+        y: [[0, 0], [0.65, 70], [1, 150]],
+        rotate: [[0, 0], [0.65, 8], [1, 14]],
+        fadeOut: [0.88, 1],
       },
       {
         el: () => pattyRef.current,
-        x: [[0, -6], [0.38, -12], [0.56, -17]],
-        y: [[0, 38], [0.38, -150], [0.56, -360]],
-        rotate: [[0, -2], [0.38, -5], [0.56, -8]],
-        fadeOut: [0.5, 0.56],
+        x: [[0, 0], [0.7, -14], [1, -24]],
+        y: [[0, 0], [0.7, 190], [1, 380]],
+        rotate: [[0, 0], [0.7, -5], [1, -9]],
+        fadeOut: [0.9, 1],
       },
       {
         el: () => bottomRef.current,
-        x: [[0, 5], [0.45, 10], [0.63, 14]],
-        y: [[0, 58], [0.45, -115], [0.63, -325]],
-        rotate: [[0, 2], [0.45, 4], [0.63, 7]],
-        fadeOut: [0.57, 0.63],
+        x: [[0, 0], [0.72, 12], [1, 20]],
+        y: [[0, 0], [0.72, 300], [1, 540]],
+        rotate: [[0, 0], [0.72, 4], [1, 8]],
+        fadeOut: [0.92, 1],
       },
       {
-        // Brazos salen volando antes que las capas principales
+        // Brazos salen volando primero
         el: () => armsRef.current,
-        x: [[0, 0], [0.29, 0]],
-        fadeOut: [0.21, 0.29],
+        x: [[0, 0], [0.4, 0]],
+        fadeOut: [0.3, 0.42],
       },
     ]);
 
@@ -142,17 +144,9 @@ export default function BurgerScene({
       ref={rootRef}
       viewBox="0 0 520 430"
       className="scene-svg burger-scene h-auto w-full cursor-pointer"
-      role="button"
-      tabIndex={0}
-      aria-label="Hamburguesa de Carne Viva — click para abrir el sitio"
+      aria-label="Hamburguesa de Carne Viva — abrir el sitio"
       onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
-      style={{ maxWidth: "min(70vw, 360px)" }}
+      style={{ maxWidth: "min(70vw, 360px)", outline: "none" }}
     >
       {/* Capa clickable invisible para todo el cuerpo */}
       <rect
@@ -185,14 +179,14 @@ export default function BurgerScene({
             <path
               d="M112 256 C70 244 52 217 38 190"
               fill="none"
-              stroke="var(--ink)"
+              stroke="#1b1b1b"
               strokeWidth="12"
               strokeLinecap="round"
             />
             <path
               d="M39 190 C20 177 19 154 36 145 C49 138 59 149 56 161 C65 148 81 153 80 168 C78 183 61 194 39 190Z"
               fill="#fff"
-              stroke="var(--ink)"
+              stroke="#1b1b1b"
               strokeWidth="9"
               strokeLinejoin="round"
             />
@@ -201,14 +195,14 @@ export default function BurgerScene({
             <path
               d="M408 256 C449 244 468 217 482 190"
               fill="none"
-              stroke="var(--ink)"
+              stroke="#1b1b1b"
               strokeWidth="12"
               strokeLinecap="round"
             />
             <path
               d="M481 190 C500 177 501 154 484 145 C471 138 461 149 464 161 C455 148 439 153 440 168 C442 183 459 194 481 190Z"
               fill="#fff"
-              stroke="var(--ink)"
+              stroke="#1b1b1b"
               strokeWidth="9"
               strokeLinejoin="round"
             />
@@ -220,14 +214,14 @@ export default function BurgerScene({
           <path
             d="M102 326 C128 310 181 305 260 306 C339 305 392 310 418 326 C414 364 385 391 349 400 C300 411 220 411 171 400 C135 391 106 364 102 326Z"
             fill="#e8a84a"
-            stroke="var(--ink)"
+            stroke="#1b1b1b"
             strokeWidth="10"
             strokeLinejoin="round"
           />
           <path
             d="M119 329 C158 318 211 316 260 317 C309 316 362 318 401 329 C390 345 343 351 260 351 C177 351 130 345 119 329Z"
             fill="#ffe09a"
-            stroke="var(--ink)"
+            stroke="#1b1b1b"
             strokeWidth="5"
             strokeLinejoin="round"
           />
@@ -260,7 +254,7 @@ export default function BurgerScene({
           <path
             d="M90 285 C99 258 126 249 161 252 C212 242 309 242 360 252 C395 249 422 258 430 285 C438 312 405 331 371 328 C318 338 202 338 149 328 C115 331 82 312 90 285Z"
             fill="#5a2e1b"
-            stroke="var(--ink)"
+            stroke="#1b1b1b"
             strokeWidth="10"
             strokeLinejoin="round"
           />
@@ -277,7 +271,7 @@ export default function BurgerScene({
           <path
             d="M104 250 L162 228 L260 237 L358 228 L416 250 L385 282 L346 271 L329 300 L294 270 L251 289 L215 269 L180 294 L159 269 L126 280Z"
             fill="#ffd750"
-            stroke="var(--ink)"
+            stroke="#1b1b1b"
             strokeWidth="9"
             strokeLinejoin="round"
           />
@@ -288,7 +282,7 @@ export default function BurgerScene({
           <path
             d="M104 225 C121 200 166 195 207 202 C239 194 281 194 313 202 C354 195 399 200 416 225 C403 247 363 252 323 245 C285 253 235 253 197 245 C157 252 117 247 104 225Z"
             fill="#f91814"
-            stroke="var(--ink)"
+            stroke="#1b1b1b"
             strokeWidth="9"
             strokeLinejoin="round"
           />
@@ -307,7 +301,7 @@ export default function BurgerScene({
           <path
             d="M89 204 L115 180 L150 188 L177 170 L213 184 L250 164 L286 184 L322 168 L353 188 L389 178 L431 204 L405 224 L367 216 L335 232 L296 217 L258 234 L220 217 L181 231 L148 215 L111 224Z"
             fill="#72aa35"
-            stroke="var(--ink)"
+            stroke="#1b1b1b"
             strokeWidth="9"
             strokeLinejoin="round"
           />
@@ -326,7 +320,7 @@ export default function BurgerScene({
           <path
             d="M103 178 C109 98 167 49 260 49 C353 49 411 98 417 178 C375 198 145 198 103 178Z"
             fill="#f0b85a"
-            stroke="var(--ink)"
+            stroke="#1b1b1b"
             strokeWidth="10"
             strokeLinejoin="round"
           />
@@ -339,7 +333,7 @@ export default function BurgerScene({
             opacity=".66"
           />
           {/* Semillas de ajonjolí */}
-          <g fill="#fff0be" stroke="var(--ink)" strokeWidth="3">
+          <g fill="#fff0be" stroke="#1b1b1b" strokeWidth="3">
             <ellipse cx="180" cy="102" rx="10" ry="4" transform="rotate(-24 180 102)" />
             <ellipse cx="231" cy="84" rx="10" ry="4" transform="rotate(12 231 84)" />
             <ellipse cx="286" cy="91" rx="10" ry="4" transform="rotate(-8 286 91)" />
@@ -354,21 +348,21 @@ export default function BurgerScene({
               className="burger-scared-brow"
               d="M197 116 L231 124 M289 124 L323 116"
               fill="none"
-              stroke="var(--ink)"
+              stroke="#1b1b1b"
               strokeWidth="8"
               strokeLinecap="round"
               style={{ opacity: 0 }}
             />
-            <ellipse cx="221" cy="147" rx="21" ry="27" fill="#fff" stroke="var(--ink)" strokeWidth="8" />
-            <ellipse cx="299" cy="147" rx="21" ry="27" fill="#fff" stroke="var(--ink)" strokeWidth="8" />
-            <circle className="burger-pupil" cx="228" cy="153" r="8" fill="var(--ink)" />
-            <circle className="burger-pupil" cx="306" cy="153" r="8" fill="var(--ink)" />
+            <ellipse cx="221" cy="147" rx="21" ry="27" fill="#fff" stroke="#1b1b1b" strokeWidth="8" />
+            <ellipse cx="299" cy="147" rx="21" ry="27" fill="#fff" stroke="#1b1b1b" strokeWidth="8" />
+            <circle className="burger-pupil" cx="228" cy="153" r="8" fill="#1b1b1b" />
+            <circle className="burger-pupil" cx="306" cy="153" r="8" fill="#1b1b1b" />
             <path
               ref={happyMouthRef}
               className="burger-happy-mouth"
               d="M229 178 C245 197 277 197 293 178"
               fill="none"
-              stroke="var(--ink)"
+              stroke="#1b1b1b"
               strokeWidth="9"
               strokeLinecap="round"
             />
@@ -380,7 +374,7 @@ export default function BurgerScene({
               rx="15"
               ry="21"
               fill="#4c0016"
-              stroke="var(--ink)"
+              stroke="#1b1b1b"
               strokeWidth="8"
               style={{ opacity: 0 }}
             />
@@ -391,7 +385,7 @@ export default function BurgerScene({
         <g
           className="burger-spark"
           fill="#ffd750"
-          stroke="var(--ink)"
+          stroke="#1b1b1b"
           strokeWidth="6"
           strokeLinejoin="round"
         >

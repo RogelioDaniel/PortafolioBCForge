@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Preloader from "@/components/portfolio/Preloader";
 import BackgroundGlow from "@/components/portfolio/BackgroundGlow";
 import Cursor from "@/components/portfolio/Cursor";
@@ -8,6 +8,8 @@ import Header from "@/components/portfolio/Header";
 import Hero from "@/components/portfolio/Hero";
 import Projects from "@/components/portfolio/Projects";
 import Services from "@/components/portfolio/Services";
+import Pricing from "@/components/portfolio/Pricing";
+import WhatsAppButton from "@/components/portfolio/WhatsAppButton";
 import Marquee from "@/components/portfolio/Marquee";
 import KineticSection from "@/components/portfolio/KineticSection";
 import AboutSection from "@/components/portfolio/AboutSection";
@@ -63,7 +65,7 @@ export default function Home() {
 
 /** Capa interna que vive dentro del provider para acceder al contexto. */
 function AppShell({ reduced }: { reduced: boolean }) {
-  const { current, direction, replayTick } = useScreenNav();
+  const { current, direction } = useScreenNav();
 
   return (
     <>
@@ -71,25 +73,69 @@ function AppShell({ reduced }: { reduced: boolean }) {
       {<SoundToggle />}
       {<CommandPalette />}
       <BackToTop />
+      <WhatsAppButton />
       <ScreenNav />
 
-      {/* Contenedor de pantallas — solo la activa es visible */}
-      <div className="screen-deck fixed inset-0 z-[1]">
-        {SCREENS.map((screen, i) => (
-          <ScreenSlot
-            key={screen.id}
-            index={i}
-            active={i === current}
-            direction={direction}
-            replayTick={replayTick}
-            reduced={reduced}
-            dark={screen.dark}
-          >
-            {renderScreen(screen.id)}
-          </ScreenSlot>
-        ))}
-      </div>
+      {/* RENDIMIENTO: solo se monta la pantalla activa (y brevemente la que
+          sale, para su animación de salida). Así el WebGL/RAF de las demás
+          pantallas NO corre en segundo plano. */}
+      <ScreenStage current={current} direction={direction} reduced={reduced} />
     </>
+  );
+}
+
+/**
+ * ScreenStage — monta SOLO la pantalla activa. Durante una transición mantiene
+ * montada la pantalla saliente ~640ms para animar su salida (slide + fade).
+ */
+function ScreenStage({
+  current,
+  direction,
+  reduced,
+}: {
+  current: number;
+  direction: "next" | "prev" | null;
+  reduced: boolean;
+}) {
+  const [outgoing, setOutgoing] = useState<number | null>(null);
+  const prevCurrent = useRef(current);
+
+  useEffect(() => {
+    if (current === prevCurrent.current) return;
+    const leaving = prevCurrent.current;
+    prevCurrent.current = current;
+    if (reduced) {
+      setOutgoing(null);
+      return;
+    }
+    setOutgoing(leaving);
+    const t = window.setTimeout(() => setOutgoing(null), 640);
+    return () => window.clearTimeout(t);
+  }, [current, reduced]);
+
+  return (
+    <div className="screen-deck fixed inset-0 z-[1]">
+      {outgoing !== null && outgoing !== current && (
+        <ScreenSlot
+          key={`out-${outgoing}`}
+          index={outgoing}
+          phase="exit"
+          direction={direction}
+          dark={SCREENS[outgoing]?.dark}
+        >
+          {renderScreen(SCREENS[outgoing].id)}
+        </ScreenSlot>
+      )}
+      <ScreenSlot
+        key={`in-${current}`}
+        index={current}
+        phase="enter"
+        direction={direction}
+        dark={SCREENS[current]?.dark}
+      >
+        {renderScreen(SCREENS[current].id)}
+      </ScreenSlot>
+    </div>
   );
 }
 
@@ -102,6 +148,8 @@ function renderScreen(id: string) {
       return <Projects />;
     case "servicios":
       return <Services />;
+    case "precios":
+      return <Pricing />;
     case "marquee":
       return (
         <div className="h-full flex items-center">
@@ -113,12 +161,15 @@ function renderScreen(id: string) {
     case "sobre-mi":
       return <AboutSection />;
     case "contacto":
+      // data-screen-scroll: el screen-nav cede la rueda a este contenedor
+      // mientras no esté en su borde (así se puede leer FAQ + contacto + footer).
       return (
-        <div className="h-full flex flex-col">
-          <div className="flex-1 overflow-y-auto">
-            <FAQ />
-            <Contact />
-          </div>
+        <div
+          data-screen-scroll
+          className="h-[100svh] w-full overflow-y-auto overflow-x-hidden"
+        >
+          <FAQ />
+          <Contact />
           <Footer />
         </div>
       );
@@ -129,47 +180,33 @@ function renderScreen(id: string) {
 
 /**
  * ScreenSlot — un "slot" de pantalla 100vh.
- * Solo la pantalla activa se muestra. Las transiciones son slide + fade.
- * Usa el atributo data-active para que las secciones hijas puedan detectar
- * cuándo entran (vía MutationObserver o al leer replayTick).
+ * phase="enter" anima la entrada; phase="exit" anima la salida. La dirección
+ * (next/prev) decide el sentido del deslizamiento.
  */
 function ScreenSlot({
   index,
-  active,
+  phase,
   direction,
-  replayTick,
-  reduced,
   dark,
   children,
 }: {
   index: number;
-  active: boolean;
+  phase: "enter" | "exit";
   direction: "next" | "prev" | null;
-  replayTick: number;
-  reduced: boolean;
   dark?: boolean;
   children: React.ReactNode;
 }) {
-  const slotRef = (node: HTMLDivElement | null) => {
-    if (node && active) {
-      node.setAttribute("data-active", "true");
-    } else if (node) {
-      node.removeAttribute("data-active");
-    }
-  };
-
   return (
     <div
-      ref={slotRef}
       className="screen-slot absolute inset-0 h-[100svh] w-full overflow-hidden"
       data-screen-index={index}
-      data-replay-tick={replayTick}
+      data-active={phase === "enter" ? "true" : undefined}
+      data-phase={phase}
+      data-dir={direction ?? "next"}
       data-dark={dark ? "true" : "false"}
       style={{
-        // Solo la activa es visible; las demás fuera de viewport
-        visibility: active ? "visible" : "hidden",
-        pointerEvents: active ? "auto" : "none",
-        zIndex: active ? 2 : 1,
+        zIndex: phase === "enter" ? 2 : 1,
+        pointerEvents: phase === "enter" ? "auto" : "none",
       }}
     >
       {children}
