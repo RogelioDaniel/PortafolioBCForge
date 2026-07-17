@@ -1,9 +1,4 @@
-"use client";
-
-import { useEffect, useRef, type CSSProperties } from "react";
-import { gsap } from "gsap";
-import { usePrefersReducedMotion } from "@/lib/motion-hooks";
-import { getAmbient } from "@/lib/ambient-sound";
+import type { CSSProperties } from "react";
 
 const SPARKS = [
   { x: 9, y: 20, strength: 0.72 },
@@ -23,62 +18,8 @@ const SPARKS = [
  * Usa CSS custom property --glow-x/--glow-y para mover el centro del radial.
  */
 export default function BackgroundGlow() {
-  const ref = useRef<HTMLDivElement>(null);
-  const reduced = usePrefersReducedMotion();
-
-  useEffect(() => {
-    if (reduced) return;
-    // Estado inicial
-    const ctx = gsap.context(() => {
-      const state = { x: 28, y: 22 };
-      gsap.to(state, {
-        x: 72,
-        y: 70,
-        duration: 12,
-        ease: "sine.inOut",
-        yoyo: true,
-        repeat: -1,
-        onUpdate: () => {
-          document.documentElement.style.setProperty(
-            "--glow-x",
-            `${state.x}%`
-          );
-          document.documentElement.style.setProperty(
-            "--glow-y",
-            `${state.y}%`
-          );
-        },
-      });
-    });
-    return () => ctx.revert();
-  }, [reduced]);
-
-  useEffect(() => {
-    const element = ref.current;
-    if (!element || reduced) return;
-
-    const unsubscribe = getAmbient()?.subscribeAnalysis(
-      ({ bass, mid, treble, energy }) => {
-        element.style.setProperty("--audio-bass", bass.toFixed(3));
-        element.style.setProperty("--audio-mid", mid.toFixed(3));
-        element.style.setProperty("--audio-treble", treble.toFixed(3));
-        element.style.setProperty("--audio-energy", energy.toFixed(3));
-        element.dataset.audioActive = energy > 0.025 ? "true" : "false";
-      }
-    );
-
-    return () => {
-      unsubscribe?.();
-      element.style.removeProperty("--audio-bass");
-      element.style.removeProperty("--audio-mid");
-      element.style.removeProperty("--audio-treble");
-      element.style.removeProperty("--audio-energy");
-      delete element.dataset.audioActive;
-    };
-  }, [reduced]);
-
   return (
-    <div ref={ref} className="bg-glow" aria-hidden="true">
+    <div className="bg-glow" aria-hidden="true">
       <div className="audio-rhythm">
         <span className="audio-wash">
           <span className="audio-wash-surface audio-wash-surface--burger" />

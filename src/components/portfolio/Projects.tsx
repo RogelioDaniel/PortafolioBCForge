@@ -48,19 +48,19 @@ export default function Projects() {
     if (scene === "burger") {
       tweenRef.current = gsap.to(obj, {
         v: 1,
-        duration: 2.0,
-        delay: delay + 0.3,
+        duration: 1.45,
+        delay: delay + 0.15,
         ease: "power2.inOut",
         yoyo: true,
         repeat: 1,
-        repeatDelay: 0.8,
+        repeatDelay: 0.35,
         onUpdate: write,
       });
     } else if (scene === "glass") {
       // Lento y en bucle: da tiempo a que el vidrio reluzca.
       tweenRef.current = gsap.to(obj, {
         v: 1,
-        duration: 5.5,
+        duration: 4.6,
         delay,
         ease: "sine.inOut",
         yoyo: true,
@@ -71,9 +71,9 @@ export default function Projects() {
     } else {
       tweenRef.current = gsap.to(obj, {
         v: 1,
-        duration: 2.4,
+        duration: 1.7,
         delay,
-        ease: "power2.inOut",
+        ease: "power2.out",
         onUpdate: write,
       });
     }

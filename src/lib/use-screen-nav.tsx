@@ -149,11 +149,11 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
         lockRef.current = true;
         setDirection(target > cur ? "next" : "prev");
         setIsTransitioning(true);
-        // Liberar el lock tras la duración de la transición (~800ms)
+        // Liberar el lock apenas termina la transición visual.
         window.setTimeout(() => {
           lockRef.current = false;
           setIsTransitioning(false);
-        }, 850);
+        }, 500);
         // Disparar replayTick para que la nueva pantalla re-animen
         setReplayTick((t) => t + 1);
         return target;
@@ -174,7 +174,7 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
           lockRef.current = true;
           window.setTimeout(() => {
             lockRef.current = false;
-          }, 620);
+          }, 430);
           if (dir === 1) sub.next();
           else sub.prev();
           // Actualizar bordes tras la navegación interna

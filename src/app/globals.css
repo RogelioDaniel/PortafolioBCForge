@@ -46,8 +46,8 @@
   --music-mid-flow: 0;
   --music-treble-spark: 0;
   --music-energy-lift: 0;
-  --music-glow: 3px;
-  --music-title-glow: 2px;
+  --music-glow: 4px;
+  --music-title-glow: 3px;
 }
 
 /* ============================================================
@@ -157,15 +157,15 @@ h3 {
    analizador. Agudos = halo corto; energía total = halo amplio. */
 .audio-title {
   --title-glow-rgb: 243 216 205;
-  transition: text-shadow 80ms ease-out;
+  transition: text-shadow 70ms ease-out;
 }
 
 html[data-music-reactive="true"] .audio-title {
   text-shadow:
-    0 0 calc(2px + var(--music-treble-spark) * 11px)
-      rgb(var(--title-glow-rgb) / 0.48),
-    0 0 var(--music-title-glow)
-      rgb(var(--title-glow-rgb) / 0.3);
+    0 0 calc(3px + var(--music-treble-spark) * 13px)
+      rgb(var(--title-glow-rgb) / 0.68),
+    0 0 calc(4px + var(--music-title-glow))
+      rgb(var(--title-glow-rgb) / 0.43);
 }
 
 .kinetic-word {
@@ -175,12 +175,12 @@ html[data-music-reactive="true"] .audio-title {
 html[data-music-reactive="true"] .audio-title-svg {
   filter:
     drop-shadow(
-      0 0 calc(2px + var(--music-treble-spark) * 8px)
-      rgba(255, 218, 230, 0.42)
+      0 0 calc(3px + var(--music-treble-spark) * 10px)
+      rgba(255, 218, 230, 0.62)
     )
     drop-shadow(
-      0 0 calc(3px + var(--music-energy-lift) * 14px)
-      rgba(167, 63, 85, 0.24)
+      0 0 calc(4px + var(--music-energy-lift) * 17px)
+      rgba(167, 63, 85, 0.34)
     );
 }
 
@@ -202,15 +202,37 @@ a {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background:
-    radial-gradient(
-      circle at var(--glow-x, 30%) var(--glow-y, 25%),
-      var(--bg-glow) 0%,
-      rgba(243, 216, 205, 0.45) 18%,
-      rgba(243, 216, 205, 0) 42%
-    );
-  transition: background 0.2s linear, opacity 0.6s ease;
-  will-change: background;
+  overflow: hidden;
+  contain: strict;
+  transition: opacity 0.45s ease;
+}
+
+/* El fondo ambiental se desplaza como una sola capa compuesta. Antes se
+   reescribía la posición de un gradiente fullscreen en cada frame. */
+.bg-glow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 118vmax;
+  height: 118vmax;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    var(--bg-glow) 0%,
+    rgba(243, 216, 205, 0.5) 18%,
+    rgba(243, 216, 205, 0) 43%
+  );
+  opacity: 0.9;
+  transform: translate3d(-68%, -64%, 0) scale(0.78);
+  animation: ambient-glow-drift 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes ambient-glow-drift {
+  to {
+    transform: translate3d(-33%, -35%, 0) scale(0.94);
+  }
 }
 
 .audio-rhythm {
@@ -230,8 +252,8 @@ html[data-project-tone] .audio-rhythm {
 
 .audio-wash {
   position: absolute;
-  left: var(--glow-x, 30%);
-  top: var(--glow-y, 25%);
+  left: 50%;
+  top: 50%;
   width: min(66vw, 64rem);
   aspect-ratio: 1;
   border-radius: 50%;
@@ -241,17 +263,14 @@ html[data-project-tone] .audio-rhythm {
     rgba(247, 154, 106, 0.12) 38%,
     transparent 70%
   );
-  filter: blur(14px);
-  opacity: calc(0.04 + var(--audio-bass) * 0.36);
-  transform: translate(-50%, -50%) scale(calc(0.7 + var(--audio-bass) * 0.7));
+  opacity: calc(0.06 + var(--audio-bass) * 0.42);
+  transform: translate3d(-50%, -50%, 0)
+    scale(calc(0.72 + var(--audio-bass) * 0.64));
   overflow: hidden;
   transition:
-    transform 90ms ease-out,
-    opacity 120ms ease-out,
-    background 500ms ease,
-    border-color 500ms ease,
-    box-shadow 500ms ease,
-    filter 500ms ease;
+    transform 80ms ease-out,
+    opacity 90ms ease-out;
+  will-change: transform, opacity;
 }
 
 .audio-rail {
@@ -294,10 +313,12 @@ html[data-project-tone] .audio-rhythm {
   width: clamp(3px, 0.45vw, 7px);
   aspect-ratio: 1;
   background: #fff6d8;
-  box-shadow: 0 0 10px rgba(255, 246, 216, 0.55);
-  opacity: calc(0.02 + var(--audio-treble) * var(--spark-strength) * 0.9);
+  box-shadow:
+    0 0 8px rgba(255, 246, 216, 0.92),
+    0 0 18px rgba(247, 154, 106, 0.48);
+  opacity: calc(0.03 + var(--audio-treble) * var(--spark-strength));
   transform: translate(-50%, -50%) scale(
-    calc(0.35 + var(--audio-treble) * var(--spark-strength) * 1.7)
+    calc(0.4 + var(--audio-treble) * var(--spark-strength) * 1.9)
   );
   transition: transform 70ms ease-out, opacity 90ms ease-out;
 }
@@ -335,12 +356,13 @@ html[data-project-tone] .audio-wash {
   border: 0;
   background: transparent;
   filter: none;
-  opacity: calc(0.1 + var(--audio-bass) * 0.3);
-  transform: translate(-50%, -50%)
-    scale(calc(0.84 + var(--audio-bass) * 0.3));
+  opacity: calc(0.14 + var(--audio-bass) * 0.34);
+  transform: translate3d(-50%, -50%, 0)
+    scale(calc(0.86 + var(--audio-bass) * 0.3));
 }
 
 .audio-wash-surface {
+  --wash-rgb: 243 216 205;
   position: absolute;
   inset: 0;
   display: block;
@@ -351,53 +373,72 @@ html[data-project-tone] .audio-wash {
   transition:
     opacity 500ms ease,
     visibility 0s linear 500ms;
+  transform: translateZ(0);
+}
+
+/* Segundo halo: aumenta el brillo rítmico con opacity/transform, sin cambiar
+   blur ni box-shadow cada vez que llega una muestra de audio. */
+.audio-wash-surface::after {
+  content: "";
+  position: absolute;
+  inset: -7%;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgb(var(--wash-rgb) / 0.44) 0%,
+    rgb(var(--wash-rgb) / 0.14) 38%,
+    transparent 72%
+  );
+  opacity: calc(0.16 + var(--audio-energy) * 0.68);
+  transform: translateZ(0)
+    scale(calc(0.9 + var(--audio-treble) * 0.18));
+  will-change: transform, opacity;
 }
 
 .audio-wash-surface--burger {
+  --wash-rgb: 247 154 106;
   border: 1px solid rgba(255, 190, 108, 0.12);
   background:
     radial-gradient(circle at 34% 28%, rgba(255, 248, 214, 0.68) 0 4%, transparent 15%),
     radial-gradient(circle at 48% 46%, rgba(247, 154, 106, 0.56), rgba(232, 84, 42, 0.2) 46%, transparent 72%);
-  filter: blur(11px);
   box-shadow:
     inset -22px -26px 60px rgba(178, 55, 26, 0.16),
-    0 0 calc(24px + var(--audio-bass) * 44px) rgba(247, 154, 106, 0.28);
+    0 0 78px rgba(247, 154, 106, 0.38);
 }
 
 .audio-wash-surface--lego {
+  --wash-rgb: 122 61 153;
   border: 1px solid rgba(245, 184, 46, 0.12);
   background:
     radial-gradient(circle at 34% 27%, rgba(255, 225, 111, 0.42) 0 5%, transparent 18%),
     radial-gradient(circle at 55% 52%, rgba(122, 61, 153, 0.52), rgba(61, 30, 82, 0.18) 48%, transparent 72%);
-  filter: blur(12px);
   box-shadow:
     inset -24px -28px 66px rgba(45, 20, 90, 0.2),
-    0 0 calc(22px + var(--audio-bass) * 40px) rgba(122, 61, 153, 0.32);
+    0 0 76px rgba(122, 61, 153, 0.42);
 }
 
 .audio-wash-surface--icecream {
+  --wash-rgb: 232 135 169;
   border: 1px solid rgba(255, 226, 234, 0.12);
   background:
     radial-gradient(circle at 32% 31%, rgba(255, 246, 234, 0.62) 0 8%, transparent 24%),
     radial-gradient(circle at 65% 38%, rgba(235, 151, 181, 0.42) 0 18%, transparent 43%),
     radial-gradient(circle at 45% 62%, rgba(255, 207, 220, 0.4), rgba(167, 63, 85, 0.12) 52%, transparent 74%);
-  filter: blur(17px);
-  box-shadow: 0 0 calc(26px + var(--audio-bass) * 42px) rgba(232, 135, 169, 0.25);
+  box-shadow: 0 0 84px rgba(232, 135, 169, 0.38);
 }
 
 .audio-wash-surface--glass {
+  --wash-rgb: 205 235 255;
   border: 1px solid rgba(226, 244, 255, 0.34);
   background:
     radial-gradient(circle at 29% 23%, rgba(255, 255, 255, 0.76) 0 2.5%, rgba(224, 244, 255, 0.18) 8%, transparent 20%),
     radial-gradient(circle at 68% 72%, rgba(171, 123, 255, 0.16), transparent 42%),
     linear-gradient(138deg, rgba(235, 249, 255, 0.18), rgba(145, 183, 209, 0.035) 46%, rgba(255, 226, 204, 0.12));
-  filter: blur(0.8px) saturate(1.18);
-  backdrop-filter: blur(7px) saturate(135%);
-  -webkit-backdrop-filter: blur(7px) saturate(135%);
   box-shadow:
-    inset 18px 16px 42px rgba(255, 255, 255, 0.11),
+    inset 18px 16px 42px rgba(255, 255, 255, 0.18),
     inset -28px -34px 62px rgba(93, 125, 153, 0.16),
-    0 0 calc(18px + var(--audio-treble) * 34px) rgba(205, 235, 255, 0.24);
+    0 0 72px rgba(205, 235, 255, 0.36);
 }
 
 .audio-wash-surface--glass::before {
@@ -421,9 +462,30 @@ html[data-project-tone="glass"] .audio-wash-surface--glass {
 }
 
 html[data-project-tone="glass"] .audio-wash {
-  opacity: calc(0.08 + var(--audio-bass) * 0.16 + var(--audio-treble) * 0.09);
-  transform: translate(-50%, -50%)
+  opacity: calc(0.11 + var(--audio-bass) * 0.18 + var(--audio-treble) * 0.11);
+  transform: translate3d(-50%, -50%, 0)
     scale(calc(0.9 + var(--audio-bass) * 0.18));
+}
+
+/* En plena navegación dejamos el halo en un fotograma luminoso estable.
+   Esto evita que las capas grandes compitan con el slide de las pantallas. */
+html[data-screen-transition="true"] .bg-glow .audio-wash {
+  opacity: 0.22;
+  transform: translate3d(-50%, -50%, 0) scale(0.94);
+  transition: none;
+}
+
+html[data-screen-transition="true"] .audio-rail,
+html[data-screen-transition="true"] .audio-spark {
+  opacity: 0;
+  transition: none;
+}
+
+html[data-screen-transition="true"] .audio-title {
+  text-shadow:
+    0 0 14px rgb(var(--title-glow-rgb) / 0.54),
+    0 0 30px rgb(var(--title-glow-rgb) / 0.28);
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -438,8 +500,13 @@ html[data-project-tone="glass"] .audio-wash {
 
   html[data-project-tone] .audio-wash {
     opacity: 0.14;
-    transform: translate(-50%, -50%) scale(0.92);
+    transform: translate3d(-50%, -50%, 0) scale(0.92);
     transition: none;
+  }
+
+  .bg-glow::before {
+    animation: none;
+    transform: translate3d(-55%, -52%, 0) scale(0.86);
   }
 
   .audio-rail,
@@ -1092,47 +1159,48 @@ body.theme-dark .bg-noise {
   /* Cada slot es absoluto y ocupa todo el viewport */
 }
 .screen-slot {
-  will-change: transform, opacity;
+  contain: layout paint style;
+  backface-visibility: hidden;
 }
 /* Entrada — la nueva pantalla llega desde el sentido del avance.
    Sin blur (caro): solo translate + fade, GPU-friendly. */
 .screen-slot[data-phase="enter"][data-dir="next"] {
-  animation: screen-in-next 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: screen-in-next 0.44s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .screen-slot[data-phase="enter"][data-dir="prev"] {
-  animation: screen-in-prev 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: screen-in-prev 0.44s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 /* Salida — la pantalla anterior se va en sentido contrario */
 .screen-slot[data-phase="exit"][data-dir="next"] {
-  animation: screen-out-next 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: screen-out-next 0.34s cubic-bezier(0.4, 0, 1, 1) both;
 }
 .screen-slot[data-phase="exit"][data-dir="prev"] {
-  animation: screen-out-prev 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: screen-out-prev 0.34s cubic-bezier(0.4, 0, 1, 1) both;
 }
 @keyframes screen-in-next {
-  from { opacity: 0; transform: translateY(6%); }
+  from { opacity: 0; transform: translate3d(0, 4%, 0); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes screen-in-prev {
-  from { opacity: 0; transform: translateY(-6%); }
+  from { opacity: 0; transform: translate3d(0, -4%, 0); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes screen-out-next {
   from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-6%); }
+  to { opacity: 0; transform: translate3d(0, -3%, 0); }
 }
 @keyframes screen-out-prev {
   from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(6%); }
+  to { opacity: 0; transform: translate3d(0, 3%, 0); }
 }
 
 /* Inicio → Proyectos: una placa luminosa revela el primer trabajo. */
 .screen-slot[data-transition="project-reveal"][data-phase="enter"] {
-  animation: project-screen-reveal 0.82s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: project-screen-reveal 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .screen-slot[data-transition="project-reveal"][data-phase="exit"] {
-  animation: project-hero-release 0.46s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: project-hero-release 0.34s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 .project-reveal-transition {
@@ -1141,26 +1209,25 @@ body.theme-dark .bg-noise {
   z-index: 4;
   overflow: hidden;
   pointer-events: none;
-  animation: project-transition-clear 0.82s ease-out both;
+  animation: project-transition-clear 0.62s ease-out both;
 }
 
 .project-reveal-flare {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: min(92vw, 84rem);
+  width: min(88vw, 72rem);
   aspect-ratio: 1.55;
   border-radius: 50%;
   background: radial-gradient(
     ellipse,
-    rgba(255, 252, 235, 0.72) 0%,
-    rgba(247, 154, 106, 0.24) 24%,
-    rgba(171, 123, 255, 0.12) 46%,
+    rgba(255, 252, 235, 0.84) 0%,
+    rgba(247, 154, 106, 0.3) 24%,
+    rgba(171, 123, 255, 0.16) 46%,
     transparent 72%
   );
-  filter: blur(18px);
-  mix-blend-mode: screen;
-  animation: project-transition-flare 0.82s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: project-transition-flare 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
 }
 
 .project-reveal-beam {
@@ -1181,7 +1248,8 @@ body.theme-dark .bg-noise {
     0 0 12px rgba(255, 252, 235, 0.95),
     0 0 38px rgba(247, 154, 106, 0.54),
     0 0 78px rgba(171, 123, 255, 0.28);
-  animation: project-transition-beam 0.82s cubic-bezier(0.65, 0, 0.35, 1) both;
+  animation: project-transition-beam 0.62s cubic-bezier(0.65, 0, 0.35, 1) both;
+  will-change: transform, opacity;
 }
 
 .project-reveal-caption {
@@ -1196,7 +1264,7 @@ body.theme-dark .bg-noise {
   font-size: 9px;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  animation: project-transition-caption 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: project-transition-caption 0.56s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .project-reveal-caption strong {
@@ -1211,14 +1279,12 @@ body.theme-dark .bg-noise {
 
 @keyframes project-screen-reveal {
   from {
-    opacity: 0.3;
-    clip-path: inset(100% 0 0 0);
-    transform: scale(1.025);
+    opacity: 0.18;
+    transform: translate3d(0, 3%, 0) scale(1.018);
   }
   to {
     opacity: 1;
-    clip-path: inset(0 0 0 0);
-    transform: scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
@@ -1316,7 +1382,9 @@ html[data-music-reactive="true"] .screen-arrow:not(:disabled),
 html[data-music-reactive="true"] .sound-toggle,
 html[data-music-reactive="true"] .btn-primary,
 html[data-music-reactive="true"] .wa-fab {
-  box-shadow: 0 0 var(--music-glow) rgba(243, 216, 205, 0.62);
+  box-shadow:
+    0 0 8px rgba(255, 247, 229, 0.82),
+    0 0 var(--music-glow) rgba(243, 216, 205, 0.76);
 }
 
 html[data-music-reactive="true"] .screen-arrow:not(:disabled),
@@ -1477,22 +1545,20 @@ html.theme-site-dark .project-subnav {
 }
 
 .project-kw-enter {
-  animation: project-kw-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: project-kw-in 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes project-kw-in {
   from {
     opacity: 0;
-    transform: translateY(40px) skewY(3deg);
-    filter: blur(8px);
+    transform: translate3d(0, 28px, 0) skewY(2deg);
   }
   to {
     opacity: 1;
-    transform: translateY(0) skewY(0);
-    filter: blur(0px);
+    transform: translate3d(0, 0, 0) skewY(0);
   }
 }
 .project-panel-enter {
-  animation: project-panel-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  animation: project-panel-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
 }
 @keyframes project-panel-in {
   from {
@@ -1528,10 +1594,6 @@ html.theme-site-dark .project-subnav {
 
 /* Figuras voxel de compañía: aparecen detrás del contenido y responden al beat. */
 .voxel-drifters {
-  --drifter-bass: 0;
-  --drifter-mid: 0;
-  --drifter-treble: 0;
-  --drifter-energy: 0;
   --voxel-glow-rgb: 243 216 205;
   position: absolute;
   inset: 0;
@@ -1549,31 +1611,78 @@ html.theme-site-dark .project-subnav {
   color: var(--ink);
   opacity: var(--drifter-opacity);
   animation: voxel-drift var(--drifter-duration) ease-in-out var(--drifter-delay) infinite alternate;
-  will-change: transform;
 }
 
 .voxel-drifter-reactive {
+  --drifter-detail-band: var(--music-treble-spark);
+  position: relative;
   display: block;
   transform-origin: 50% 62%;
+  isolation: isolate;
+  transform:
+    translate3d(
+      calc(var(--music-mid-flow) * var(--drifter-audio-x)),
+      calc(var(--music-bass-hit) * var(--drifter-audio-y)),
+      0
+    )
+    rotate(calc(var(--music-treble-spark) * var(--drifter-audio-rotate)))
+    scale(
+      calc(
+        1 +
+        var(--music-bass-hit) * var(--drifter-bass-scale) +
+        var(--drifter-detail-band) * var(--drifter-detail-scale)
+      )
+    );
+  transition: transform 72ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.voxel-drifter-reactive[data-variant="runner"] {
+  --drifter-detail-band: var(--music-mid-flow);
+}
+
+.voxel-drifter-reactive::before {
+  content: "";
+  position: absolute;
+  inset: 8% 4%;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgb(var(--voxel-glow-rgb) / 0.92) 0%,
+    rgb(var(--voxel-glow-rgb) / 0.28) 38%,
+    transparent 72%
+  );
+  opacity: 0;
+  transform: translateZ(0) scale(0.72);
   transition:
-    transform 72ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter 72ms ease-out;
-  will-change: transform, filter;
+    opacity 72ms ease-out,
+    transform 72ms ease-out;
 }
 
 .voxel-drifter-icon {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: auto;
 }
 
-.voxel-drifters[data-audio-active="true"] .voxel-drifter-reactive {
+html[data-music-reactive="true"] .voxel-drifter-reactive::before {
+  opacity: calc(0.22 + var(--music-energy-lift) * 0.74);
+  transform: translateZ(0)
+    scale(calc(0.82 + var(--music-treble-spark) * 0.28));
+}
+
+html[data-music-reactive="true"] .voxel-drifter-icon {
   filter:
-    brightness(calc(1 + var(--drifter-treble) * 0.85))
-    drop-shadow(
-      0 0 calc(3px + var(--drifter-energy) * 25px)
-      rgb(var(--voxel-glow-rgb) / 0.82)
-    );
+    brightness(1.24)
+    drop-shadow(0 0 7px rgb(var(--voxel-glow-rgb) / 0.78));
+}
+
+html[data-screen-transition="true"] .voxel-drifter-reactive {
+  transform: none;
+  transition: none;
 }
 
 .screen-slot:has(.project-stage[data-project-tone="burger"]) > .voxel-drifters {

@@ -25,6 +25,7 @@ const EMPTY_BANDS: AudioBands = {
   energyLift: 0,
 };
 const TRACK_URL = "/sounds/kontraa-unlock-me-amapiano-music-149058.mp3";
+const ANALYSIS_INTERVAL_MS = 1000 / 30;
 const shapeBand = (value: number, gain: number) =>
   value <= 0 ? 0 : Math.min(1, Math.pow(value, 0.72) * gain);
 
@@ -40,6 +41,7 @@ class AmbientSound {
   private analysisFrame: number | null = null;
   private stopTimer: number | null = null;
   private visibilityListening = false;
+  private lastAnalysisAt = 0;
   private bands: AudioBands = { ...EMPTY_BANDS };
   private subscribers = new Set<EnabledCallback>();
   private analysisSubscribers = new Set<AnalysisCallback>();
@@ -85,14 +87,17 @@ class AmbientSound {
     );
     root.style.setProperty(
       "--music-glow",
-      `${Math.round(3 + this.bands.energyLift * 24)}px`
+      `${Math.round(4 + this.bands.energyLift * 30)}px`
     );
     root.style.setProperty(
       "--music-title-glow",
-      `${Math.round(2 + this.bands.energyLift * 22 + this.bands.trebleSpark * 10)}px`
+      `${Math.round(3 + this.bands.energyLift * 27 + this.bands.trebleSpark * 13)}px`
     );
-    root.dataset.musicReactive =
+    const nextReactive =
       this.enabled && this.bands.energy > 0.025 ? "true" : "false";
+    if (root.dataset.musicReactive !== nextReactive) {
+      root.dataset.musicReactive = nextReactive;
+    }
     this.analysisSubscribers.forEach((callback) => callback(this.bands));
   }
 
@@ -244,11 +249,23 @@ class AmbientSound {
       this.visibilityListening = true;
     }
 
-    const tick = () => {
+    this.lastAnalysisAt = 0;
+    const tick = (timestamp: number) => {
       this.analysisFrame = null;
       if (!this.enabled || document.hidden || !this.analyser || !this.frequencyData) {
         return;
       }
+
+      // Treinta muestras visuales por segundo conservan el pulso musical y
+      // dejan margen de GPU/CPU para las transiciones y las escenas.
+      if (
+        this.lastAnalysisAt > 0 &&
+        timestamp - this.lastAnalysisAt < ANALYSIS_INTERVAL_MS
+      ) {
+        this.analysisFrame = window.requestAnimationFrame(tick);
+        return;
+      }
+      this.lastAnalysisAt = timestamp;
 
       this.analyser.getByteFrequencyData(this.frequencyData);
       const nextBands = {
@@ -286,6 +303,7 @@ class AmbientSound {
       window.cancelAnimationFrame(this.analysisFrame);
       this.analysisFrame = null;
     }
+    this.lastAnalysisAt = 0;
     if (this.visibilityListening && !keepVisibilityListener) {
       document.removeEventListener("visibilitychange", this.handleVisibilityChange);
       this.visibilityListening = false;

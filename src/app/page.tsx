@@ -126,9 +126,22 @@ function ScreenStage({
       setStage((value) =>
         value.outgoing === outgoing ? { ...value, outgoing: null } : value
       );
-    }, isProjectReveal ? 820 : 640);
+    }, isProjectReveal ? 640 : 440);
     return () => window.clearTimeout(t);
   }, [displayedCurrent, outgoing, transitionDirection]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (outgoing === null) {
+      delete root.dataset.screenTransition;
+      return;
+    }
+
+    root.dataset.screenTransition = "true";
+    return () => {
+      delete root.dataset.screenTransition;
+    };
+  }, [outgoing]);
 
   const isProjectReveal =
     !reduced &&
@@ -255,7 +268,9 @@ function ScreenSlot({
         pointerEvents: phase === "enter" ? "auto" : "none",
       }}
     >
-      <VoxelDrifters screenIndex={index} reduced={reduced} />
+      {phase === "enter" && (
+        <VoxelDrifters screenIndex={index} reduced={reduced} />
+      )}
       <div className="relative z-[2] h-full">{children}</div>
     </div>
   );
