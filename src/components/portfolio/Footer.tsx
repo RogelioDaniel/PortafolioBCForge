@@ -25,7 +25,7 @@ export default function Footer() {
           {/* Brand + nota + newsletter */}
           <div className="col-span-2 md:col-span-5">
             <h3
-              className="display"
+              className="audio-title display"
               style={{ fontSize: "clamp(2rem, 6vw, 5rem)" }}
             >
               TOMEMOS

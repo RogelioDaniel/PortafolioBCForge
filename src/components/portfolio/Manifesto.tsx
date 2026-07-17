@@ -68,7 +68,7 @@ export default function Manifesto() {
           >
             <div className="md:col-span-8">
               <h2
-                className="display"
+                className="audio-title display"
                 style={{ fontSize: "clamp(2rem, 6.5vw, 5.5rem)" }}
               >
                 {block.title.split(" ").map((word, idx) => (

@@ -122,7 +122,7 @@ export default function Hero() {
       <div className="hero-content relative z-[1] flex-1 flex items-center min-h-0">
         <div className="container-edge w-full">
           <h1
-            className="hero-title display"
+            className="hero-title audio-title display"
             style={{ fontSize: "clamp(3rem, 12.5vw, 12.5rem)" }}
           >
             {/* Accessible text (hidden visually) */}
@@ -175,4 +175,3 @@ export default function Hero() {
     </section>
   );
 }
-

@@ -197,7 +197,7 @@ export default function IceCreamScene({
       <ellipse ref={glowRef} cx="180" cy="320" rx="170" ry="120" fill={accent} opacity="0.08" />
 
       {/* TEXTO "HELADO NUBE" — debajo de la cortina (se va revelando) */}
-      <g className="icecream-text" textAnchor="middle">
+      <g className="icecream-text audio-title-svg" textAnchor="middle">
         <text
           x="180"
           y="195"

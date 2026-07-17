@@ -55,7 +55,7 @@ export default function Contact() {
           <div className="md:col-span-5">
             <span className="section-label block mb-6">[ CONTACTO ]</span>
             <h2
-              className="display"
+              className="audio-title display"
               style={{ fontSize: "clamp(2.5rem, 8vw, 7rem)" }}
             >
               HABLEMOS

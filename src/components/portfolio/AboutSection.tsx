@@ -106,7 +106,7 @@ export default function AboutSection() {
           <div className="md:col-span-7">
             <span className="section-label block mb-6">{ABOUT.eyebrow}</span>
             <h2
-              className="about-title display"
+              className="about-title audio-title display"
               style={{ fontSize: "clamp(2.5rem, 9vw, 8rem)" }}
             >
               {ABOUT.title.map((line, i) => (

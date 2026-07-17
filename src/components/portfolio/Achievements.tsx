@@ -108,7 +108,7 @@ export default function Achievements() {
         {/* Mini-hero con objetos decorativos flotantes (parallax por capas) */}
         <div className="relative mb-16 md:mb-24">
           <h2
-            className="ach-title display"
+            className="ach-title audio-title display"
             style={{ fontSize: "clamp(3rem, 16vw, 14rem)" }}
           >
             {ACHIEVEMENTS.title}

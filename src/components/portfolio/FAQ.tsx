@@ -73,7 +73,7 @@ export default function FAQ() {
           <div className="md:col-span-5">
             <span className="section-label block mb-6">{FAQ_DATA.eyebrow}</span>
             <h2
-              className="faq-title display"
+              className="faq-title audio-title display"
               style={{ fontSize: "clamp(2.5rem, 8vw, 7rem)" }}
             >
               {FAQ_DATA.title.map((line, i) => (

@@ -109,7 +109,7 @@ export default function Testimonials() {
               <span className="pill">Testimonios</span>
             </div>
             <h2
-              className="tst-reveal display"
+              className="tst-reveal audio-title display"
               style={{ fontSize: "clamp(2.5rem, 8vw, 7rem)" }}
             >
               <span className="reveal-mask block">

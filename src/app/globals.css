@@ -37,6 +37,17 @@
   --font-space-mono: "Space Mono", monospace;
   --font-inter: "Inter", sans-serif;
   --font-caveat: "Caveat", cursive;
+
+  /* Señales normalizadas del analizador de audio */
+  --music-bass: 0;
+  --music-mid: 0;
+  --music-treble: 0;
+  --music-bass-hit: 0;
+  --music-mid-flow: 0;
+  --music-treble-spark: 0;
+  --music-energy-lift: 0;
+  --music-glow: 3px;
+  --music-title-glow: 2px;
 }
 
 /* ============================================================
@@ -142,6 +153,37 @@ h3 {
   font-stretch: 78%;
 }
 
+/* Los titulares no se desplazan con la música: sólo reciben luz real del
+   analizador. Agudos = halo corto; energía total = halo amplio. */
+.audio-title {
+  --title-glow-rgb: 243 216 205;
+  transition: text-shadow 80ms ease-out;
+}
+
+html[data-music-reactive="true"] .audio-title {
+  text-shadow:
+    0 0 calc(2px + var(--music-treble-spark) * 11px)
+      rgb(var(--title-glow-rgb) / 0.48),
+    0 0 var(--music-title-glow)
+      rgb(var(--title-glow-rgb) / 0.3);
+}
+
+.kinetic-word {
+  text-shadow: 0 0 40px rgba(243, 216, 205, 0.25);
+}
+
+html[data-music-reactive="true"] .audio-title-svg {
+  filter:
+    drop-shadow(
+      0 0 calc(2px + var(--music-treble-spark) * 8px)
+      rgba(255, 218, 230, 0.42)
+    )
+    drop-shadow(
+      0 0 calc(3px + var(--music-energy-lift) * 14px)
+      rgba(167, 63, 85, 0.24)
+    );
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -182,6 +224,10 @@ a {
   opacity: 1;
 }
 
+html[data-project-tone] .audio-rhythm {
+  opacity: 0.55;
+}
+
 .audio-wash {
   position: absolute;
   left: var(--glow-x, 30%);
@@ -198,7 +244,14 @@ a {
   filter: blur(14px);
   opacity: calc(0.04 + var(--audio-bass) * 0.36);
   transform: translate(-50%, -50%) scale(calc(0.7 + var(--audio-bass) * 0.7));
-  transition: transform 90ms ease-out, opacity 120ms ease-out;
+  overflow: hidden;
+  transition:
+    transform 90ms ease-out,
+    opacity 120ms ease-out,
+    background 500ms ease,
+    border-color 500ms ease,
+    box-shadow 500ms ease,
+    filter 500ms ease;
 }
 
 .audio-rail {
@@ -275,8 +328,122 @@ html.theme-site-dark .audio-wash {
   );
 }
 
+/* Esfera musical de Proyectos: misma forma, distinto material por trabajo. */
+html[data-project-tone] .audio-wash {
+  width: min(68vw, 66rem);
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  filter: none;
+  opacity: calc(0.1 + var(--audio-bass) * 0.3);
+  transform: translate(-50%, -50%)
+    scale(calc(0.84 + var(--audio-bass) * 0.3));
+}
+
+.audio-wash-surface {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: inherit;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 500ms ease,
+    visibility 0s linear 500ms;
+}
+
+.audio-wash-surface--burger {
+  border: 1px solid rgba(255, 190, 108, 0.12);
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 248, 214, 0.68) 0 4%, transparent 15%),
+    radial-gradient(circle at 48% 46%, rgba(247, 154, 106, 0.56), rgba(232, 84, 42, 0.2) 46%, transparent 72%);
+  filter: blur(11px);
+  box-shadow:
+    inset -22px -26px 60px rgba(178, 55, 26, 0.16),
+    0 0 calc(24px + var(--audio-bass) * 44px) rgba(247, 154, 106, 0.28);
+}
+
+.audio-wash-surface--lego {
+  border: 1px solid rgba(245, 184, 46, 0.12);
+  background:
+    radial-gradient(circle at 34% 27%, rgba(255, 225, 111, 0.42) 0 5%, transparent 18%),
+    radial-gradient(circle at 55% 52%, rgba(122, 61, 153, 0.52), rgba(61, 30, 82, 0.18) 48%, transparent 72%);
+  filter: blur(12px);
+  box-shadow:
+    inset -24px -28px 66px rgba(45, 20, 90, 0.2),
+    0 0 calc(22px + var(--audio-bass) * 40px) rgba(122, 61, 153, 0.32);
+}
+
+.audio-wash-surface--icecream {
+  border: 1px solid rgba(255, 226, 234, 0.12);
+  background:
+    radial-gradient(circle at 32% 31%, rgba(255, 246, 234, 0.62) 0 8%, transparent 24%),
+    radial-gradient(circle at 65% 38%, rgba(235, 151, 181, 0.42) 0 18%, transparent 43%),
+    radial-gradient(circle at 45% 62%, rgba(255, 207, 220, 0.4), rgba(167, 63, 85, 0.12) 52%, transparent 74%);
+  filter: blur(17px);
+  box-shadow: 0 0 calc(26px + var(--audio-bass) * 42px) rgba(232, 135, 169, 0.25);
+}
+
+.audio-wash-surface--glass {
+  border: 1px solid rgba(226, 244, 255, 0.34);
+  background:
+    radial-gradient(circle at 29% 23%, rgba(255, 255, 255, 0.76) 0 2.5%, rgba(224, 244, 255, 0.18) 8%, transparent 20%),
+    radial-gradient(circle at 68% 72%, rgba(171, 123, 255, 0.16), transparent 42%),
+    linear-gradient(138deg, rgba(235, 249, 255, 0.18), rgba(145, 183, 209, 0.035) 46%, rgba(255, 226, 204, 0.12));
+  filter: blur(0.8px) saturate(1.18);
+  backdrop-filter: blur(7px) saturate(135%);
+  -webkit-backdrop-filter: blur(7px) saturate(135%);
+  box-shadow:
+    inset 18px 16px 42px rgba(255, 255, 255, 0.11),
+    inset -28px -34px 62px rgba(93, 125, 153, 0.16),
+    0 0 calc(18px + var(--audio-treble) * 34px) rgba(205, 235, 255, 0.24);
+}
+
+.audio-wash-surface--glass::before {
+  content: "";
+  position: absolute;
+  inset: 7%;
+  border-radius: inherit;
+  opacity: calc(0.2 + var(--audio-treble) * 0.55);
+  border-top: 2px solid rgba(255, 255, 255, 0.42);
+  background: linear-gradient(118deg, rgba(255, 255, 255, 0.2), transparent 34%);
+  transform: rotate(-12deg) scale(0.84);
+}
+
+html[data-project-tone="burger"] .audio-wash-surface--burger,
+html[data-project-tone="lego"] .audio-wash-surface--lego,
+html[data-project-tone="icecream"] .audio-wash-surface--icecream,
+html[data-project-tone="glass"] .audio-wash-surface--glass {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+html[data-project-tone="glass"] .audio-wash {
+  opacity: calc(0.08 + var(--audio-bass) * 0.16 + var(--audio-treble) * 0.09);
+  transform: translate(-50%, -50%)
+    scale(calc(0.9 + var(--audio-bass) * 0.18));
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .audio-rhythm {
+  html:not([data-project-tone]) .audio-rhythm {
+    display: none;
+  }
+
+  html[data-project-tone] .audio-rhythm {
+    display: block;
+    opacity: 0.55;
+  }
+
+  html[data-project-tone] .audio-wash {
+    opacity: 0.14;
+    transform: translate(-50%, -50%) scale(0.92);
+    transition: none;
+  }
+
+  .audio-rail,
+  .audio-spark {
     display: none;
   }
 }
@@ -1257,37 +1424,29 @@ html.theme-site-dark .project-subnav {
 }
 
 /* Animaciones de entrada para keyword y panel de proyecto */
-.project-stage {
-  --project-bass: 0;
-  --project-mid: 0;
-  --project-treble: 0;
-  --project-energy: 0;
-}
-
 .project-keyword {
-  display: inline-flex;
-  align-items: baseline;
-  perspective: 900px;
+  --title-glow-rgb: 243 216 205;
 }
 
-.project-letter {
-  display: inline-block;
-  transform-origin: 50% 72%;
-  transition:
-    transform 80ms cubic-bezier(0.22, 1, 0.36, 1),
-    text-shadow 120ms ease-out;
-  will-change: transform;
+.project-stage[data-project-tone="burger"] .project-keyword {
+  --title-glow-rgb: 247 154 106;
 }
 
-.project-stage[data-beat="on"] .project-letter {
-  text-shadow:
-    0 calc(var(--project-bass) * 5px) calc(8px + var(--project-treble) * 16px)
-    color-mix(in srgb, currentColor 24%, transparent);
+.project-stage[data-project-tone="lego"] .project-keyword {
+  --title-glow-rgb: 245 184 46;
+}
+
+.project-stage[data-project-tone="icecream"] .project-keyword {
+  --title-glow-rgb: 232 135 169;
+}
+
+.project-stage[data-project-tone="glass"] .project-keyword {
+  --title-glow-rgb: 205 235 255;
 }
 
 .project-cta-reactive {
-  transform: translate3d(0, calc(var(--project-mid) * -3px), 0)
-    scale(calc(1 + var(--project-bass) * 0.035));
+  transform: translate3d(0, calc(var(--music-mid-flow) * -3px), 0)
+    scale(calc(1 + var(--music-bass-hit) * 0.035));
   transition: transform 110ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1307,14 +1466,14 @@ html.theme-site-dark .project-subnav {
     color-mix(in srgb, currentColor 14%, transparent) 48%,
     transparent 68%
   );
-  opacity: calc(var(--project-treble) * 0.75);
-  transform: translateX(calc(-70% + var(--project-treble) * 95%));
+  opacity: calc(var(--music-treble-spark) * 0.7);
+  transform: translateX(calc(-70% + var(--music-treble-spark) * 95%));
   transition: transform 90ms ease-out, opacity 90ms ease-out;
 }
 
 .project-stage .project-dot.is-active {
-  transform: translateX(calc(var(--project-mid) * -5px))
-    scale(calc(1 + var(--project-bass) * 0.06));
+  transform: translateX(calc(var(--music-mid-flow) * -5px))
+    scale(calc(1 + var(--music-bass-hit) * 0.06));
 }
 
 .project-kw-enter {
@@ -1369,6 +1528,11 @@ html.theme-site-dark .project-subnav {
 
 /* Figuras voxel de compañía: aparecen detrás del contenido y responden al beat. */
 .voxel-drifters {
+  --drifter-bass: 0;
+  --drifter-mid: 0;
+  --drifter-treble: 0;
+  --drifter-energy: 0;
+  --voxel-glow-rgb: 243 216 205;
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -1384,8 +1548,16 @@ html.theme-site-dark .project-subnav {
   width: var(--drifter-size);
   color: var(--ink);
   opacity: var(--drifter-opacity);
-  filter: drop-shadow(0 0 0 rgba(243, 216, 205, 0));
   animation: voxel-drift var(--drifter-duration) ease-in-out var(--drifter-delay) infinite alternate;
+  will-change: transform;
+}
+
+.voxel-drifter-reactive {
+  display: block;
+  transform-origin: 50% 62%;
+  transition:
+    transform 72ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 72ms ease-out;
   will-change: transform, filter;
 }
 
@@ -1395,19 +1567,40 @@ html.theme-site-dark .project-subnav {
   height: auto;
 }
 
-.voxel-drifters[data-audio-active="true"] .voxel-drifter {
-  filter: drop-shadow(0 0 var(--music-glow) rgba(243, 216, 205, 0.72));
+.voxel-drifters[data-audio-active="true"] .voxel-drifter-reactive {
+  filter:
+    brightness(calc(1 + var(--drifter-treble) * 0.85))
+    drop-shadow(
+      0 0 calc(3px + var(--drifter-energy) * 25px)
+      rgb(var(--voxel-glow-rgb) / 0.82)
+    );
+}
+
+.screen-slot:has(.project-stage[data-project-tone="burger"]) > .voxel-drifters {
+  --voxel-glow-rgb: 247 154 106;
+}
+
+.screen-slot:has(.project-stage[data-project-tone="lego"]) > .voxel-drifters {
+  --voxel-glow-rgb: 245 184 46;
+}
+
+.screen-slot:has(.project-stage[data-project-tone="icecream"]) > .voxel-drifters {
+  --voxel-glow-rgb: 232 135 169;
+}
+
+.screen-slot:has(.project-stage[data-project-tone="glass"]) > .voxel-drifters {
+  --voxel-glow-rgb: 205 235 255;
 }
 
 @keyframes voxel-drift {
   0% {
-    transform: translate3d(-7px, 5px, 0) rotate(var(--drifter-start-rotation)) scale(var(--music-scale, 1));
+    transform: translate3d(-10px, 7px, 0) rotate(var(--drifter-start-rotation));
   }
   52% {
-    transform: translate3d(10px, -13px, 0) rotate(var(--drifter-peak-rotation)) scale(var(--music-scale, 1));
+    transform: translate3d(16px, -20px, 0) rotate(var(--drifter-peak-rotation));
   }
   100% {
-    transform: translate3d(-3px, -4px, 0) rotate(var(--drifter-end-rotation)) scale(var(--music-scale, 1));
+    transform: translate3d(-5px, -7px, 0) rotate(var(--drifter-end-rotation));
   }
 }
 
@@ -1436,7 +1629,8 @@ html.theme-site-dark .project-subnav {
     transform: none !important;
   }
 
-  .project-letter,
+  .audio-title,
+  .audio-title-svg,
   .project-cta-reactive,
   .project-stage .project-dot,
   .music-nudge svg {

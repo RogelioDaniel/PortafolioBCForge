@@ -14,7 +14,7 @@ import { PixelArrow } from "./PixelIcons";
  *  - El flip a negro (body.theme-dark) se aplica al MONTAR y se quita al
  *    DESMONTAR de forma garantizada (useEffect cleanup + un flag defensivo).
  *  - Las palabras se intercambian con flechas (las del screen-nav global).
- *    Al detectar replayTick (entrar a esta pantalla) se resetea a la palabra 0.
+ *    Cada montaje de la pantalla comienza en la palabra 0.
  *  - Las flechas grandes laterales permiten navegar entre palabras.
  *  - Registra sub-nav para que las flechas inferiores se oculten mientras no
  *    estemos en el último slide, guiando al usuario con la flecha derecha.
@@ -22,7 +22,7 @@ import { PixelArrow } from "./PixelIcons";
 export default function KineticSection() {
   const ref = useRef<HTMLElement>(null);
   const reduced = usePrefersReducedMotion();
-  const { replayTick, registerSubNav, notifySubNavChange } = useScreenNav();
+  const { registerSubNav, notifySubNavChange } = useScreenNav();
   const [activeWord, setActiveWord] = useState(0);
   const wordRef = useRef(0);
   const flipAppliedRef = useRef(false);
@@ -37,12 +37,6 @@ export default function KineticSection() {
       flipAppliedRef.current = false;
     };
   }, []);
-
-  // Resetear a la primera palabra al entrar a la pantalla
-  useEffect(() => {
-    setActiveWord(0);
-    wordRef.current = 0;
-  }, [replayTick]);
 
   // Sincronizar wordRef con activeWord
   useEffect(() => {
@@ -148,11 +142,10 @@ export default function KineticSection() {
         {KINETIC_WORDS.map((w, i) => (
           <span
             key={w}
-            className="kinetic-word absolute display whitespace-nowrap"
+            className="kinetic-word audio-title absolute display whitespace-nowrap"
             style={{
               fontSize: "clamp(2.6rem, 13vw, 12rem)",
               color: "#f4f4f4",
-              textShadow: "0 0 40px rgba(243,216,205,0.25)",
               visibility: i === activeWord ? "visible" : "hidden",
             }}
           >

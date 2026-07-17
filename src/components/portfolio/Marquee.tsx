@@ -130,7 +130,7 @@ export default function Marquee() {
           {ITEMS_TOP.map((it, i) => (
             <span key={i} className="inline-flex items-center">
               <span
-                className="marquee-word display transition-all duration-300"
+                className="marquee-word audio-title display transition-all duration-300"
                 style={{ fontSize: "clamp(2.5rem, 7vw, 5.5rem)" }}
               >
                 {it}
@@ -141,7 +141,7 @@ export default function Marquee() {
           {ITEMS_TOP.map((it, i) => (
             <span key={`d-${i}`} className="inline-flex items-center">
               <span
-                className="marquee-word display transition-all duration-300"
+                className="marquee-word audio-title display transition-all duration-300"
                 style={{ fontSize: "clamp(2.5rem, 7vw, 5.5rem)" }}
               >
                 {it}
@@ -161,7 +161,7 @@ export default function Marquee() {
           {ITEMS_BOTTOM.map((it, i) => (
             <span key={i} className="inline-flex items-center">
               <span
-                className="marquee-word display"
+                className="marquee-word audio-title display"
                 style={{
                   fontSize: "clamp(2.5rem, 7vw, 5.5rem)",
                   WebkitTextStroke: "1.5px var(--ink)",
@@ -176,7 +176,7 @@ export default function Marquee() {
           {ITEMS_BOTTOM.map((it, i) => (
             <span key={`d-${i}`} className="inline-flex items-center">
               <span
-                className="marquee-word display"
+                className="marquee-word audio-title display"
                 style={{
                   fontSize: "clamp(2.5rem, 7vw, 5.5rem)",
                   WebkitTextStroke: "1.5px var(--ink)",

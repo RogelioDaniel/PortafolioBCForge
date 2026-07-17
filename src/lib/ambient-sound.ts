@@ -5,13 +5,28 @@ export type AudioBands = {
   mid: number;
   treble: number;
   energy: number;
+  bassHit: number;
+  midFlow: number;
+  trebleSpark: number;
+  energyLift: number;
 };
 
 type EnabledCallback = (enabled: boolean) => void;
 type AnalysisCallback = (bands: AudioBands) => void;
 
-const EMPTY_BANDS: AudioBands = { bass: 0, mid: 0, treble: 0, energy: 0 };
+const EMPTY_BANDS: AudioBands = {
+  bass: 0,
+  mid: 0,
+  treble: 0,
+  energy: 0,
+  bassHit: 0,
+  midFlow: 0,
+  trebleSpark: 0,
+  energyLift: 0,
+};
 const TRACK_URL = "/sounds/kontraa-unlock-me-amapiano-music-149058.mp3";
+const shapeBand = (value: number, gain: number) =>
+  value <= 0 ? 0 : Math.min(1, Math.pow(value, 0.72) * gain);
 
 class AmbientSound {
   private ctx: AudioContext | null = null;
@@ -58,8 +73,24 @@ class AmbientSound {
     root.style.setProperty("--music-bass", this.bands.bass.toFixed(3));
     root.style.setProperty("--music-mid", this.bands.mid.toFixed(3));
     root.style.setProperty("--music-treble", this.bands.treble.toFixed(3));
-    root.style.setProperty("--music-glow", `${Math.round(4 + this.bands.energy * 18)}px`);
-    root.style.setProperty("--music-scale", (1 + this.bands.bass * 0.22).toFixed(3));
+    root.style.setProperty("--music-bass-hit", this.bands.bassHit.toFixed(3));
+    root.style.setProperty("--music-mid-flow", this.bands.midFlow.toFixed(3));
+    root.style.setProperty(
+      "--music-treble-spark",
+      this.bands.trebleSpark.toFixed(3)
+    );
+    root.style.setProperty(
+      "--music-energy-lift",
+      this.bands.energyLift.toFixed(3)
+    );
+    root.style.setProperty(
+      "--music-glow",
+      `${Math.round(3 + this.bands.energyLift * 24)}px`
+    );
+    root.style.setProperty(
+      "--music-title-glow",
+      `${Math.round(2 + this.bands.energyLift * 22 + this.bands.trebleSpark * 10)}px`
+    );
     root.dataset.musicReactive =
       this.enabled && this.bands.energy > 0.025 ? "true" : "false";
     this.analysisSubscribers.forEach((callback) => callback(this.bands));
@@ -87,7 +118,8 @@ class AmbientSound {
 
     master.gain.value = 0;
     analyser.fftSize = 2048;
-    analyser.smoothingTimeConstant = 0.84;
+    // Conserva continuidad, pero deja pasar los golpes y detalles rítmicos.
+    analyser.smoothingTimeConstant = 0.72;
 
     source.connect(master);
     master.connect(analyser);
@@ -225,18 +257,23 @@ class AmbientSound {
         treble: this.readBand(2_000, 9_000),
       };
 
-      this.bands = {
-        bass: this.smooth(this.bands.bass, nextBands.bass, 0.42),
-        mid: this.smooth(this.bands.mid, nextBands.mid, 0.3),
-        treble: this.smooth(this.bands.treble, nextBands.treble, 0.36),
-        energy: 0,
-      };
-      this.bands.energy = Math.min(
+      const bass = this.smooth(this.bands.bass, nextBands.bass, 0.56);
+      const mid = this.smooth(this.bands.mid, nextBands.mid, 0.38);
+      const treble = this.smooth(this.bands.treble, nextBands.treble, 0.48);
+      const energy = Math.min(
         1,
-        this.bands.bass * 0.52 +
-          this.bands.mid * 0.32 +
-          this.bands.treble * 0.16
+        bass * 0.52 + mid * 0.32 + treble * 0.16
       );
+      this.bands = {
+        bass,
+        mid,
+        treble,
+        energy,
+        bassHit: shapeBand(bass, 1.5),
+        midFlow: shapeBand(mid, 1.6),
+        trebleSpark: shapeBand(treble, 1.85),
+        energyLift: shapeBand(energy, 1.55),
+      };
       this.notifyAnalysis();
       this.analysisFrame = window.requestAnimationFrame(tick);
     };
@@ -275,12 +312,14 @@ class AmbientSound {
       Math.ceil(endHz / binWidth)
     );
 
-    let total = 0;
+    let totalSquares = 0;
     for (let index = firstBin; index <= lastBin; index += 1) {
-      total += this.frequencyData[index];
+      const value = this.frequencyData[index];
+      totalSquares += value * value;
     }
 
-    return total / Math.max(1, lastBin - firstBin + 1) / 255;
+    const sampleCount = Math.max(1, lastBin - firstBin + 1);
+    return Math.sqrt(totalSquares / sampleCount) / 255;
   }
 
   private smooth(current: number, next: number, amount: number) {

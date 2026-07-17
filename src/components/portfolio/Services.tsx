@@ -78,7 +78,7 @@ export default function Services() {
       <div className="container-edge">
         {/* Statement */}
         <h2
-          className="svc-statement display max-w-[18ch]"
+          className="svc-statement audio-title display max-w-[18ch]"
           style={{ fontSize: "clamp(2rem, 6vw, 5rem)" }}
         >
           {SERVICES.statement.map((line, i) => (

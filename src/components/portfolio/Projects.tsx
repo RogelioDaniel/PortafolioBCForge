@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import ProjectScenes from "./scenes/ProjectScenes";
 import { PROJECTS, type Project } from "@/lib/portfolio-content";
 import { useScreenNav } from "@/lib/use-screen-nav";
-import { getAmbient } from "@/lib/ambient-sound";
 
 /**
  * Proyectos destacados — EXPERIENCIA GUIADA (sin scroll).
@@ -24,8 +23,6 @@ import { getAmbient } from "@/lib/ambient-sound";
 
 export default function Projects() {
   const { registerSubNav } = useScreenNav();
-  const sectionRef = useRef<HTMLElement>(null);
-  const keywordRef = useRef<HTMLSpanElement>(null);
   const activeRef = useRef(0);
   const progressRef = useRef(0);
   const [active, setActive] = useState(0);
@@ -33,6 +30,7 @@ export default function Projects() {
   const tweenRef = useRef<gsap.core.Tween | null>(null);
 
   const lastIndex = PROJECTS.length - 1;
+  const current = PROJECTS[active];
 
   // Detona la animación de una escena al ENTRAR (patrón proxy + onUpdate, que
   // sí engancha con GSAP). Cada escena tiene su ritmo:
@@ -104,42 +102,17 @@ export default function Projects() {
     };
   }, [startReveal]);
 
-  useEffect(() => {
-    const section = sectionRef.current;
-    const keyword = keywordRef.current;
-    if (!section || !keyword) return;
-
-    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let phase = 0;
-    const unsubscribe = getAmbient()?.subscribeAnalysis(
-      ({ bass, mid, treble, energy }) => {
-        if (motionQuery.matches) return;
-        phase += 0.075 + energy * 0.06;
-        section.style.setProperty("--project-bass", bass.toFixed(3));
-        section.style.setProperty("--project-mid", mid.toFixed(3));
-        section.style.setProperty("--project-treble", treble.toFixed(3));
-        section.style.setProperty("--project-energy", energy.toFixed(3));
-        section.dataset.beat = energy > 0.045 ? "on" : "off";
-
-        (keywordRef.current ?? keyword).querySelectorAll<HTMLElement>(".project-letter").forEach(
-          (letter, index) => {
-            const wave = Math.sin(phase + index * 0.72);
-            const counterWave = Math.cos(phase * 0.78 + index * 0.48);
-            const lift = wave * (1.5 + mid * 10);
-            const sway = counterWave * treble * 2.4;
-            const scaleY = 1 + bass * (0.035 + (index % 3) * 0.012);
-            const scaleX = 1 - bass * 0.018;
-            letter.style.transform = `translate3d(${sway.toFixed(2)}px, ${lift.toFixed(2)}px, 0) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)})`;
-          }
-        );
-      }
-    );
-
+  // El glow global cambia de material/color con el proyecto activo.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const tone = current.scene;
+    root.dataset.projectTone = tone;
     return () => {
-      unsubscribe?.();
-      delete section.dataset.beat;
+      if (root.dataset.projectTone === tone) {
+        delete root.dataset.projectTone;
+      }
     };
-  }, []);
+  }, [current.scene]);
 
   // Registrar la sub-navegación: las flechas globales avanzan de proyecto.
   useEffect(() => {
@@ -160,38 +133,25 @@ export default function Projects() {
     }
   };
 
-  const current = PROJECTS[active];
-
   return (
     <section
-      ref={sectionRef}
       id="proyectos"
       className="project-stage relative h-[100svh] w-full overflow-hidden flex items-center justify-center"
+      data-project-tone={current.scene}
       aria-label="Proyectos destacados"
     >
       {/* Palabra clave gigante centrada — DEBAJO de la escena */}
       <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
         <span
-          ref={keywordRef}
           key={`kw-${active}`}
-          className="project-keyword display whitespace-nowrap project-kw-enter"
+          className="project-keyword audio-title display whitespace-nowrap project-kw-enter"
           style={{
             fontSize: "clamp(3.2rem, 15vw, 14.5rem)",
             color: "var(--ink)",
             letterSpacing: "-0.02em",
           }}
         >
-          {Array.from(current.keyword).map((character, index) => (
-            <span
-              key={`${current.keyword}-${index}`}
-              className="project-letter"
-              style={{ "--letter-index": index } as CSSProperties}
-              aria-hidden="true"
-            >
-              {character === " " ? "\u00a0" : character}
-            </span>
-          ))}
-          <span className="sr-only">{current.keyword}</span>
+          {current.keyword}
         </span>
       </div>
 

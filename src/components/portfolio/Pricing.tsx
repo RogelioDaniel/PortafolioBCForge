@@ -57,7 +57,7 @@ export default function Pricing() {
             {PRICING.eyebrow}
           </span>
           <h2
-            className="price-head display"
+            className="price-head audio-title display"
             style={{ fontSize: "clamp(2.4rem, 7vw, 5.5rem)" }}
           >
             {PRICING.title.join(" ")}

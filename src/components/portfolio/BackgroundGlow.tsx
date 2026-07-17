@@ -80,7 +80,12 @@ export default function BackgroundGlow() {
   return (
     <div ref={ref} className="bg-glow" aria-hidden="true">
       <div className="audio-rhythm">
-        <span className="audio-wash" />
+        <span className="audio-wash">
+          <span className="audio-wash-surface audio-wash-surface--burger" />
+          <span className="audio-wash-surface audio-wash-surface--lego" />
+          <span className="audio-wash-surface audio-wash-surface--icecream" />
+          <span className="audio-wash-surface audio-wash-surface--glass" />
+        </span>
         <span className="audio-rail audio-rail--one" />
         <span className="audio-rail audio-rail--two" />
         <span className="audio-rail audio-rail--three" />
