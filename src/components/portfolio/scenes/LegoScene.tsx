@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type ReactElement } from "react";
+import { getAmbient } from "@/lib/ambient-sound";
 import type { SceneProps } from "./scene-shared";
 
 /**
@@ -12,6 +13,7 @@ import type { SceneProps } from "./scene-shared";
  *     escalonado según su altura.
  *
  * Render isométrico: 3 caras (top/front/side) + studs por ladrillo.
+ * Al quedar armada, la estructura baila sutilmente con las bandas de audio.
  */
 type Brick = {
   id: number;
@@ -159,13 +161,16 @@ export default function LegoScene({
 }: SceneProps) {
   const rootRef = useRef<SVGSVGElement>(null);
   const bricksContainerRef = useRef<SVGGElement>(null);
+  const danceRef = useRef<SVGGElement>(null);
+  const shadowRef = useRef<SVGEllipseElement>(null);
 
   // Estructura random: useMemo con factory que no depende de nada (cambia por Date.now())
   const bricks = useMemo<Brick[]>(() => generateStructure(), []);
 
   useEffect(() => {
     const container = bricksContainerRef.current;
-    if (!container) return;
+    const dancer = danceRef.current;
+    if (!container || !dancer) return;
 
     const brickEls = Array.from(
       container.querySelectorAll<SVGGElement>("[data-brick-id]")
@@ -173,24 +178,39 @@ export default function LegoScene({
     const maxGz = Math.max(...bricks.map((brick) => brick.gz));
     const screenSlot = container.closest<HTMLElement>(".screen-slot");
 
+    const ambient = getAmbient();
+    const audio = {
+      bassHit: 0,
+      midFlow: 0,
+      trebleSpark: 0,
+      energyLift: 0,
+    };
+    let musicEnabled = ambient?.isEnabled() ?? false;
+    const unsubscribeEnabled = ambient?.subscribe((enabled) => {
+      musicEnabled = enabled;
+    });
+    const unsubscribeAudio = ambient?.subscribeAnalysis((bands) => {
+      audio.bassHit = bands.bassHit;
+      audio.midFlow = bands.midFlow;
+      audio.trebleSpark = bands.trebleSpark;
+      audio.energyLift = bands.energyLift;
+    });
+
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let reducedMotion = motionQuery.matches;
+    const onMotionPreferenceChange = (event: MediaQueryListEvent) => {
+      reducedMotion = event.matches;
+    };
+    motionQuery.addEventListener("change", onMotionPreferenceChange);
+
     let raf = 0;
+    let running = false;
+    let screenActive = screenSlot?.dataset.phase !== "exit";
+    let lastFrameAt = 0;
     let lastProgress = -1;
-    const animate = () => {
-      raf = requestAnimationFrame(animate);
-      if (
-        document.hidden ||
-        screenSlot?.dataset.phase === "exit"
-      ) {
-        return;
-      }
+    let dancing = false;
 
-      const p = progressRef.current;
-      const active = activeRef.current;
-      if (active !== 1) return;
-      const quantizedProgress = Math.round(p * 1000) / 1000;
-      if (quantizedProgress === lastProgress) return;
-      lastProgress = quantizedProgress;
-
+    const updateBuild = (p: number) => {
       // Normalizar el orden de armado: por altura gz, luego por posición
       brickEls.forEach((el) => {
         const brickId = parseInt(el.dataset.brickId || "0", 10);
@@ -219,9 +239,112 @@ export default function LegoScene({
         el.style.transformOrigin = "center bottom";
       });
     };
-    animate();
 
-    return () => cancelAnimationFrame(raf);
+    const resetDance = () => {
+      dancer.removeAttribute("transform");
+      if (shadowRef.current) shadowRef.current.style.opacity = "";
+    };
+
+    const applyDance = (timestamp: number) => {
+      const t = timestamp / 1000;
+      const bass = audio.bassHit;
+      const mid = audio.midFlow;
+      const treble = audio.trebleSpark;
+      const sway = Math.sin(t * 2.2) * mid * 2.4;
+      const hop = -bass * 4.1;
+      const rotation =
+        Math.sin(t * 2.45 + 0.6) * mid * 1.15 +
+        Math.sin(t * 8.4) * treble * 0.55;
+      const scaleX = 1 + bass * 0.018;
+      const scaleY = 1 - bass * 0.01 + treble * 0.005;
+
+      // El conjunto baila como una sola construcción: bajos levantan y
+      // comprimen, medios balancean y agudos aportan un giro corto.
+      dancer.setAttribute(
+        "transform",
+        `translate(${sway.toFixed(2)} ${hop.toFixed(2)}) rotate(${rotation.toFixed(2)} 0 84) translate(0 84) scale(${scaleX.toFixed(4)} ${scaleY.toFixed(4)}) translate(0 -84)`
+      );
+      if (shadowRef.current) {
+        shadowRef.current.style.opacity = Math.min(
+          0.17,
+          0.065 + audio.energyLift * 0.055 + bass * 0.035
+        ).toFixed(3);
+      }
+    };
+
+    const animate = (timestamp: number) => {
+      if (!running) return;
+      raf = requestAnimationFrame(animate);
+      if (timestamp - lastFrameAt < 1000 / 30) return;
+      lastFrameAt = timestamp;
+
+      const active = activeRef.current;
+      const p = reducedMotion ? 1 : progressRef.current;
+      const quantizedProgress = Math.round(p * 1000) / 1000;
+
+      if (active !== 1) {
+        if (dancing) resetDance();
+        dancing = false;
+        return;
+      }
+
+      if (quantizedProgress !== lastProgress) {
+        updateBuild(p);
+        lastProgress = quantizedProgress;
+      }
+
+      const shouldDance =
+        p >= 0.985 &&
+        !reducedMotion &&
+        musicEnabled &&
+        document.documentElement.dataset.musicReactive === "true";
+      if (shouldDance) {
+        applyDance(timestamp);
+      } else if (dancing) {
+        resetDance();
+      }
+      dancing = shouldDance;
+    };
+
+    const stop = () => {
+      if (!running) return;
+      cancelAnimationFrame(raf);
+      running = false;
+    };
+    const start = () => {
+      if (running || document.hidden || !screenActive) return;
+      running = true;
+      lastFrameAt = 0;
+      raf = requestAnimationFrame(animate);
+    };
+    const onVisibilityChange = () => {
+      if (document.hidden) stop();
+      else start();
+    };
+    const phaseObserver = screenSlot
+      ? new MutationObserver(() => {
+          screenActive = screenSlot.dataset.phase !== "exit";
+          if (screenActive) start();
+          else stop();
+        })
+      : null;
+
+    phaseObserver?.observe(screenSlot!, {
+      attributes: true,
+      attributeFilter: ["data-phase"],
+    });
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    start();
+
+    return () => {
+      stop();
+      phaseObserver?.disconnect();
+      unsubscribeEnabled?.();
+      unsubscribeAudio?.();
+      motionQuery.removeEventListener("change", onMotionPreferenceChange);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      resetDance();
+    };
   }, [activeRef, progressRef, bricks]);
 
   return (
@@ -244,12 +367,22 @@ export default function LegoScene({
       />
 
       {/* Baseplate sutil */}
-      <ellipse cx="0" cy="115" rx="135" ry="36" fill="#1b1b1b" opacity="0.08" />
+      <ellipse
+        ref={shadowRef}
+        cx="0"
+        cy="115"
+        rx="135"
+        ry="36"
+        fill="#1b1b1b"
+        opacity="0.08"
+      />
 
-      <g ref={bricksContainerRef} transform="translate(-20 55)">
-        {bricks.map((brick) => (
-          <BrickShape key={brick.id} brick={brick} />
-        ))}
+      <g ref={danceRef}>
+        <g ref={bricksContainerRef} transform="translate(-20 55)">
+          {bricks.map((brick) => (
+            <BrickShape key={brick.id} brick={brick} />
+          ))}
+        </g>
       </g>
     </svg>
   );
@@ -302,7 +435,7 @@ function BrickShape({ brick }: { brick: Brick }) {
     return `rgb(${r},${g},${b})`;
   };
 
-  const studs = [];
+  const studs: ReactElement[] = [];
   for (let sx = 0; sx < w; sx++) {
     for (let sy = 0; sy < d; sy++) {
       const cx = gx + sx + 0.5;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useScreenNav, SCREENS } from "@/lib/use-screen-nav";
 import { useIsTouch } from "@/lib/motion-hooks";
 
@@ -31,6 +32,54 @@ export default function ScreenNav() {
   const prevTarget =
     isInsideSubNav && !subNavEdges.atStart ? "Proyecto anterior" : prevLabel;
 
+  // En pantallas con contenido largo, los controles se apartan visualmente
+  // mientras el usuario baja. Al subir o alcanzar un borde recuperan presencia.
+  useEffect(() => {
+    const root = document.documentElement;
+    let scrollFrame = 0;
+    let bindFrame = 0;
+    let scroller: HTMLElement | null = null;
+    let lastTop = 0;
+
+    const setDimmed = (dimmed: boolean) => {
+      if (dimmed) root.dataset.controlsDimmed = "true";
+      else delete root.dataset.controlsDimmed;
+    };
+
+    const onScroll = () => {
+      if (!scroller || scrollFrame) return;
+      scrollFrame = window.requestAnimationFrame(() => {
+        scrollFrame = 0;
+        if (!scroller) return;
+        const top = scroller.scrollTop;
+        const atTop = top <= 8;
+        const atBottom =
+          top + scroller.clientHeight >= scroller.scrollHeight - 8;
+        const delta = top - lastTop;
+
+        if (atTop || atBottom || delta < -2) setDimmed(false);
+        else if (delta > 2) setDimmed(true);
+        lastTop = top;
+      });
+    };
+
+    bindFrame = window.requestAnimationFrame(() => {
+      scroller = document.querySelector<HTMLElement>(
+        '.screen-slot[data-active="true"] [data-screen-scroll]'
+      );
+      lastTop = scroller?.scrollTop ?? 0;
+      setDimmed(false);
+      scroller?.addEventListener("scroll", onScroll, { passive: true });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(bindFrame);
+      window.cancelAnimationFrame(scrollFrame);
+      scroller?.removeEventListener("scroll", onScroll);
+      setDimmed(false);
+    };
+  }, [current]);
+
   return (
     <div
       className="screen-nav-audio fixed bottom-5 left-1/2 -translate-x-1/2 z-[55] flex items-center gap-3 md:gap-5 select-none"
@@ -44,8 +93,8 @@ export default function ScreenNav() {
         aria-label={prevTarget ?? "Pantalla anterior"}
         className="screen-arrow music-nudge group disabled:opacity-0 disabled:pointer-events-none transition-all duration-300 hover:scale-110"
         style={{
-          width: isTouch ? 40 : 46,
-          height: isTouch ? 40 : 46,
+          width: isTouch ? 44 : 46,
+          height: isTouch ? 44 : 46,
         }}
       >
         <svg
@@ -58,7 +107,7 @@ export default function ScreenNav() {
           <PixelArrowLeft />
         </svg>
         <span className="screen-arrow-label" aria-hidden="true">
-          {prevLabel}
+          {prevTarget}
         </span>
       </button>
 
@@ -94,8 +143,8 @@ export default function ScreenNav() {
           subNavEdges?.atEnd ? " screen-arrow-reveal" : ""
         }`}
         style={{
-          width: isTouch ? 40 : 46,
-          height: isTouch ? 40 : 46,
+          width: isTouch ? 44 : 46,
+          height: isTouch ? 44 : 46,
         }}
       >
         <svg
@@ -108,7 +157,7 @@ export default function ScreenNav() {
           <PixelArrowRight />
         </svg>
         <span className="screen-arrow-label" aria-hidden="true">
-          {nextLabel}
+          {nextTarget}
         </span>
       </button>
     </div>

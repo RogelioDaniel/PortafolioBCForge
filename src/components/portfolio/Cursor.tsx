@@ -30,6 +30,7 @@ export default function Cursor() {
     const onMove = (e: MouseEvent) => {
       mx = e.clientX;
       my = e.clientY;
+      dot.classList.add("is-visible");
       const t = e.target as HTMLElement;
       const interactive = t.closest(
         'a, button, [data-cursor], input, textarea, [role="button"]'

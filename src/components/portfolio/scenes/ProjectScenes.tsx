@@ -23,12 +23,14 @@ export default function ProjectScenes({
   active,
   activeRef,
   progressRef,
+  revealCompleteRef,
   onOpen,
 }: {
   projects: Project[];
   active: number;
   activeRef: React.MutableRefObject<number>;
   progressRef: React.MutableRefObject<number>;
+  revealCompleteRef: React.MutableRefObject<boolean>;
   onOpen: () => void;
 }) {
   const p = projects[active];
@@ -37,6 +39,7 @@ export default function ProjectScenes({
   const common = {
     activeRef,
     progressRef,
+    revealCompleteRef,
     accent: p?.accent || accentFallback[active] || "#e8542a",
     onOpen, // click en la escena = abrir el sitio en vivo
   };

@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import ProjectScenes from "./scenes/ProjectScenes";
 import { PROJECTS, type Project } from "@/lib/portfolio-content";
 import { useScreenNav } from "@/lib/use-screen-nav";
+import { usePrefersReducedMotion } from "@/lib/motion-hooks";
 
 /**
  * Proyectos destacados — EXPERIENCIA GUIADA (sin scroll).
@@ -23,11 +24,19 @@ import { useScreenNav } from "@/lib/use-screen-nav";
 
 export default function Projects() {
   const { registerSubNav } = useScreenNav();
+  const reduced = usePrefersReducedMotion();
   const activeRef = useRef(0);
   const progressRef = useRef(0);
+  const revealCompleteRef = useRef(false);
   const [active, setActive] = useState(0);
   const [panelTick, setPanelTick] = useState(1);
   const tweenRef = useRef<gsap.core.Tween | null>(null);
+  const transitionTimerRef = useRef<number | null>(null);
+  const reducedRef = useRef(reduced);
+
+  useLayoutEffect(() => {
+    reducedRef.current = reduced;
+  }, [reduced]);
 
   const lastIndex = PROJECTS.length - 1;
   const current = PROJECTS[active];
@@ -35,15 +44,25 @@ export default function Projects() {
   // Detona la animación de una escena al ENTRAR (patrón proxy + onUpdate, que
   // sí engancha con GSAP). Cada escena tiene su ritmo:
   //  - burger: se desarma y se re-arma una vez, luego vuelve a brincar (idle).
-  //  - glass: loop lento (estalla y reconstruye) para que RELUZCA sin apurarse.
+  //  - glass: estalla y se reconstruye una sola vez.
   //  - lego/crema: se construyen/caen una vez y se quedan.
   const startReveal = useCallback((index: number, delay = 0) => {
     tweenRef.current?.kill();
     progressRef.current = 0;
+    revealCompleteRef.current = false;
     const scene = PROJECTS[index]?.scene;
+    if (reducedRef.current) {
+      progressRef.current = scene === "burger" ? 0 : 1;
+      revealCompleteRef.current = true;
+      return;
+    }
     const obj = { v: 0 };
     const write = () => {
       progressRef.current = obj.v;
+    };
+    const complete = () => {
+      progressRef.current = scene === "burger" ? 0 : 1;
+      revealCompleteRef.current = true;
     };
     if (scene === "burger") {
       tweenRef.current = gsap.to(obj, {
@@ -55,18 +74,18 @@ export default function Projects() {
         repeat: 1,
         repeatDelay: 0.35,
         onUpdate: write,
+        onComplete: complete,
       });
     } else if (scene === "glass") {
-      // Lento y en bucle: da tiempo a que el vidrio reluzca.
+      // Un único ciclo completo: fractura en la primera mitad y reconstrucción
+      // en la segunda. Después queda estable para reaccionar sólo a la música.
       tweenRef.current = gsap.to(obj, {
         v: 1,
-        duration: 4.6,
+        duration: 3.4,
         delay,
-        ease: "sine.inOut",
-        yoyo: true,
-        repeat: -1,
-        repeatDelay: 0.5,
+        ease: "power2.inOut",
         onUpdate: write,
+        onComplete: complete,
       });
     } else {
       tweenRef.current = gsap.to(obj, {
@@ -75,15 +94,34 @@ export default function Projects() {
         delay,
         ease: "power2.out",
         onUpdate: write,
+        onComplete: complete,
       });
     }
   }, []);
+
+  useEffect(() => {
+    if (!reduced) return;
+    tweenRef.current?.kill();
+    progressRef.current = current.scene === "burger" ? 0 : 1;
+    revealCompleteRef.current = true;
+  }, [current.scene, reduced]);
 
   // Entrar a un proyecto: detona su animación de escena.
   const goToProject = useCallback(
     (index: number) => {
       const target = Math.max(0, Math.min(lastIndex, index));
       if (target === activeRef.current) return;
+      const root = document.documentElement;
+      root.dataset.projectTransition = "true";
+      if (transitionTimerRef.current !== null) {
+        window.clearTimeout(transitionTimerRef.current);
+      }
+      transitionTimerRef.current = window.setTimeout(() => {
+        if (root.dataset.projectTransition === "true") {
+          delete root.dataset.projectTransition;
+        }
+        transitionTimerRef.current = null;
+      }, 720);
       activeRef.current = target;
       setActive(target);
       setPanelTick((t) => t + 1);
@@ -99,6 +137,11 @@ export default function Projects() {
     startReveal(0);
     return () => {
       tweenRef.current?.kill();
+      if (transitionTimerRef.current !== null) {
+        window.clearTimeout(transitionTimerRef.current);
+        transitionTimerRef.current = null;
+      }
+      delete document.documentElement.dataset.projectTransition;
     };
   }, [startReveal]);
 
@@ -153,7 +196,7 @@ export default function Projects() {
         <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
           <span
             key={`kw-${active}`}
-            className="project-keyword audio-title display whitespace-nowrap project-kw-enter"
+            className="project-keyword display whitespace-nowrap project-kw-enter"
             style={{
               fontSize: "clamp(3.2rem, 15vw, 14.5rem)",
               color: "var(--ink)",
@@ -171,6 +214,7 @@ export default function Projects() {
         active={active}
         activeRef={activeRef}
         progressRef={progressRef}
+        revealCompleteRef={revealCompleteRef}
         onOpen={openCurrentProject}
       />
 

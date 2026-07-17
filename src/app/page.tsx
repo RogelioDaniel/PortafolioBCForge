@@ -41,9 +41,11 @@ import { usePrefersReducedMotion } from "@/lib/motion-hooks";
 export default function Home() {
   const [loaded, setLoaded] = useState(false);
   const [appReady, setAppReady] = useState(false);
+  const [introStarted, setIntroStarted] = useState(false);
   const reduced = usePrefersReducedMotion();
   const finishPreloader = useCallback(() => setLoaded(true), []);
   const reportAppReady = useCallback(() => setAppReady(true), []);
+  const startIntro = useCallback(() => setIntroStarted(true), []);
 
   useEffect(() => {
     // Bloquea scroll durante preloader (el screen-nav también lo bloquea después)
@@ -60,11 +62,28 @@ export default function Home() {
       <div className="bg-noise" aria-hidden="true" />
       {loaded && <Cursor />}
 
-      <ScreenNavProvider>
-        <AppShell reduced={reduced} onReady={reportAppReady} />
+      <ScreenNavProvider enabled={loaded}>
+        <div
+          inert={!loaded}
+          aria-hidden={!loaded}
+          data-preloading={!introStarted ? "true" : undefined}
+        >
+          <AppShell
+            reduced={reduced}
+            interactive={loaded}
+            heroRunning={introStarted}
+            onHeroReady={reportAppReady}
+          />
+        </div>
       </ScreenNavProvider>
 
-      {!loaded && <Preloader ready={appReady} onDone={finishPreloader} />}
+      {!loaded && (
+        <Preloader
+          ready={appReady}
+          onExitStart={startIntro}
+          onDone={finishPreloader}
+        />
+      )}
     </>
   );
 }
@@ -72,36 +91,39 @@ export default function Home() {
 /** Capa interna que vive dentro del provider para acceder al contexto. */
 function AppShell({
   reduced,
-  onReady,
+  interactive,
+  heroRunning,
+  onHeroReady,
 }: {
   reduced: boolean;
-  onReady: () => void;
+  interactive: boolean;
+  heroRunning: boolean;
+  onHeroReady: () => void;
 }) {
   const { current, direction } = useScreenNav();
-
-  useEffect(() => {
-    let secondFrame = 0;
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(onReady);
-    });
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
-    };
-  }, [onReady]);
 
   return (
     <>
       <Header />
-      {<SoundToggle />}
-      {<CommandPalette />}
-      <WhatsAppButton />
-      <ScreenNav />
+      {interactive && (
+        <>
+          <SoundToggle />
+          <CommandPalette />
+          <WhatsAppButton />
+          <ScreenNav />
+        </>
+      )}
 
       {/* RENDIMIENTO: solo se monta la pantalla activa (y brevemente la que
           sale, para su animación de salida). Así el WebGL/RAF de las demás
           pantallas NO corre en segundo plano. */}
-      <ScreenStage current={current} direction={direction} reduced={reduced} />
+      <ScreenStage
+        current={current}
+        direction={direction}
+        reduced={reduced}
+        heroRunning={heroRunning}
+        onHeroReady={onHeroReady}
+      />
     </>
   );
 }
@@ -114,10 +136,14 @@ function ScreenStage({
   current,
   direction,
   reduced,
+  heroRunning,
+  onHeroReady,
 }: {
   current: number;
   direction: "next" | "prev" | null;
   reduced: boolean;
+  heroRunning: boolean;
+  onHeroReady: () => void;
 }) {
   const [stage, setStage] = useState(() => ({
     displayedCurrent: current,
@@ -184,7 +210,11 @@ function ScreenStage({
           reduced={reduced}
           transition={isProjectReveal ? "project-reveal" : undefined}
         >
-          {renderScreen(SCREENS[outgoing].id)}
+          {renderScreen(
+            SCREENS[outgoing].id,
+            true,
+            outgoing === 0 ? onHeroReady : undefined
+          )}
         </ScreenSlot>
       )}
       <ScreenSlot
@@ -196,7 +226,11 @@ function ScreenStage({
         reduced={reduced}
         transition={isProjectReveal ? "project-reveal" : undefined}
       >
-        {renderScreen(SCREENS[displayedCurrent].id)}
+        {renderScreen(
+          SCREENS[displayedCurrent].id,
+          heroRunning,
+          displayedCurrent === 0 ? onHeroReady : undefined
+        )}
       </ScreenSlot>
       {isProjectReveal && <ProjectRevealTransition />}
     </div>
@@ -217,10 +251,16 @@ function ProjectRevealTransition() {
 }
 
 /** Renderiza el componente de cada pantalla según su id. */
-function renderScreen(id: string) {
+function renderScreen(
+  id: string,
+  heroRunning = true,
+  onHeroReady?: () => void
+) {
   switch (id) {
     case "top":
-      return <Hero />;
+      return (
+        <Hero playIntro={heroRunning} onSceneReady={onHeroReady} />
+      );
     case "proyectos":
       return <Projects />;
     case "servicios":
@@ -291,9 +331,7 @@ function ScreenSlot({
         pointerEvents: phase === "enter" ? "auto" : "none",
       }}
     >
-      {phase === "enter" && (
-        <VoxelDrifters screenIndex={index} reduced={reduced} />
-      )}
+      <VoxelDrifters screenIndex={index} reduced={reduced} />
       <div className="relative z-[2] h-full">{children}</div>
     </div>
   );

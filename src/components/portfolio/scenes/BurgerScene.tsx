@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getAmbient } from "@/lib/ambient-sound";
 import { makeScrollDriver, type SceneProps } from "./scene-shared";
 
 /**
@@ -8,7 +9,7 @@ import { makeScrollDriver, type SceneProps } from "./scene-shared";
  * Adaptada del proyecto original (cartoon-burger.tsx) pero con GSAP-free
  * driver de scroll propio para encajar en el sistema del portafolio.
  *
- *  - Brinca idle cuando está activa (CSS keyframe .burger-idle-bounce)
+ *  - Tras la intro, brinca con música apagada o separa ingredientes por banda
  *  - Se desarma con scroll: las 6 capas salen volando hacia afuera
  *    (mismas trayectorias escaladas del original)
  *  - Cara feliz → asustada conforme avanza el scroll
@@ -17,6 +18,7 @@ import { makeScrollDriver, type SceneProps } from "./scene-shared";
 export default function BurgerScene({
   activeRef,
   progressRef,
+  revealCompleteRef,
   onOpen,
 }: SceneProps) {
   const rootRef = useRef<SVGSVGElement>(null);
@@ -32,14 +34,20 @@ export default function BurgerScene({
   const scaredMouthRef = useRef<SVGEllipseElement>(null);
   const scaredBrowRef = useRef<SVGPathElement>(null);
   const armsRef = useRef<SVGGElement>(null);
+  const steamRef = useRef<SVGGElement>(null);
+  const sparkRef = useRef<SVGGElement>(null);
 
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
 
+    // El progreso visual se desacopla del ref compartido para poder congelar la
+    // composición armada cuando el usuario pide movimiento reducido.
+    const visualProgress = { current: 0 };
+
     // Curvas que ARRANCAN en 0 (hamburguesa armada/junta en reposo) y separan
     // las capas hacia afuera conforme el progreso sube a 1 (desarme al click).
-    const driver = makeScrollDriver(progressRef, [
+    const driver = makeScrollDriver(visualProgress, [
       // Las capas se desprenden de arriba hacia abajo, en orden staggered
       {
         el: () => topRef.current,
@@ -91,70 +99,251 @@ export default function BurgerScene({
       },
     ]);
 
+    const ambient = getAmbient();
+    const audio = {
+      bassHit: 0,
+      midFlow: 0,
+      trebleSpark: 0,
+      energyLift: 0,
+    };
+    let musicEnabled = ambient?.isEnabled() ?? false;
+    const unsubscribeEnabled = ambient?.subscribe((enabled) => {
+      musicEnabled = enabled;
+    });
+    const unsubscribeAudio = ambient?.subscribeAnalysis((bands) => {
+      audio.bassHit = bands.bassHit;
+      audio.midFlow = bands.midFlow;
+      audio.trebleSpark = bands.trebleSpark;
+      audio.energyLift = bands.energyLift;
+    });
+
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let reducedMotion = motionQuery.matches;
+    const onMotionPreferenceChange = (event: MediaQueryListEvent) => {
+      reducedMotion = event.matches;
+    };
+    motionQuery.addEventListener("change", onMotionPreferenceChange);
+
+    type BurgerMode = "intro" | "idle" | "reactive" | "still";
+    let mode: BurgerMode = "still";
     let raf = 0;
+    let running = false;
+    let lastFrameAt = 0;
     let lastActive = -1;
     let lastProgress = -1;
-    let revealStarted = false;
-    let revealFinished = false;
+    let lastAudioKey = "";
     const screenSlot = root.closest<HTMLElement>(".screen-slot");
-    const animate = () => {
-      raf = requestAnimationFrame(animate);
-      if (
-        document.hidden ||
-        screenSlot?.dataset.phase === "exit"
-      ) {
-        return;
+    let screenActive = screenSlot?.dataset.phase !== "exit";
+
+    const setLayerTransform = (
+      element: SVGGElement | null,
+      x: number,
+      y: number,
+      rotation: number,
+      pivotY: number
+    ) => {
+      element?.setAttribute(
+        "transform",
+        `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${rotation.toFixed(2)} 260 ${pivotY})`
+      );
+    };
+
+    const resetAudioPose = () => {
+      [
+        topRef.current,
+        lettuceRef.current,
+        tomatoRef.current,
+        cheeseRef.current,
+        pattyRef.current,
+        bottomRef.current,
+        armsRef.current,
+      ].forEach((element) => element?.removeAttribute("transform"));
+      if (steamRef.current) steamRef.current.style.opacity = "0.5";
+      if (sparkRef.current) sparkRef.current.style.opacity = "1";
+    };
+
+    const applyAudioPose = () => {
+      const bass = audio.bassHit;
+      const mid = audio.midFlow;
+      const treble = audio.trebleSpark;
+
+      // Cada ingrediente responde a la banda que mejor encaja con su peso:
+      // bajos en pan/carne, medios en rellenos y agudos en hojas/pan superior.
+      setLayerTransform(bottomRef.current, -bass * 1.8, bass * 3.2, bass * 0.45, 355);
+      setLayerTransform(pattyRef.current, bass * 1.4, -bass * 5.8, -bass * 0.8, 292);
+      setLayerTransform(cheeseRef.current, mid * 3.2, -mid * 6.4, mid * 1.15, 260);
+      setLayerTransform(tomatoRef.current, -mid * 3.8, -mid * 8.1, -mid * 1.25, 225);
+      setLayerTransform(lettuceRef.current, treble * 4.8, -treble * 9.6, treble * 1.55, 201);
+      setLayerTransform(
+        topRef.current,
+        -treble * 3.5,
+        -(bass * 3.6 + treble * 7.2),
+        (treble - bass) * 1.4,
+        145
+      );
+      setLayerTransform(
+        armsRef.current,
+        (treble - mid) * 2.8,
+        -treble * 3.2,
+        (mid - treble) * 0.9,
+        245
+      );
+      if (steamRef.current) {
+        steamRef.current.style.opacity = (0.34 + audio.energyLift * 0.34).toFixed(3);
+      }
+      if (sparkRef.current) {
+        sparkRef.current.style.opacity = (0.58 + treble * 0.42).toFixed(3);
+      }
+    };
+
+    const updateCamera = (progress: number) => {
+      // Cámara dinámica: conserva la hamburguesa grande al estar armada y abre
+      // el encuadre durante el desarme para que ninguna capa quede recortada.
+      // El SVG también crece físicamente: así el vuelo ocupa la página en vez
+      // de quedar visible dentro de un recuadro central diminuto.
+      const cameraT = progress;
+      const height = 430 + cameraT * 1050;
+      const width = height * (520 / 430);
+      const x = 260 - width / 2;
+      const y = 215 - height / 2;
+      const restingWidth = Math.min(430, window.innerWidth * 0.78);
+      const expandedWidth = Math.min(1100, window.innerWidth * 0.94);
+      const displayWidth =
+        restingWidth + (expandedWidth - restingWidth) * cameraT;
+      root.style.maxWidth = `${displayWidth.toFixed(1)}px`;
+      root.setAttribute(
+        "viewBox",
+        `${x.toFixed(2)} ${y.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)}`
+      );
+    };
+
+    const updateScrollPose = (progress: number, active: number) => {
+      visualProgress.current = progress;
+      driver.update();
+
+      // Cara: feliz → asustada
+      const faceOp = Math.max(0, Math.min(1, (progress - 0.018) / 0.047));
+      if (happyMouthRef.current) {
+        happyMouthRef.current.style.opacity = (1 - faceOp).toFixed(3);
+      }
+      if (scaredMouthRef.current) {
+        scaredMouthRef.current.style.opacity = faceOp.toFixed(3);
+      }
+      if (scaredBrowRef.current) {
+        scaredBrowRef.current.style.opacity = faceOp.toFixed(3);
       }
 
-      const p = progressRef.current;
+      if (faceRef.current) {
+        faceRef.current.style.transform = `rotate(${(progress * 8).toFixed(2)}deg)`;
+        faceRef.current.style.transformOrigin = "260px 215px";
+      }
+      updateCamera(progress);
+      lastActive = active;
+      lastProgress = Math.round(progress * 1000) / 1000;
+    };
+
+    const animate = (timestamp: number) => {
+      if (!running) return;
+      raf = requestAnimationFrame(animate);
+      if (timestamp - lastFrameAt < 1000 / 30) {
+        return;
+      }
+      lastFrameAt = timestamp;
+
+      const rawProgress = progressRef.current;
+      const p = reducedMotion ? 0 : rawProgress;
       const active = activeRef.current;
       const quantizedProgress = Math.round(p * 1000) / 1000;
 
-      if (p >= 0.05) revealStarted = true;
-      if (revealStarted && p < 0.04) revealFinished = true;
-      if (active === lastActive && quantizedProgress === lastProgress) return;
+      const introComplete =
+        active === 0 && revealCompleteRef.current && p <= 0.01;
+      const musicReactive =
+        introComplete &&
+        !reducedMotion &&
+        musicEnabled &&
+        document.documentElement.dataset.musicReactive === "true";
+      const nextMode: BurgerMode = !introComplete
+        ? "intro"
+        : reducedMotion || musicEnabled
+          ? musicReactive
+            ? "reactive"
+            : "still"
+          : "idle";
 
-      // Arrancar/detener el driver de capas según si está activo
-      if (active === 0 && p < 0.05) {
-        driver.start();
+      // Al salir del modo musical se limpia primero su pose; si la intro vuelve
+      // a arrancar, el driver de progreso escribe enseguida la pose correcta.
+      if (mode === "reactive" && nextMode !== "reactive") {
+        resetAudioPose();
+        lastAudioKey = "";
       }
 
-      // Idle bounce: solo cuando activo y al inicio del scroll
-      const idleEl = idleRef.current;
-      if (idleEl) {
-        if (active === 0 && revealFinished && p < 0.04) {
-          idleEl.classList.add("is-bouncing");
-        } else {
-          idleEl.classList.remove("is-bouncing");
+      if (active !== lastActive || quantizedProgress !== lastProgress) {
+        updateScrollPose(p, active);
+      }
+
+      if (nextMode !== mode) {
+        idleRef.current?.classList.toggle("is-bouncing", nextMode === "idle");
+        mode = nextMode;
+      }
+      if (mode === "reactive") {
+        // El analizador puede conservar una muestra durante más de un tick.
+        // Evitamos reescribir nueve propiedades SVG si las bandas no cambiaron.
+        const audioKey = [
+          audio.bassHit,
+          audio.midFlow,
+          audio.trebleSpark,
+          audio.energyLift,
+        ]
+          .map((value) => Math.round(value * 100))
+          .join(":");
+        if (audioKey !== lastAudioKey) {
+          applyAudioPose();
+          lastAudioKey = audioKey;
         }
       }
-
-      // Cara: feliz → asustada
-      const happy = happyMouthRef.current;
-      const scared = scaredMouthRef.current;
-      const brow = scaredBrowRef.current;
-      const faceOp = Math.max(0, Math.min(1, (p - 0.018) / 0.047));
-      if (happy) happy.style.opacity = (1 - faceOp).toFixed(3);
-      if (scared) scared.style.opacity = faceOp.toFixed(3);
-      if (brow) brow.style.opacity = faceOp.toFixed(3);
-
-      // Rotación leve de toda la hamburguesa con el progreso (continuidad)
-      if (faceRef.current) {
-        const rot = p * 8; // hasta 8deg
-        faceRef.current.style.transform = `rotate(${rot.toFixed(2)}deg)`;
-        faceRef.current.style.transformOrigin = "260px 215px";
-      }
-
-      lastActive = active;
-      lastProgress = quantizedProgress;
     };
-    animate();
+
+    const stop = () => {
+      if (!running) return;
+      cancelAnimationFrame(raf);
+      running = false;
+    };
+    const start = () => {
+      if (running || document.hidden || !screenActive) return;
+      running = true;
+      lastFrameAt = 0;
+      raf = requestAnimationFrame(animate);
+    };
+    const onVisibilityChange = () => {
+      if (document.hidden) stop();
+      else start();
+    };
+    const phaseObserver = screenSlot
+      ? new MutationObserver(() => {
+          screenActive = screenSlot.dataset.phase !== "exit";
+          if (screenActive) start();
+          else stop();
+        })
+      : null;
+
+    phaseObserver?.observe(screenSlot!, {
+      attributes: true,
+      attributeFilter: ["data-phase"],
+    });
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    start();
 
     return () => {
-      cancelAnimationFrame(raf);
-      driver.stop();
+      stop();
+      phaseObserver?.disconnect();
+      unsubscribeEnabled?.();
+      unsubscribeAudio?.();
+      motionQuery.removeEventListener("change", onMotionPreferenceChange);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      idleRef.current?.classList.remove("is-bouncing");
+      resetAudioPose();
     };
-  }, [activeRef, progressRef]);
+  }, [activeRef, progressRef, revealCompleteRef]);
 
   return (
     <svg
@@ -163,7 +352,7 @@ export default function BurgerScene({
       className="scene-svg burger-scene h-auto w-full cursor-pointer"
       aria-label="Hamburguesa de Carne Viva — abrir el sitio"
       onClick={onOpen}
-      style={{ maxWidth: "min(70vw, 360px)", outline: "none" }}
+      style={{ maxWidth: "min(78vw, 430px)", outline: "none" }}
     >
       {/* Capa clickable invisible para todo el cuerpo */}
       <rect
@@ -178,6 +367,7 @@ export default function BurgerScene({
       <g ref={idleRef} className="burger-idle">
         {/* Vapor */}
         <g
+          ref={steamRef}
           className="burger-steam"
           fill="none"
           stroke="#fff4d9"
@@ -400,6 +590,7 @@ export default function BurgerScene({
 
         {/* Chispas cómic */}
         <g
+          ref={sparkRef}
           className="burger-spark"
           fill="#ffd750"
           stroke="#1b1b1b"

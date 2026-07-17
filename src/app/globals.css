@@ -39,15 +39,10 @@
   --font-caveat: "Caveat", cursive;
 
   /* Señales normalizadas del analizador de audio */
-  --music-bass: 0;
-  --music-mid: 0;
-  --music-treble: 0;
   --music-bass-hit: 0;
   --music-mid-flow: 0;
   --music-treble-spark: 0;
   --music-energy-lift: 0;
-  --music-glow: 4px;
-  --music-title-glow: 3px;
 }
 
 /* ============================================================
@@ -157,15 +152,20 @@ h3 {
    analizador. Agudos = halo corto; energía total = halo amplio. */
 .audio-title {
   --title-glow-rgb: 243 216 205;
-  transition: text-shadow 70ms ease-out;
 }
 
 html[data-music-reactive="true"] .audio-title {
   text-shadow:
-    0 0 calc(3px + var(--music-treble-spark) * 13px)
-      rgb(var(--title-glow-rgb) / 0.68),
-    0 0 calc(4px + var(--music-title-glow))
-      rgb(var(--title-glow-rgb) / 0.43);
+    0 0 9px
+      rgb(
+        var(--title-glow-rgb) /
+          calc(0.28 + var(--music-treble-spark) * 0.48)
+      ),
+    0 0 28px
+      rgb(
+        var(--title-glow-rgb) /
+          calc(0.14 + var(--music-energy-lift) * 0.36)
+      );
 }
 
 .kinetic-word {
@@ -175,12 +175,12 @@ html[data-music-reactive="true"] .audio-title {
 html[data-music-reactive="true"] .audio-title-svg {
   filter:
     drop-shadow(
-      0 0 calc(3px + var(--music-treble-spark) * 10px)
-      rgba(255, 218, 230, 0.62)
+      0 0 8px
+      rgb(255 218 230 / calc(0.24 + var(--music-treble-spark) * 0.42))
     )
     drop-shadow(
-      0 0 calc(4px + var(--music-energy-lift) * 17px)
-      rgba(167, 63, 85, 0.34)
+      0 0 20px
+      rgb(167 63 85 / calc(0.12 + var(--music-energy-lift) * 0.28))
     );
 }
 
@@ -452,6 +452,18 @@ html[data-project-tone] .audio-wash {
   transform: rotate(-12deg) scale(0.84);
 }
 
+/* El shader ya aporta el baile y el destello del vidrio. Estas dos capas
+   conservan su material, pero no fuerzan otra pintura por cada muestra. */
+html[data-project-tone="glass"] .audio-wash-surface--glass::before {
+  opacity: 0.34;
+}
+
+html[data-project-tone="glass"] .audio-wash-surface--glass::after {
+  opacity: 0.3;
+  transform: translateZ(0) scale(0.96);
+  will-change: auto;
+}
+
 html[data-project-tone="burger"] .audio-wash-surface--burger,
 html[data-project-tone="lego"] .audio-wash-surface--lego,
 html[data-project-tone="icecream"] .audio-wash-surface--icecream,
@@ -470,7 +482,7 @@ html[data-project-tone="glass"] .audio-wash {
 html[data-screen-transition="true"] .audio-rail,
 html[data-screen-transition="true"] .audio-spark {
   opacity: 0;
-  transition: none;
+  transition: opacity 90ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -487,6 +499,12 @@ html[data-screen-transition="true"] .audio-spark {
     opacity: 0.14;
     transform: translate3d(-50%, -50%, 0) scale(0.92);
     transition: none;
+  }
+
+  html[data-project-tone] .audio-wash-surface::after {
+    opacity: 0.24;
+    transform: translateZ(0) scale(0.94);
+    will-change: auto;
   }
 
   .bg-glow::before {
@@ -511,6 +529,7 @@ html[data-screen-transition="true"] .audio-spark {
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   background-size: 200px 200px;
+  transition: opacity 120ms ease-out;
 }
 
 /* Variante oscura para la sección cinética */
@@ -705,8 +724,16 @@ html.theme-site-dark .btn-primary:hover {
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
+  opacity: 0;
   transform: translate(-50%, -50%);
-  transition: width 0.25s ease, height 0.25s ease, background 0.25s ease;
+  transition:
+    opacity 0.12s ease,
+    width 0.25s ease,
+    height 0.25s ease,
+    background 0.25s ease;
+}
+.cursor-dot.is-visible {
+  opacity: 1;
 }
 /* Círculo sólido, siempre visible (el "círculo negro que se mueve"):
    tinta sólida en claro, crema en oscuro. Sin mix-blend para que se lea nítido. */
@@ -923,6 +950,9 @@ html.theme-site-dark .cursor-dot.is-hover ~ .cursor-label {
   filter: drop-shadow(0 12px 28px rgba(14, 14, 16, 0.18));
   user-select: none;
 }
+.icecream-scene {
+  filter: none;
+}
 
 /* --- Burger: brinco idle (cuando .burger-idle tiene .is-bouncing) --- */
 .burger-idle.is-bouncing {
@@ -1110,9 +1140,8 @@ body.theme-dark .bg-noise {
 }
 
 .sound-track-menu {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 10px);
+  position: relative;
+  z-index: 80;
   width: min(290px, calc(100vw - 40px));
   padding: 0.55rem;
   border: 1px solid color-mix(in srgb, var(--ink) 24%, transparent);
@@ -1162,8 +1191,15 @@ body.theme-dark .bg-noise {
 }
 
 .sound-track-option:hover,
-.sound-track-option:focus-visible {
+.sound-track-option:focus-visible,
+.sound-track-option[data-highlighted] {
   background: color-mix(in srgb, var(--ink) 7%, transparent);
+  outline: none;
+}
+
+.sound-track-option:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 .sound-track-option.is-active {
@@ -1213,6 +1249,22 @@ body.theme-dark .bg-noise {
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (max-width: 360px) {
+  .loader-reading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .loader-title {
+    font-size: clamp(2.65rem, 17vw, 4rem) !important;
+  }
+
+  .loader-percentage {
+    align-self: flex-end;
   }
 }
 
@@ -1323,8 +1375,7 @@ body.theme-dark .bg-noise {
 }
 
 html[data-screen-transition="true"] .bg-noise {
-  opacity: 0;
-  mix-blend-mode: normal;
+  opacity: 0.018;
 }
 /* Entrada — la nueva pantalla llega desde el sentido del avance.
    Sin blur (caro): solo translate + fade, GPU-friendly. */
@@ -1522,6 +1573,38 @@ html[data-screen-transition="true"] .bg-noise {
 }
 
 /* Flechas de navegación */
+.screen-nav-audio,
+.sound-dock {
+  transition: opacity 240ms ease;
+}
+
+.wa-fab {
+  transition:
+    opacity 240ms ease,
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 300ms ease;
+}
+
+html[data-controls-dimmed="true"] .screen-nav-audio,
+html[data-controls-dimmed="true"] .sound-dock,
+html[data-controls-dimmed="true"] .wa-fab {
+  opacity: 0.28;
+}
+
+html[data-controls-dimmed="true"] .wa-fab::after {
+  animation-play-state: paused;
+  opacity: 0;
+}
+
+html[data-controls-dimmed="true"] .screen-nav-audio:hover,
+html[data-controls-dimmed="true"] .screen-nav-audio:focus-within,
+html[data-controls-dimmed="true"] .sound-dock:hover,
+html[data-controls-dimmed="true"] .sound-dock:focus-within,
+html[data-controls-dimmed="true"] .wa-fab:hover,
+html[data-controls-dimmed="true"] .wa-fab:focus-visible {
+  opacity: 1;
+}
+
 .screen-arrow {
   position: relative;
   display: inline-flex;
@@ -1547,8 +1630,8 @@ html[data-music-reactive="true"] .sound-toggle,
 html[data-music-reactive="true"] .btn-primary,
 html[data-music-reactive="true"] .wa-fab {
   box-shadow:
-    0 0 8px rgba(255, 247, 229, 0.82),
-    0 0 var(--music-glow) rgba(243, 216, 205, 0.76);
+    0 0 8px rgba(255, 247, 229, 0.78),
+    0 0 22px rgba(243, 216, 205, 0.52);
 }
 
 html[data-music-reactive="true"] .screen-arrow:not(:disabled),
@@ -1561,12 +1644,9 @@ html[data-music-reactive="true"] .sound-toggle {
 }
 
 html[data-music-reactive="true"] .music-nudge:not(:disabled) svg {
-  transform: translateY(calc(var(--music-mid) * -2px))
-    scale(calc(1 + var(--music-bass) * 0.06));
-  filter: drop-shadow(
-    0 0 calc(var(--music-treble) * 7px)
-    color-mix(in srgb, currentColor 45%, transparent)
-  );
+  transform: translateY(calc(var(--music-mid-flow) * -2px))
+    scale(calc(1 + var(--music-bass-hit) * 0.06));
+  filter: drop-shadow(0 0 6px color-mix(in srgb, currentColor 34%, transparent));
 }
 .screen-arrow-label {
   position: absolute;
@@ -1655,25 +1735,10 @@ html.theme-site-dark .project-subnav {
   }
 }
 
-/* Animaciones de entrada para keyword y panel de proyecto */
+/* Animaciones de entrada para keyword y panel de proyecto. El título grande
+   permanece limpio: la escena, no la tipografía, lleva la respuesta musical. */
 .project-keyword {
-  --title-glow-rgb: 243 216 205;
-}
-
-.project-stage[data-project-tone="burger"] .project-keyword {
-  --title-glow-rgb: 247 154 106;
-}
-
-.project-stage[data-project-tone="lego"] .project-keyword {
-  --title-glow-rgb: 245 184 46;
-}
-
-.project-stage[data-project-tone="icecream"] .project-keyword {
-  --title-glow-rgb: 232 135 169;
-}
-
-.project-stage[data-project-tone="glass"] .project-keyword {
-  --title-glow-rgb: 205 235 255;
+  text-shadow: none !important;
 }
 
 .project-cta-reactive {
@@ -1845,8 +1910,12 @@ html[data-music-reactive="true"] .voxel-drifter-icon {
 }
 
 html[data-screen-transition="true"] .voxel-drifter-reactive {
-  transform: none;
   transition: none;
+}
+
+[data-preloading="true"] .voxel-drifter,
+.screen-slot[data-phase="exit"] .voxel-drifter {
+  animation-play-state: paused;
 }
 
 .screen-slot:has(.project-stage[data-project-tone="burger"]) > .voxel-drifters {
@@ -1878,8 +1947,59 @@ html[data-screen-transition="true"] .voxel-drifter-reactive {
 }
 
 @media (max-width: 767px) {
-  .voxel-drifter:nth-child(n + 4) {
+  /* En móvil, la ficha de canción vive encima del altavoz; así la fila
+     inferior queda libre para las flechas globales. */
+  .sound-dock {
+    align-items: flex-start;
+    bottom: max(1.25rem, env(safe-area-inset-bottom));
+    flex-direction: column-reverse;
+  }
+
+  .screen-nav-audio,
+  .wa-fab {
+    bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+
+  .sound-track-toggle {
+    width: min(210px, calc(100vw - 40px));
+  }
+
+  .sound-invite-label {
     display: none;
+  }
+
+  .voxel-drifter:nth-child(n + 3) {
+    display: none;
+  }
+
+  .voxel-drifter {
+    left: var(--drifter-mobile-x);
+    top: var(--drifter-mobile-y);
+    width: var(--drifter-mobile-size);
+    animation-name: voxel-drift-mobile;
+  }
+
+  .audio-rail--three,
+  .audio-spark:nth-last-child(n + 5) {
+    display: none;
+  }
+}
+
+@keyframes voxel-drift-mobile {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drifter-mobile-out-x), 6px, 0)
+      rotate(var(--drifter-start-rotation));
+  }
+  18%,
+  82% {
+    opacity: var(--drifter-opacity);
+  }
+  50% {
+    opacity: var(--drifter-opacity);
+    transform: translate3d(var(--drifter-mobile-in-x), -16px, 0)
+      rotate(var(--drifter-peak-rotation));
   }
 }
 

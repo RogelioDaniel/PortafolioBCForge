@@ -14,14 +14,24 @@ import { getAmbient } from "@/lib/ambient-sound";
 export default function HeroScene({
   reduced,
   isTouch,
+  running = true,
+  onFirstFrame,
 }: {
   reduced: boolean;
   isTouch: boolean;
+  running?: boolean;
+  onFirstFrame?: () => void;
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
+  const runningRef = useRef(running);
+  const startRef = useRef<() => void>(() => undefined);
+  const stopRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
-    if (reduced) return;
+    if (reduced) {
+      onFirstFrame?.();
+      return;
+    }
 
     const mount = mountRef.current;
     if (!mount) return;
@@ -35,11 +45,18 @@ export default function HeroScene({
     );
     camera.position.z = 8;
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: "high-performance",
-    });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+      });
+    } catch {
+      // Un navegador sin WebGL no debe dejar el loader bloqueado.
+      onFirstFrame?.();
+      return;
+    }
     renderer.setSize(mount.clientWidth, mount.clientHeight);
     renderer.setPixelRatio(
       Math.min(window.devicePixelRatio, isTouch ? 1 : 1.25)
@@ -138,7 +155,11 @@ export default function HeroScene({
     // Escala contenida: acentos discretos sobre el titular, no protagonistas
     makeVoxelCluster(stairs, -2.9, 1.0, 0.6, 0.17);
     makeVoxelCluster(figure, 2.1, -0.5, 0.9, 0.19);
-    makeVoxelCluster(cross, 3.9, 1.6, 0.3, 0.13);
+    // En teléfono dejamos exactamente dos figuras, con recorrido suficiente
+    // para asomarse, salir del borde y volver sin saturar la GPU.
+    if (!isTouch) {
+      makeVoxelCluster(cross, 3.9, 1.6, 0.3, 0.13);
+    }
 
     const mouse = { x: 0, y: 0 };
     const target = { x: 0, y: 0 };
@@ -170,10 +191,20 @@ export default function HeroScene({
     };
 
     const start = () => {
-      if (running || !visible || !screenActive || document.hidden) return;
+      if (
+        running ||
+        !runningRef.current ||
+        !visible ||
+        !screenActive ||
+        document.hidden
+      ) {
+        return;
+      }
       running = true;
       raf = window.requestAnimationFrame(animate);
     };
+    startRef.current = start;
+    stopRef.current = stop;
 
     const io = new IntersectionObserver(
       ([entry]) => {
@@ -186,12 +217,24 @@ export default function HeroScene({
     io.observe(mount);
 
     const startTime = performance.now();
-    const animate = () => {
-      if (!visible || !screenActive || document.hidden) {
+    const minimumFrameTime = 1000 / (isTouch ? 30 : 40);
+    let lastFrameAt = 0;
+    const animate = (timestamp: number) => {
+      if (
+        !runningRef.current ||
+        !visible ||
+        !screenActive ||
+        document.hidden
+      ) {
         running = false;
         return;
       }
-      const t = (performance.now() - startTime) / 1000;
+      if (timestamp - lastFrameAt < minimumFrameTime) {
+        raf = window.requestAnimationFrame(animate);
+        return;
+      }
+      lastFrameAt = timestamp;
+      const t = (timestamp - startTime) / 1000;
 
       mouse.x += (target.x - mouse.x) * 0.05;
       mouse.y += (target.y - mouse.y) * 0.05;
@@ -210,8 +253,15 @@ export default function HeroScene({
           Math.sin(t * (0.6 + audioBands.mid * 0.3) + f.floatPhase) *
             f.floatAmp *
             (1 + band * 0.7);
+        const horizontalTravel = isTouch
+          ? index === 0
+            ? 0.95
+            : 1.1
+          : f.floatAmp * 0.5;
         f.group.position.x =
-          f.basePos.x + Math.cos(t * 0.4 + f.floatPhase) * f.floatAmp * 0.5;
+          f.basePos.x +
+          Math.cos(t * (isTouch ? 0.34 : 0.4) + f.floatPhase) *
+            horizontalTravel;
       });
 
       matWhite.emissiveIntensity = THREE.MathUtils.lerp(
@@ -245,6 +295,9 @@ export default function HeroScene({
       attributes: true,
       attributeFilter: ["data-phase"],
     });
+    // Primer frame real: el loader sólo puede terminar después de esta señal.
+    renderer.render(scene, camera);
+    onFirstFrame?.();
     start();
 
     const onResize = () => {
@@ -267,6 +320,9 @@ export default function HeroScene({
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("mousemove", onMouse);
       window.removeEventListener("resize", onResize);
+      startRef.current = () => undefined;
+      stopRef.current = () => undefined;
+      renderer.forceContextLoss();
       renderer.dispose();
       voxelGeo.dispose();
       matWhite.dispose();
@@ -274,7 +330,13 @@ export default function HeroScene({
         mount.removeChild(renderer.domElement);
       }
     };
-  }, [reduced, isTouch]);
+  }, [reduced, isTouch, onFirstFrame]);
+
+  useEffect(() => {
+    runningRef.current = running;
+    if (running) startRef.current();
+    else stopRef.current();
+  }, [running]);
 
   return (
     <div

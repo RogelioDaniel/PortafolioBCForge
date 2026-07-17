@@ -95,7 +95,13 @@ export function useScreenNav() {
   return ctx;
 }
 
-export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
+export function ScreenNavProvider({
+  children,
+  enabled = true,
+}: {
+  children: React.ReactNode;
+  enabled?: boolean;
+}) {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState<Direction>(null);
   const [replayTick, setReplayTick] = useState(0);
@@ -195,22 +201,73 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
   // fuera de vista; las flechas (ScreenNav) son las únicas que cambian de
   // pantalla. No bloqueamos el overflow del body.
   useEffect(() => {
+    if (!enabled) return;
+
     // Teclado: flechas, PageUp/Down, Home/End
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      // No interceptar si el foco está en un input/textarea/contenteditable
+      // No interceptar controles: Espacio debe activar el botón enfocado y
+      // las flechas deben seguir funcionando dentro de menús/radios.
       if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
+        target?.closest(
+          'a, button, input, textarea, select, [contenteditable="true"], ' +
+            '[role="button"], [role="menuitem"], [role="menuitemradio"]'
+        )
       ) {
         return;
       }
-      if (["ArrowDown", "PageDown", "ArrowRight", " "].includes(e.key)) {
+      const downKey =
+        ["ArrowDown", "PageDown"].includes(e.key) ||
+        (e.key === " " && !e.shiftKey);
+      const upKey =
+        ["ArrowUp", "PageUp"].includes(e.key) ||
+        (e.key === " " && e.shiftKey);
+      const scroller = document.querySelector<HTMLElement>(
+        '.screen-slot[data-active="true"] [data-screen-scroll]'
+      );
+
+      if (scroller && scroller.scrollHeight > scroller.clientHeight + 2) {
+        const atTop = scroller.scrollTop <= 2;
+        const atBottom =
+          scroller.scrollTop + scroller.clientHeight >=
+          scroller.scrollHeight - 2;
+        const pageStep = Math.max(120, scroller.clientHeight * 0.82);
+
+        if (downKey && !atBottom) {
+          e.preventDefault();
+          scroller.scrollBy({
+            top: e.key === "ArrowDown" ? 56 : pageStep,
+            behavior: "smooth",
+          });
+          return;
+        }
+        if (upKey && !atTop) {
+          e.preventDefault();
+          scroller.scrollBy({
+            top: e.key === "ArrowUp" ? -56 : -pageStep,
+            behavior: "smooth",
+          });
+          return;
+        }
+        if (e.key === "Home" && !atTop) {
+          e.preventDefault();
+          scroller.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+        if (e.key === "End" && !atBottom) {
+          e.preventDefault();
+          scroller.scrollTo({
+            top: scroller.scrollHeight,
+            behavior: "smooth",
+          });
+          return;
+        }
+      }
+
+      if (downKey || e.key === "ArrowRight") {
         e.preventDefault();
         next();
-      } else if (["ArrowUp", "PageUp", "ArrowLeft"].includes(e.key)) {
+      } else if (upKey || e.key === "ArrowLeft") {
         e.preventDefault();
         prev();
       } else if (e.key === "Home") {
@@ -227,7 +284,7 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
     return () => {
       window.removeEventListener("keydown", onKey);
     };
-  }, [next, prev, goTo, total]);
+  }, [enabled, next, prev, goTo, total]);
 
   const value = useMemo<ScreenNavValue>(
     () => ({

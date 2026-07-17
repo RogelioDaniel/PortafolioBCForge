@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { getAmbient } from "@/lib/ambient-sound";
 import { SITE } from "@/lib/portfolio-content";
@@ -15,21 +15,32 @@ import { SITE } from "@/lib/portfolio-content";
  */
 export default function Preloader({
   ready,
+  onExitStart,
   onDone,
 }: {
   ready: boolean;
+  onExitStart: () => void;
   onDone: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const ballRef = useRef<HTMLSpanElement>(null);
   const readyRef = useRef(ready);
-  const [pct, setPct] = useState(0);
+  const interfaceResolveRef = useRef<(() => void) | null>(null);
+  const pctRef = useRef(8);
+  const travelRef = useRef(0);
+  const [pct, setPct] = useState(8);
   const [soundOn, setSoundOn] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     readyRef.current = ready;
+    if (ready) {
+      interfaceResolveRef.current?.();
+      interfaceResolveRef.current = null;
+    }
   }, [ready]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
@@ -42,46 +53,109 @@ export default function Preloader({
     let onWindowLoad: (() => void) | null = null;
     let minimumTimer = 0;
     let failsafeTimer = 0;
-    let readyFrame = 0;
+    let releaseInterface: (() => void) | null = null;
+    let resizeObserver: ResizeObserver | null = null;
+    let progressTween: gsap.core.Tween | null = null;
     let finishTween: gsap.core.Tween | null = null;
     let exitTween: gsap.core.Tween | null = null;
 
-    // El contador avanza hasta 88 mientras espera las señales reales de
-    // documento + fuentes. Sólo llega a 100 cuando la interfaz está lista.
-    const obj = { v: 0 };
-    const approachTween = gsap.to(obj, {
-      v: 88,
-      duration: reduced ? 0.15 : 1.35,
-      ease: "power2.out",
-      onUpdate: () => setPct(Math.round(obj.v)),
-    });
+    const obj = { v: 8 };
+    const updateProgress = (value: number) => {
+      const next = Math.max(0, Math.min(100, value));
+      const rounded = Math.round(next);
+      if (pctRef.current !== rounded) {
+        pctRef.current = rounded;
+        setPct(rounded);
+      }
+
+      const track = trackRef.current;
+      const ball = ballRef.current;
+      if (track && ball) {
+        ball.style.transform = `translate3d(${(
+          (travelRef.current * next) /
+          100
+        ).toFixed(2)}px, -50%, 0)`;
+      }
+    };
+    const animateProgress = (target: number, duration = 0.34) => {
+      if (target <= obj.v) return;
+      progressTween?.kill();
+      progressTween = gsap.to(obj, {
+        v: target,
+        duration: reduced ? 0.05 : duration,
+        ease: "power2.out",
+        onUpdate: () => updateProgress(obj.v),
+      });
+    };
+
+    const milestones = {
+      window: false,
+      fonts: false,
+      interface: false,
+      minimum: false,
+    };
+    const mark = (key: keyof typeof milestones) => {
+      if (milestones[key] || cancelled) return;
+      milestones[key] = true;
+      const target =
+        8 +
+        (milestones.window ? 24 : 0) +
+        (milestones.fonts ? 18 : 0) +
+        (milestones.interface ? 38 : 0) +
+        (milestones.minimum ? 8 : 0);
+      animateProgress(target);
+    };
+
+    const measureTravel = () => {
+      const track = trackRef.current;
+      const ball = ballRef.current;
+      if (!track || !ball) return;
+      travelRef.current = Math.max(0, track.clientWidth - ball.offsetWidth);
+      updateProgress(obj.v);
+    };
+
+    measureTravel();
+    updateProgress(8);
+    resizeObserver = new ResizeObserver(measureTravel);
+    if (trackRef.current) resizeObserver.observe(trackRef.current);
 
     const windowReady = new Promise<void>((resolve) => {
       if (document.readyState === "complete") {
+        mark("window");
         resolve();
         return;
       }
-      onWindowLoad = () => resolve();
+      onWindowLoad = () => {
+        mark("window");
+        resolve();
+      };
       window.addEventListener("load", onWindowLoad, { once: true });
     });
-    const fontsReady = document.fonts?.ready.then(() => undefined) ??
-      Promise.resolve();
+    const fontsReady = (
+      document.fonts?.ready.then(() => undefined) ?? Promise.resolve()
+    ).then(() => {
+      mark("fonts");
+    });
     const interfaceReady = new Promise<void>((resolve) => {
-      const check = () => {
+      releaseInterface = () => {
         if (cancelled) return;
-        if (readyRef.current) {
-          resolve();
-          return;
-        }
-        readyFrame = window.requestAnimationFrame(check);
+        mark("interface");
+        resolve();
       };
-      check();
+      if (readyRef.current) releaseInterface();
+      else interfaceResolveRef.current = releaseInterface;
     });
     const minimumVisible = new Promise<void>((resolve) => {
-      minimumTimer = window.setTimeout(resolve, reduced ? 80 : 650);
+      minimumTimer = window.setTimeout(() => {
+        mark("minimum");
+        resolve();
+      }, reduced ? 80 : 650);
     });
     const failsafe = new Promise<void>((resolve) => {
-      failsafeTimer = window.setTimeout(resolve, reduced ? 180 : 2600);
+      failsafeTimer = window.setTimeout(() => {
+        animateProgress(96, 0.2);
+        resolve();
+      }, reduced ? 180 : 2600);
     });
 
     void Promise.all([
@@ -92,14 +166,15 @@ export default function Preloader({
       ]),
     ]).then(() => {
       if (cancelled) return;
-      approachTween.kill();
+      progressTween?.kill();
       finishTween = gsap.to(obj, {
         v: 100,
         duration: reduced ? 0.12 : 0.42,
         ease: "power2.out",
-        onUpdate: () => setPct(Math.round(obj.v)),
+        onUpdate: () => updateProgress(obj.v),
         onComplete: () => {
-          setPct(100);
+          updateProgress(100);
+          onExitStart();
           exitTween = gsap.to(rootRef.current, {
             yPercent: -100,
             duration: reduced ? 0.22 : 0.62,
@@ -112,18 +187,21 @@ export default function Preloader({
 
     return () => {
       cancelled = true;
-      approachTween.kill();
+      progressTween?.kill();
       finishTween?.kill();
       exitTween?.kill();
+      resizeObserver?.disconnect();
       window.clearTimeout(minimumTimer);
       window.clearTimeout(failsafeTimer);
-      window.cancelAnimationFrame(readyFrame);
+      if (interfaceResolveRef.current === releaseInterface) {
+        interfaceResolveRef.current = null;
+      }
       if (onWindowLoad) {
         window.removeEventListener("load", onWindowLoad);
       }
       unsub?.();
     };
-  }, [onDone]);
+  }, [onDone, onExitStart]);
 
   const toggleSound = () => {
     // Requiere gesto del usuario para iniciar AudioContext
@@ -157,14 +235,14 @@ export default function Preloader({
       {/* Centro — lectura estable arriba y pista completa debajo. El porcentaje
           reserva siempre tres dígitos para no redimensionar la barra. */}
       <div className="relative z-10 w-full px-6 md:px-10">
-        <div className="flex items-end justify-between gap-4 md:gap-10">
+        <div className="loader-reading flex items-end justify-between gap-4 md:gap-10">
           <h1
-            className="display display--heavy leading-[0.82] min-w-0"
+            className="loader-title display display--heavy leading-[0.82] min-w-0"
             style={{ fontSize: "clamp(3.2rem, 11vw, 11rem)" }}
           >
             LOADING
           </h1>
-          <div className="shrink-0 flex items-start justify-end">
+          <div className="loader-percentage shrink-0 flex items-start justify-end">
             <span
               className="display display--heavy tabular-nums leading-[0.82] inline-block w-[3ch] text-right"
               style={{ fontSize: "clamp(2rem, 9vw, 11rem)" }}
@@ -191,13 +269,13 @@ export default function Preloader({
           aria-valuemax={100}
           aria-label="Cargando"
         >
-          <div className="absolute inset-2 md:inset-2.5">
+          <div ref={trackRef} className="absolute inset-2 md:inset-2.5">
             <span
-              className="absolute top-1/2 h-full aspect-square rounded-full bg-[var(--ink)] block"
+              ref={ballRef}
+              className="absolute left-0 top-1/2 h-full aspect-square rounded-full bg-[var(--ink)] block"
               style={{
-                left: `${pct}%`,
-                transform: `translate3d(-${pct}%, -50%, 0)`,
-                willChange: "left, transform",
+                transform: "translate3d(0, -50%, 0)",
+                willChange: "transform",
               }}
             />
           </div>

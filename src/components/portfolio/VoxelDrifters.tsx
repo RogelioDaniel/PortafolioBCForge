@@ -65,6 +65,11 @@ export default function VoxelDrifters({
                 "--drifter-start-rotation": direction > 0 ? "-8deg" : "8deg",
                 "--drifter-peak-rotation": direction > 0 ? "11deg" : "-11deg",
                 "--drifter-end-rotation": direction > 0 ? "-4deg" : "4deg",
+                "--drifter-mobile-x": index === 0 ? "86%" : "7%",
+                "--drifter-mobile-y": index === 0 ? "17%" : "72%",
+                "--drifter-mobile-out-x": index === 0 ? "58px" : "-52px",
+                "--drifter-mobile-in-x": index === 0 ? "-16px" : "14px",
+                "--drifter-mobile-size": index === 0 ? "44px" : "34px",
               } as CSSProperties
             }
           >

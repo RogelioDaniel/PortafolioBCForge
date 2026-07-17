@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getAmbient } from "@/lib/ambient-sound";
 import type { SceneProps } from "./scene-shared";
+
+const ICE_CREAM_DESKTOP_FPS = 24;
+const ICE_CREAM_TOUCH_FPS = 20;
+
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+
+const quantizeBand = (value: number) =>
+  Math.round(clamp01(value) * 48) / 48;
 
 /**
  * IceCreamScene — CORTINA CREMOSA que cae y baña las letras "HELADO NUBE".
@@ -33,25 +42,70 @@ export default function IceCreamScene({
 
   useEffect(() => {
     const root = rootRef.current;
-    const screenSlot = root?.closest<HTMLElement>(".screen-slot");
+    if (!root) return;
+
+    const screenSlot = root.closest<HTMLElement>(".screen-slot");
+    const ambient = getAmbient();
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    const frameRate = coarsePointer
+      ? ICE_CREAM_TOUCH_FPS
+      : ICE_CREAM_DESKTOP_FPS;
+    const frameInterval = 1000 / frameRate;
+    const audioBands = {
+      bass: 0,
+      mid: 0,
+      treble: 0,
+    };
+    let musicEnabled = ambient?.isEnabled() ?? false;
+    const reducedMotionQuery = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    );
+    let reducedMotion = reducedMotionQuery.matches;
+    const initialRect = root.getBoundingClientRect();
+    let visible =
+      initialRect.width > 0 &&
+      initialRect.height > 0 &&
+      initialRect.bottom > 0 &&
+      initialRect.top < window.innerHeight;
+    let screenActive =
+      !screenSlot || screenSlot.dataset.phase !== "exit";
+    let running = false;
     let raf = 0;
-    let lastFrameAt = 0;
-    const animate = (timestamp: number) => {
-      raf = requestAnimationFrame(animate);
-      if (
-        document.hidden ||
-        screenSlot?.dataset.phase === "exit" ||
-        timestamp - lastFrameAt < 1000 / 30
-      ) {
-        return;
-      }
-      lastFrameAt = timestamp;
+    let lastFrameAt = -Infinity;
+    let lastRenderKey = "";
+    let residueOnlySettled = false;
 
-      const p = progressRef.current;
-      const active = activeRef.current;
-      if (active !== 2) return;
+    const canRun = () =>
+      visible &&
+      screenActive &&
+      !document.hidden &&
+      activeRef.current === 2;
 
-      const t = performance.now() / 1000;
+    const renderScene = (timestamp: number, force = false) => {
+      const p = Math.round(clamp01(progressRef.current) * 1000) / 1000;
+      const bass =
+        musicEnabled && !reducedMotion
+          ? quantizeBand(audioBands.bass)
+          : 0;
+      const mid =
+        musicEnabled && !reducedMotion
+          ? quantizeBand(audioBands.mid)
+          : 0;
+      const treble =
+        musicEnabled && !reducedMotion
+          ? quantizeBand(audioBands.treble)
+          : 0;
+      const musicSignalActive =
+        musicEnabled && !reducedMotion && bass + mid + treble > 0.035;
+      const timeStep =
+        musicSignalActive
+          ? Math.floor(timestamp / frameInterval)
+          : 0;
+      const renderKey = `${p}|${bass}|${mid}|${treble}|${timeStep}|${reducedMotion}`;
+      if (!force && renderKey === lastRenderKey) return;
+      lastRenderKey = renderKey;
+
+      const t = reducedMotion ? 0 : timestamp / 1000;
 
       // La cortina baja: en p=0 no hay cortina, en p=0.85 llega abajo
       const reveal = Math.min(1, p / 0.85); // 0..1
@@ -64,13 +118,53 @@ export default function IceCreamScene({
       // Suavizar con ease-out cuadrático
       const dissolveEased = 1 - (1 - dissolveT) * (1 - dissolveT);
 
-      // Onda sinusoidal en el borde inferior de la cortina (realismo)
-      const waveAmp = 14 + dissolveEased * 8; // ondas más amplias al disolverse
-      const waveFreq = 0.035;
-      const waveSpeed = 1.5 + dissolveEased * 0.5;
+      if (residueRef.current) {
+        const residueShow = dissolveEased;
+        const rY = 400; // posición del residuo (cerca del fondo)
+        const rAmp = 6 + Math.sin(t * 0.8) * 3 + bass * 8;
+        let rPath = `M0 440 L0 ${rY} `;
+        for (let x = 0; x <= 360; x += 10) {
+          const wave =
+            Math.sin(
+              x * (0.04 + mid * 0.012) +
+                t * (1.2 + mid * 1.6)
+            ) *
+              rAmp +
+            Math.sin(x * 0.12 - t * 2.8) * treble * 2.5;
+          rPath += `L${x} ${(rY + wave).toFixed(1)} `;
+        }
+        rPath += `L360 440 Z`;
+        residueRef.current.setAttribute("d", rPath);
+        residueRef.current.style.opacity = (residueShow * 0.35).toFixed(3);
+      }
+
+      // Cuando la cortina ya desapareció, la única capa viva es la onda
+      // inferior. Las otras capas se apagan una vez y dejan de recibir writes.
+      const residueOnly = p >= 0.995;
+      if (residueOnly) {
+        if (!residueOnlySettled) {
+          if (curtainRef.current) curtainRef.current.style.opacity = "0";
+          if (dripRef.current) dripRef.current.style.opacity = "0";
+          if (drip2Ref.current) drip2Ref.current.style.opacity = "0";
+          if (drip3Ref.current) drip3Ref.current.style.opacity = "0";
+          if (sheenRef.current) sheenRef.current.style.opacity = "0";
+          residueOnlySettled = true;
+        }
+        return;
+      }
+      residueOnlySettled = false;
+
+      // Bajo = amplitud, medios = flujo, agudos = ondulación fina.
+      const waveAmp = 14 + dissolveEased * 8 + bass * 14;
+      const waveFreq = 0.035 + mid * 0.016;
+      const waveSpeed = 1.5 + dissolveEased * 0.5 + mid * 2.2;
+      const detailAmp = treble * 5;
       let pathD = `M0 0 L360 0 L360 ${curtainBottomY} `;
       for (let x = 360; x >= 0; x -= 8) {
-        const wave = Math.sin(x * waveFreq + t * waveSpeed) * waveAmp;
+        const wave =
+          Math.sin(x * waveFreq + t * waveSpeed) * waveAmp +
+          Math.sin(x * (0.105 + treble * 0.035) - t * 3.1) *
+            detailAmp;
         const y = curtainBottomY + wave;
         pathD += `L${x} ${y.toFixed(1)} `;
       }
@@ -80,21 +174,6 @@ export default function IceCreamScene({
         // Transición suave de opacidad: de 1.0 a 0.0 durante la disolución
         const curtainOp = 1 - dissolveEased * 1.0;
         curtainRef.current.style.opacity = curtainOp.toFixed(3);
-      }
-
-      // Residuo cremoso en la parte inferior — aparece cuando la cortina se disuelve
-      if (residueRef.current) {
-        const residueShow = dissolveEased;
-        const rY = 400; // posición del residuo (cerca del fondo)
-        const rAmp = 6 + Math.sin(t * 0.8) * 3;
-        let rPath = `M0 440 L0 ${rY} `;
-        for (let x = 0; x <= 360; x += 10) {
-          const wave = Math.sin(x * 0.04 + t * 1.2) * rAmp;
-          rPath += `L${x} ${(rY + wave).toFixed(1)} `;
-        }
-        rPath += `L360 440 Z`;
-        residueRef.current.setAttribute("d", rPath);
-        residueRef.current.style.opacity = (residueShow * 0.35).toFixed(3);
       }
 
       // Goteo central que cuelga cuando la cortina ya bajó bastante
@@ -146,16 +225,109 @@ export default function IceCreamScene({
 
       // Brillo/sheen que se desliza (realismo de líquido)
       if (sheenRef.current) {
-        const sheenY = (t * 30) % 440;
+        const sheenY = (t * (30 + treble * 24)) % 440;
         sheenRef.current.setAttribute("y", sheenY.toFixed(1));
         // El brillo se desvanece suavemente junto con la cortina
-        const sheenOp = reveal < 0.9 ? 0.25 : 0.25 * (1 - dissolveEased);
+        const sheenOp =
+          (reveal < 0.9 ? 0.25 : 0.25 * (1 - dissolveEased)) *
+          (1 + treble * 0.7);
         sheenRef.current.style.opacity = sheenOp.toFixed(3);
       }
-
     };
-    raf = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(raf);
+
+    const animate = (timestamp: number) => {
+      if (!canRun()) {
+        running = false;
+        return;
+      }
+
+      if (
+        timestamp - lastFrameAt >=
+        frameInterval
+      ) {
+        lastFrameAt = timestamp;
+        renderScene(timestamp);
+      }
+      raf = window.requestAnimationFrame(animate);
+    };
+
+    const start = () => {
+      if (running || !canRun()) return;
+      running = true;
+      lastFrameAt = -Infinity;
+      raf = window.requestAnimationFrame(animate);
+    };
+
+    const stop = () => {
+      if (!running) return;
+      window.cancelAnimationFrame(raf);
+      running = false;
+    };
+
+    const syncRenderLoop = () => {
+      if (canRun()) start();
+      else stop();
+    };
+
+    const unsubscribeEnabled = ambient?.subscribe((enabled) => {
+      musicEnabled = enabled;
+      lastRenderKey = "";
+      syncRenderLoop();
+    });
+    const unsubscribeAnalysis = ambient?.subscribeAnalysis((bands) => {
+      audioBands.bass = bands.bassHit;
+      audioBands.mid = bands.midFlow;
+      audioBands.treble = bands.trebleSpark;
+    });
+
+    const intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting;
+        syncRenderLoop();
+      },
+      { threshold: 0 }
+    );
+    intersectionObserver.observe(root);
+
+    const phaseObserver = screenSlot
+      ? new MutationObserver(() => {
+          screenActive = screenSlot.dataset.phase !== "exit";
+          syncRenderLoop();
+        })
+      : null;
+    phaseObserver?.observe(screenSlot!, {
+      attributes: true,
+      attributeFilter: ["data-phase"],
+    });
+
+    const onVisibilityChange = () => syncRenderLoop();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    const onReducedMotionChange = (event: MediaQueryListEvent) => {
+      reducedMotion = event.matches;
+      lastRenderKey = "";
+      renderScene(performance.now(), true);
+    };
+    reducedMotionQuery.addEventListener("change", onReducedMotionChange);
+
+    renderScene(performance.now(), true);
+    syncRenderLoop();
+
+    return () => {
+      stop();
+      intersectionObserver.disconnect();
+      phaseObserver?.disconnect();
+      unsubscribeEnabled?.();
+      unsubscribeAnalysis?.();
+      document.removeEventListener(
+        "visibilitychange",
+        onVisibilityChange
+      );
+      reducedMotionQuery.removeEventListener(
+        "change",
+        onReducedMotionChange
+      );
+    };
   }, [activeRef, progressRef]);
 
   return (
@@ -198,7 +370,7 @@ export default function IceCreamScene({
       <rect x="0" y="0" width="360" height="440" fill="transparent" aria-hidden="true" />
 
       {/* TEXTO "HELADO NUBE" — debajo de la cortina (se va revelando) */}
-      <g className="icecream-text audio-title-svg" textAnchor="middle">
+      <g className="icecream-text" textAnchor="middle">
         <text
           x="180"
           y="195"

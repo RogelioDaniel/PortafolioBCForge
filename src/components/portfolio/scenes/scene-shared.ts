@@ -16,6 +16,7 @@ import type { MutableRefObject } from "react";
 export interface SceneProps {
   activeRef: MutableRefObject<number>;
   progressRef: MutableRefObject<number>;
+  revealCompleteRef: MutableRefObject<boolean>;
   accent: string;
   /** Se llama al hacer click en el cuerpo principal de la escena */
   onOpen: () => void;
@@ -44,8 +45,8 @@ export function sampleCurve(
   return points[points.length - 1][1];
 }
 
-/** Mantiene una colección de elementos DOM animados por progreso de scroll.
- *  Lee progressRef en cada frame y aplica transforms a cada capa. */
+/** Mantiene una colección de elementos DOM animados por progreso.
+ *  El consumidor llama update() desde su único loop para evitar RAF duplicados. */
 export function makeScrollDriver(
   progressRef: MutableRefObject<number>,
   layers: Array<{
@@ -58,13 +59,9 @@ export function makeScrollDriver(
     fadeOut?: [number, number];
   }>
 ) {
-  let raf = 0;
-  let running = false;
   let lastP = -1;
 
-  const tick = () => {
-    if (!running) return;
-    raf = requestAnimationFrame(tick);
+  const update = () => {
     const p = progressRef.current;
     // Cuantizar para evitar reflows cuando el progreso no cambia apreciablemente
     const pq = Math.round(p * 1000) / 1000;
@@ -91,14 +88,6 @@ export function makeScrollDriver(
   };
 
   return {
-    start() {
-      if (running) return;
-      running = true;
-      raf = requestAnimationFrame(tick);
-    },
-    stop() {
-      running = false;
-      cancelAnimationFrame(raf);
-    },
+    update,
   };
 }

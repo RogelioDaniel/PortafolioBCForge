@@ -24,6 +24,8 @@ export default function FAQ() {
     gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
       if (reduced) return;
+      const scroller =
+        ref.current?.closest<HTMLElement>("[data-screen-scroll]") ?? undefined;
       const lines = ref.current?.querySelectorAll(".faq-title .reveal-inner");
       if (lines) {
         gsap.fromTo(
@@ -34,7 +36,11 @@ export default function FAQ() {
             duration: 1,
             ease: "power4.out",
             stagger: 0.1,
-            scrollTrigger: { trigger: ref.current, start: "top 78%" },
+            scrollTrigger: {
+              trigger: ref.current,
+              scroller,
+              start: "top 78%",
+            },
           }
         );
       }
@@ -48,13 +54,18 @@ export default function FAQ() {
             y: 0,
             duration: 0.6,
             ease: "power3.out",
-            scrollTrigger: { trigger: r, start: "top 92%" },
+            scrollTrigger: { trigger: r, scroller, start: "top 92%" },
           }
         );
       });
     }, ref);
     return () => ctx.revert();
   }, [reduced]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => ScrollTrigger.refresh(), 540);
+    return () => window.clearTimeout(timer);
+  }, [openIdx]);
 
   const toggle = (i: number) => {
     setOpenIdx((prev) => (prev === i ? null : i));
@@ -70,11 +81,11 @@ export default function FAQ() {
       <div className="container-edge">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12">
           {/* Header */}
-          <div className="md:col-span-5">
+          <div className="md:col-span-5 min-w-0">
             <span className="section-label block mb-6">{FAQ_DATA.eyebrow}</span>
             <h2
-              className="faq-title audio-title display"
-              style={{ fontSize: "clamp(2.5rem, 8vw, 7rem)" }}
+              className="faq-title audio-title display max-w-full"
+              style={{ fontSize: "clamp(2.5rem, 5.2vw, 5.5rem)" }}
             >
               {FAQ_DATA.title.map((line, i) => (
                 <span key={i} className="reveal-mask block">
@@ -98,6 +109,7 @@ export default function FAQ() {
                     className="faq-item hairline"
                   >
                     <button
+                      id={`faq-button-${i}`}
                       onClick={() => toggle(i)}
                       aria-expanded={isOpen}
                       aria-controls={`faq-panel-${i}`}
@@ -144,6 +156,7 @@ export default function FAQ() {
                     <div
                       id={`faq-panel-${i}`}
                       role="region"
+                      aria-labelledby={`faq-button-${i}`}
                       aria-hidden={!isOpen}
                       className="overflow-hidden transition-all duration-500"
                       style={{

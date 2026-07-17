@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   AMBIENT_TRACKS,
   getAmbient,
@@ -17,7 +18,6 @@ export default function SoundToggle() {
   const [hasInteracted, setHasInteracted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [track, setTrack] = useState<AmbientTrack>(AMBIENT_TRACKS[0]);
-  const dockRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const ambient = getAmbient();
@@ -31,28 +31,6 @@ export default function SoundToggle() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-
-    const closeFromOutside = (event: PointerEvent) => {
-      if (!dockRef.current?.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    const closeFromEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", closeFromOutside);
-    document.addEventListener("keydown", closeFromEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeFromOutside);
-      document.removeEventListener("keydown", closeFromEscape);
-    };
-  }, [menuOpen]);
-
   const toggle = () => {
     setHasInteracted(true);
     getAmbient()?.toggle();
@@ -64,8 +42,9 @@ export default function SoundToggle() {
 
     setHasInteracted(true);
     setMenuOpen(false);
-    await ambient.selectTrack(trackId);
-    if (!ambient.isEnabled()) {
+    const shouldStart = !ambient.isPlaybackRequested();
+    const selected = await ambient.selectTrack(trackId);
+    if (shouldStart && selected && !ambient.isPlaybackRequested()) {
       await ambient.enable();
     }
   };
@@ -74,44 +53,8 @@ export default function SoundToggle() {
 
   return (
     <div
-      ref={dockRef}
       className="sound-dock fixed bottom-5 left-5 z-[57] flex items-center gap-2"
     >
-      {menuOpen && (
-        <div
-          id="sound-track-menu"
-          className="sound-track-menu"
-          role="menu"
-          aria-label="Elegir canción"
-        >
-          <div className="sound-track-menu-heading">
-            <span>Selecciona canción</span>
-            <span>{String(AMBIENT_TRACKS.length).padStart(2, "0")}</span>
-          </div>
-          <div className="sound-track-list">
-            {AMBIENT_TRACKS.map((item) => {
-              const active = item.id === track.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={active}
-                  className={`sound-track-option${active ? " is-active" : ""}`}
-                  onClick={() => void chooseTrack(item.id)}
-                >
-                  <span className="sound-track-option-dot" aria-hidden="true" />
-                  <span className="min-w-0">
-                    <strong>{item.title}</strong>
-                    <small>{item.artist}</small>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       <button
         onClick={toggle}
         aria-pressed={on}
@@ -146,35 +89,76 @@ export default function SoundToggle() {
         />
       </button>
 
-      <button
-        type="button"
-        className="sound-track-toggle"
-        aria-haspopup="menu"
-        aria-expanded={menuOpen}
-        aria-controls="sound-track-menu"
-        aria-label={`Canción actual: ${track.title}, ${track.artist}. Elegir otra canción`}
-        onClick={() => {
-          setHasInteracted(true);
-          setMenuOpen((open) => !open);
+      <DropdownMenu.Root
+        open={menuOpen}
+        onOpenChange={(open) => {
+          if (open) setHasInteracted(true);
+          setMenuOpen(open);
         }}
       >
-        <span className="sound-track-status" aria-hidden="true">
-          {on ? "ON AIR" : "TRACK"}
-        </span>
-        <span className="sound-track-copy">
-          <strong>{track.title}</strong>
-          <small>{track.artist}</small>
-        </span>
-        <svg
-          viewBox="0 0 10 10"
-          width="10"
-          height="10"
-          aria-hidden="true"
-          className={menuOpen ? "rotate-180" : undefined}
-        >
-          <path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
-        </svg>
-      </button>
+        <DropdownMenu.Trigger asChild>
+          <button
+            type="button"
+            className="sound-track-toggle"
+            aria-label={`Canción actual: ${track.title}, ${track.artist}. Elegir otra canción`}
+          >
+            <span className="sound-track-status" aria-hidden="true">
+              {on ? "ON AIR" : "TRACK"}
+            </span>
+            <span className="sound-track-copy">
+              <strong>{track.title}</strong>
+              <small>{track.artist}</small>
+            </span>
+            <svg
+              viewBox="0 0 10 10"
+              width="10"
+              height="10"
+              aria-hidden="true"
+              className={menuOpen ? "rotate-180" : undefined}
+            >
+              <path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+            </svg>
+          </button>
+        </DropdownMenu.Trigger>
+
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content
+            id="sound-track-menu"
+            className="sound-track-menu"
+            side="top"
+            align="start"
+            sideOffset={10}
+            collisionPadding={12}
+            aria-label="Elegir canción"
+          >
+            <div className="sound-track-menu-heading">
+              <span>Selecciona canción</span>
+              <span>{String(AMBIENT_TRACKS.length).padStart(2, "0")}</span>
+            </div>
+            <DropdownMenu.RadioGroup
+              className="sound-track-list"
+              value={track.id}
+              onValueChange={(trackId) => void chooseTrack(trackId)}
+            >
+              {AMBIENT_TRACKS.map((item) => (
+                <DropdownMenu.RadioItem
+                  key={item.id}
+                  value={item.id}
+                  className={`sound-track-option${
+                    item.id === track.id ? " is-active" : ""
+                  }`}
+                >
+                  <span className="sound-track-option-dot" aria-hidden="true" />
+                  <span className="min-w-0">
+                    <strong>{item.title}</strong>
+                    <small>{item.artist}</small>
+                  </span>
+                </DropdownMenu.RadioItem>
+              ))}
+            </DropdownMenu.RadioGroup>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
 
       <span
         className="sr-only"

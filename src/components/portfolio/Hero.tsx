@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import HeroScene from "./three/HeroScene";
 import { PixelChevron } from "./PixelIcons";
@@ -15,13 +15,19 @@ import { useIsTouch, usePrefersReducedMotion } from "@/lib/motion-hooks";
  *  - P4 (bug "no se ven las letras"): ya NO hay parallax de salida con scroll.
  *    Las letras se animan al montar y quedan visibles durante toda la salida.
  */
-export default function Hero() {
+export default function Hero({
+  playIntro = true,
+  onSceneReady,
+}: {
+  playIntro?: boolean;
+  onSceneReady?: () => void;
+}) {
   const rootRef = useRef<HTMLElement>(null);
   const lineRef = useRef<SVGPathElement>(null);
   const reduced = usePrefersReducedMotion();
   const isTouch = useIsTouch();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       const chars = rootRef.current?.querySelectorAll<HTMLElement>(".hero-char");
       const line = lineRef.current;
@@ -35,6 +41,21 @@ export default function Hero() {
       if (chars && chars.length) {
         gsap.set(chars, { opacity: 0, yPercent: 120, rotate: 8, filter: "blur(8px)" });
       }
+      if (line) {
+        const length = line.getTotalLength();
+        gsap.set(line, {
+          strokeDasharray: length,
+          strokeDashoffset: length,
+        });
+      }
+      gsap.set(
+        rootRef.current?.querySelectorAll(".hero-fade") as NodeListOf<HTMLElement>,
+        { opacity: 0, y: 20 }
+      );
+
+      // Durante el loading se prepara el DOM y un frame WebGL, pero el
+      // espectáculo empieza junto con el wipe para evitar flashes.
+      if (!playIntro) return;
 
       // Entrada letra por letra: stagger + blur + rotación
       if (chars && chars.length) {
@@ -52,10 +73,8 @@ export default function Hero() {
 
       // Línea decorativa que se dibuja debajo del titular
       if (line) {
-        const length = line.getTotalLength();
-        gsap.fromTo(
+        gsap.to(
           line,
-          { strokeDasharray: length, strokeDashoffset: length },
           {
             strokeDashoffset: 0,
             duration: 1.4,
@@ -93,7 +112,7 @@ export default function Hero() {
       }
     }, rootRef);
     return () => ctx.revert();
-  }, [reduced]);
+  }, [playIntro, reduced]);
 
   // Split de cada línea en caracteres (preserva espacios)
   const renderLine = (line: string, lineIdx: number) =>
@@ -157,7 +176,12 @@ export default function Hero() {
       </div>
 
       {/* Capa 2: canvas Three.js (z-2) */}
-      <HeroScene reduced={reduced} isTouch={isTouch} />
+      <HeroScene
+        reduced={reduced}
+        isTouch={isTouch}
+        running={playIntro}
+        onFirstFrame={onSceneReady}
+      />
 
       {/* Indicador de navegación — abajo-centro (invita a usar las flechas) */}
       <div

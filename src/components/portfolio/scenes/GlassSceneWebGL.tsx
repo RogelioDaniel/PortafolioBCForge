@@ -2,7 +2,17 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { getAmbient } from "@/lib/ambient-sound";
 import type { SceneProps } from "./scene-shared";
+
+const GLASS_DESKTOP_FPS = 24;
+const GLASS_TOUCH_FPS = 20;
+const GLASS_DESKTOP_DPR = 1.2;
+
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+
+const quantizeUnit = (value: number, steps: number) =>
+  Math.round(clamp01(value) * steps) / steps;
 
 /**
  * GlassSceneWebGL — panel de vidrio que se FRACTURA desde un punto de impacto
@@ -62,7 +72,6 @@ function buildShardGeometry(impact: THREE.Vector2, paneW: number, paneH: number,
   const randoms: number[] = [];
   const delays: number[] = [];
   const edgeMasks: number[] = [];
-  const uvs: number[] = [];
 
   const pushTri = (
     a: THREE.Vector3,
@@ -85,8 +94,9 @@ function buildShardGeometry(impact: THREE.Vector2, paneW: number, paneH: number,
       );
       randoms.push(rand[0], rand[1], rand[2]);
       delays.push(delay);
-      edgeMasks.push(edgeMask[idx]);
-      uvs.push((p.x + paneW / 2) / paneW, (p.y + paneH / 2) / paneH);
+      // La máscara describe las tres aristas del triángulo y debe repetirse
+      // completa en cada vértice para interpolar junto a aBary.
+      edgeMasks.push(edgeMask[0], edgeMask[1], edgeMask[2]);
     });
   };
 
@@ -119,7 +129,6 @@ function buildShardGeometry(impact: THREE.Vector2, paneW: number, paneH: number,
   geo.setAttribute("aRandom", new THREE.Float32BufferAttribute(randoms, 3));
   geo.setAttribute("aDelay", new THREE.Float32BufferAttribute(delays, 1));
   geo.setAttribute("aEdgeMask", new THREE.Float32BufferAttribute(edgeMasks, 3));
-  geo.setAttribute("aUv", new THREE.Float32BufferAttribute(uvs, 2));
   return geo;
 }
 
@@ -129,14 +138,14 @@ attribute vec3 aBary;
 attribute vec3 aRandom;
 attribute float aDelay;
 attribute vec3 aEdgeMask;
-attribute vec2 aUv;
 
 uniform float uShatter;
 uniform vec2 uImpact;
+uniform float uDance;
+uniform float uTime;
 
 varying vec3 vBary;
 varying vec3 vEdgeMask;
-varying vec2 vUv;
 varying float vShatter;
 varying float vDist;
 
@@ -157,19 +166,33 @@ void main() {
 
   vec3 local = position - aCentroid;
   vec3 axis = normalize(aRandom + vec3(0.0, 0.0, 0.6));
-  float ang = s * (2.2 + aRandom.x * 2.4);
+  // Aun reconstruido, cada celda conserva un pulso mínimo. Al fracturarse,
+  // la misma banda abre progresivamente todo el recorrido.
+  float danceGate = mix(0.18, 1.0, s) * uDance;
+  float dancePhase =
+    uTime * (2.4 + aRandom.x * 1.8) +
+    aRandom.y * 6.2831853;
+  float sway = sin(dancePhase);
+  float lift = cos(dancePhase * 0.82 + aRandom.z * 4.0);
+  float ang =
+    s * (2.2 + aRandom.x * 2.4) +
+    danceGate * sway * 0.32;
   vec3 rotated = rotateAxis(local, axis, ang);
 
   vec3 explode;
   explode.xy = dir * s * spread;
   explode.z = s * (1.4 + aRandom.z * 1.2);
   explode.y -= s * s * 0.5;
+  vec2 tangent = vec2(-dir.y, dir.x);
+  explode.xy +=
+    tangent * sway * danceGate * (0.10 + aRandom.z * 0.08);
+  explode.z +=
+    lift * danceGate * (0.08 + aRandom.x * 0.08);
 
   vec3 pos = aCentroid + rotated + explode;
 
   vBary = aBary;
   vEdgeMask = aEdgeMask;
-  vUv = aUv;
   vShatter = s;
   vDist = length(aCentroid.xy - uImpact);
 
@@ -183,10 +206,10 @@ precision highp float;
 uniform vec3 uFrost;
 uniform vec3 uCopper;
 uniform float uOpacity;
+uniform float uEdgePulse;
 
 varying vec3 vBary;
 varying vec3 vEdgeMask;
-varying vec2 vUv;
 varying float vShatter;
 varying float vDist;
 
@@ -202,9 +225,19 @@ void main() {
   float edge = max(edgeCuts.x, max(edgeCuts.y, edgeCuts.z));
   float edgeCore = max(coreCuts.x, max(coreCuts.y, coreCuts.z));
   col = mix(col, vec3(0.018, 0.022, 0.024), edge * 0.68);
-  col += edgeCore * (0.08 + vShatter * 0.20) * vec3(0.82, 0.76, 0.68);
+  vec3 liveEdge = mix(
+    vec3(0.82, 0.76, 0.68),
+    uCopper,
+    uEdgePulse * 0.62
+  );
+  col +=
+    edgeCore *
+    (0.08 + vShatter * 0.20 + uEdgePulse * 0.48) *
+    liveEdge;
+  col += edge * uEdgePulse * 0.10 * uCopper;
 
-  float alpha = (0.46 + edge * 0.22) * uOpacity;
+  float alpha =
+    (0.46 + edge * (0.22 + uEdgePulse * 0.08)) * uOpacity;
   gl_FragColor = vec4(col, alpha);
 }
 `;
@@ -220,25 +253,53 @@ export default function GlassSceneWebGL({
     const mount = mountRef.current;
     if (!mount) return;
 
-    // GUARD anti-NaN: nunca dividir por 0. Si el contenedor aún no tiene
-    // tamaño (montaje temprano), usar el viewport como respaldo.
-    let W = mount.clientWidth || window.innerWidth;
-    let H = mount.clientHeight || window.innerHeight;
+    const initialRect = mount.getBoundingClientRect();
+    // Nunca se construye la proyección con cero: evita atributos NaN durante
+    // montajes tempranos o cambios de pantalla.
+    let W = Math.max(
+      1,
+      Math.round(initialRect.width || mount.clientWidth || window.innerWidth)
+    );
+    let H = Math.max(
+      1,
+      Math.round(initialRect.height || mount.clientHeight || window.innerHeight)
+    );
+    const initialAspect = W / H;
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    const frameRate = coarsePointer ? GLASS_TOUCH_FPS : GLASS_DESKTOP_FPS;
+    const frameInterval = 1000 / frameRate;
+    const reducedMotionQuery = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    );
+    let reducedMotion = reducedMotionQuery.matches;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
     camera.position.z = 6;
 
-    const renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: true,
-      powerPreference: "high-performance",
-    });
-    renderer.setSize(W, H);
-    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-    renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, coarsePointer ? 1 : 1.25)
-    );
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        alpha: true,
+        antialias: !coarsePointer,
+        powerPreference: "high-performance",
+      });
+    } catch {
+      return;
+    }
+
+    const getTargetDpr = () =>
+      Math.min(
+        window.devicePixelRatio || 1,
+        coarsePointer ? 1 : GLASS_DESKTOP_DPR
+      );
+    let currentDpr = getTargetDpr();
+    renderer.setPixelRatio(currentDpr);
+    renderer.setSize(W, H, false);
+    renderer.setClearColor(0x000000, 0);
+    renderer.domElement.style.width = "100%";
+    renderer.domElement.style.height = "100%";
+    renderer.domElement.style.display = "block";
     mount.appendChild(renderer.domElement);
 
     // Dimensiones del panel que cubre el viewport
@@ -268,9 +329,17 @@ export default function GlassSceneWebGL({
         uFrost: { value: new THREE.Color(0xc2d0d8) },
         uCopper: { value: new THREE.Color(0xd18a45) },
         uOpacity: { value: 1 },
+        uDance: { value: 0 },
+        uTime: { value: 0 },
+        uEdgePulse: { value: 0 },
       },
     });
     const mesh = new THREE.Mesh(geo, mat);
+    // Solo cambia de escala al redimensionar; evita recomponer la matriz en
+    // cada render.
+    mesh.matrixAutoUpdate = false;
+    mesh.updateMatrix();
+    mesh.frustumCulled = false;
     scene.add(mesh);
 
     // Click → abrir URL
@@ -278,44 +347,133 @@ export default function GlassSceneWebGL({
     renderer.domElement.style.cursor = "pointer";
     renderer.domElement.addEventListener("click", onClick);
 
+    const ambient = getAmbient();
+    const audioBands = {
+      dance: 0,
+      edge: 0,
+    };
+    let musicEnabled = ambient?.isEnabled() ?? false;
     const screenSlot = mount.closest<HTMLElement>(".screen-slot");
-    let visible = true;
-    let screenActive = screenSlot?.dataset.phase !== "exit";
-    const io = new IntersectionObserver(
+    let visible =
+      initialRect.width > 0 &&
+      initialRect.height > 0 &&
+      initialRect.bottom > 0 &&
+      initialRect.top < window.innerHeight;
+    let screenActive =
+      !screenSlot || screenSlot.dataset.phase !== "exit";
+    let loopRunning = false;
+    let lastRenderAt = -Infinity;
+    let lastRenderSignature = "";
+
+    const canRender = () =>
+      visible &&
+      screenActive &&
+      !document.hidden &&
+      activeRef.current === 3;
+
+    const readShatter = () => {
+      if (activeRef.current !== 3) return 0;
+      const p = clamp01(progressRef.current);
+      if (p < 0.5) {
+        return (p / 0.5) ** 1.3;
+      }
+
+      // Reconstrucción dirigida exclusivamente por progressRef.
+      const k = (p - 0.5) / 0.5;
+      return Math.pow(1 - k, 3);
+    };
+
+    const renderFrame = (timestamp: number, force = false) => {
+      if (!canRender()) {
+        if (loopRunning) {
+          renderer.setAnimationLoop(null);
+          loopRunning = false;
+        }
+        return;
+      }
+      if (
+        !force &&
+        timestamp - lastRenderAt < frameInterval
+      ) {
+        return;
+      }
+      lastRenderAt = timestamp;
+
+      const shatter = quantizeUnit(readShatter(), 180);
+      const dance =
+        musicEnabled && !reducedMotion
+          ? quantizeUnit(audioBands.dance, 36)
+          : 0;
+      const edgePulse =
+        musicEnabled && !reducedMotion
+          ? quantizeUnit(audioBands.edge, 48)
+          : 0;
+      const musicMotionActive =
+        musicEnabled &&
+        !reducedMotion &&
+        (dance > 0.02 || edgePulse > 0.02);
+      const timeBucket = musicMotionActive
+        ? Math.floor(timestamp / frameInterval)
+        : 0;
+      const signature = `${shatter}|${dance}|${edgePulse}|${timeBucket}`;
+      if (!force && signature === lastRenderSignature) return;
+      lastRenderSignature = signature;
+
+      if (mat.uniforms.uShatter.value !== shatter) {
+        mat.uniforms.uShatter.value = shatter;
+      }
+      if (mat.uniforms.uDance.value !== dance) {
+        mat.uniforms.uDance.value = dance;
+      }
+      if (mat.uniforms.uEdgePulse.value !== edgePulse) {
+        mat.uniforms.uEdgePulse.value = edgePulse;
+      }
+      if (musicMotionActive) {
+        const quantizedTime = (timeBucket % (frameRate * 1024)) / frameRate;
+        if (mat.uniforms.uTime.value !== quantizedTime) {
+          mat.uniforms.uTime.value = quantizedTime;
+        }
+      }
+
+      renderer.render(scene, camera);
+    };
+
+    const animate = (timestamp: number) => renderFrame(timestamp);
+
+    function syncRenderLoop() {
+      const shouldRender = canRender();
+      if (shouldRender === loopRunning) return;
+
+      loopRunning = shouldRender;
+      if (shouldRender) {
+        lastRenderAt = -Infinity;
+        lastRenderSignature = "";
+        renderer.setAnimationLoop(animate);
+      } else {
+        renderer.setAnimationLoop(null);
+      }
+    }
+
+    const unsubscribeEnabled = ambient?.subscribe((enabled) => {
+      musicEnabled = enabled;
+      lastRenderSignature = "";
+      syncRenderLoop();
+    });
+    const unsubscribeAnalysis = ambient?.subscribeAnalysis((bands) => {
+      // Medios sostenidos mueven las esquirlas; agudos transitorios prenden
+      // sus cortes. Los callbacks solo escriben memoria: ningún setState.
+      audioBands.dance = bands.midFlow;
+      audioBands.edge = bands.trebleSpark;
+    });
+
+    const intersectionObserver = new IntersectionObserver(
       ([entry]) => {
         visible = entry.isIntersecting;
         syncRenderLoop();
       },
       { threshold: 0 }
     );
-    io.observe(mount);
-
-    let lastRenderAt = 0;
-    const minimumFrameTime = 1000 / (coarsePointer ? 30 : 45);
-    const animate = (timestamp: number) => {
-      if (timestamp - lastRenderAt < minimumFrameTime) return;
-      lastRenderAt = timestamp;
-      const p = progressRef.current;
-      const active = activeRef.current;
-      // uShatter: 0 al inicio, sube a 1 al 50% del progreso, vuelve a 0 al final
-      let shatter = 0;
-      if (p < 0.5) {
-        shatter = (p / 0.5) ** 1.3;
-      } else {
-        // reconstrucción (easeInOutCubic invertida)
-        const k = (p - 0.5) / 0.5;
-        shatter = 1 - (1 - Math.pow(1 - k, 3));
-      }
-      // Solo anima cuando es el proyecto activo (glass = índice 3)
-      if (active !== 3) shatter = 0;
-      mat.uniforms.uShatter.value = shatter;
-      renderer.render(scene, camera);
-    };
-
-    function syncRenderLoop() {
-      const shouldRender = visible && screenActive && !document.hidden;
-      renderer.setAnimationLoop(shouldRender ? animate : null);
-    }
+    intersectionObserver.observe(mount);
 
     const phaseObserver = screenSlot
       ? new MutationObserver(() => {
@@ -330,29 +488,78 @@ export default function GlassSceneWebGL({
 
     const onVisibilityChange = () => syncRenderLoop();
     document.addEventListener("visibilitychange", onVisibilityChange);
-    syncRenderLoop();
 
-    const onResize = () => {
-      W = mount.clientWidth || window.innerWidth;
-      H = mount.clientHeight || window.innerHeight;
+    const onReducedMotionChange = (event: MediaQueryListEvent) => {
+      reducedMotion = event.matches;
+      lastRenderSignature = "";
+      if (canRender()) renderFrame(performance.now(), true);
+    };
+    reducedMotionQuery.addEventListener("change", onReducedMotionChange);
+
+    let resizeFrame = 0;
+    const applyResize = () => {
+      resizeFrame = 0;
+      const rect = mount.getBoundingClientRect();
+      const nextW = Math.max(
+        1,
+        Math.round(rect.width || mount.clientWidth || window.innerWidth)
+      );
+      const nextH = Math.max(
+        1,
+        Math.round(rect.height || mount.clientHeight || window.innerHeight)
+      );
+      const nextDpr = getTargetDpr();
+      if (nextW === W && nextH === H && nextDpr === currentDpr) return;
+
+      W = nextW;
+      H = nextH;
+      currentDpr = nextDpr;
       camera.aspect = W / H;
       camera.updateProjectionMatrix();
-      renderer.setPixelRatio(
-        Math.min(window.devicePixelRatio, coarsePointer ? 1 : 1.25)
-      );
-      renderer.setSize(W, H);
+      renderer.setPixelRatio(currentDpr);
+      renderer.setSize(W, H, false);
+      mesh.scale.x =
+        Math.round(((W / H) / initialAspect) * 1000) / 1000;
+      mesh.updateMatrix();
+      lastRenderSignature = "";
+      if (canRender()) renderFrame(performance.now(), true);
     };
-    window.addEventListener("resize", onResize);
+    const resizeObserver = new ResizeObserver(() => {
+      if (resizeFrame) return;
+      resizeFrame = window.requestAnimationFrame(applyResize);
+    });
+    resizeObserver.observe(mount);
+
+    // El primer frame no depende del loop ni de que IntersectionObserver haya
+    // entregado su primera entrada.
+    if (canRender()) {
+      renderFrame(performance.now(), true);
+    }
+    syncRenderLoop();
 
     return () => {
       renderer.setAnimationLoop(null);
+      loopRunning = false;
+      if (resizeFrame) {
+        window.cancelAnimationFrame(resizeFrame);
+      }
       renderer.domElement.removeEventListener("click", onClick);
-      window.removeEventListener("resize", onResize);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      io.disconnect();
+      document.removeEventListener(
+        "visibilitychange",
+        onVisibilityChange
+      );
+      reducedMotionQuery.removeEventListener(
+        "change",
+        onReducedMotionChange
+      );
+      unsubscribeEnabled?.();
+      unsubscribeAnalysis?.();
+      intersectionObserver.disconnect();
+      resizeObserver.disconnect();
       phaseObserver?.disconnect();
       geo.dispose();
       mat.dispose();
+      renderer.forceContextLoss();
       renderer.dispose();
       if (renderer.domElement.parentNode === mount) {
         mount.removeChild(renderer.domElement);
