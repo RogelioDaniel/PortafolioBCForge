@@ -18,8 +18,8 @@ import Contact from "@/components/portfolio/Contact";
 import Footer from "@/components/portfolio/Footer";
 import SoundToggle from "@/components/portfolio/SoundToggle";
 import CommandPalette from "@/components/portfolio/CommandPalette";
-import BackToTop from "@/components/portfolio/BackToTop";
 import ScreenNav from "@/components/portfolio/ScreenNav";
+import VoxelDrifters from "@/components/portfolio/VoxelDrifters";
 import { ScreenNavProvider, useScreenNav, SCREENS } from "@/lib/use-screen-nav";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
 
@@ -72,7 +72,6 @@ function AppShell({ reduced }: { reduced: boolean }) {
       <Header />
       {<SoundToggle />}
       {<CommandPalette />}
-      <BackToTop />
       <WhatsAppButton />
       <ScreenNav />
 
@@ -122,6 +121,7 @@ function ScreenStage({
           phase="exit"
           direction={direction}
           dark={SCREENS[outgoing]?.dark}
+          reduced={reduced}
         >
           {renderScreen(SCREENS[outgoing].id)}
         </ScreenSlot>
@@ -132,6 +132,7 @@ function ScreenStage({
         phase="enter"
         direction={direction}
         dark={SCREENS[current]?.dark}
+        reduced={reduced}
       >
         {renderScreen(SCREENS[current].id)}
       </ScreenSlot>
@@ -188,12 +189,14 @@ function ScreenSlot({
   phase,
   direction,
   dark,
+  reduced,
   children,
 }: {
   index: number;
   phase: "enter" | "exit";
   direction: "next" | "prev" | null;
   dark?: boolean;
+  reduced: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -209,7 +212,8 @@ function ScreenSlot({
         pointerEvents: phase === "enter" ? "auto" : "none",
       }}
     >
-      {children}
+      <VoxelDrifters screenIndex={index} reduced={reduced} />
+      <div className="relative z-[2] h-full">{children}</div>
     </div>
   );
 }

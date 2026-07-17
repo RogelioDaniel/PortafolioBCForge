@@ -27,7 +27,7 @@ export default function SoundToggle() {
       aria-pressed={on}
       aria-label={on ? "Silenciar música" : "Reproducir música"}
       data-cursor={on ? "SILENCIAR" : "SONIDO"}
-      className="fixed bottom-5 left-5 z-40 w-11 h-11 rounded-full border flex items-center justify-center transition-all duration-300 hover:scale-110"
+      className="sound-toggle fixed bottom-5 left-5 z-40 w-11 h-11 rounded-full border flex items-center justify-center transition-all duration-300 hover:scale-110"
       style={{
         borderColor: "var(--pill-border)",
         background: "var(--bg-light)",

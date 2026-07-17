@@ -157,15 +157,18 @@ export default function Projects() {
       {/* Panel superior: nombre + descripción del proyecto.
           El indicador y pill van alineados a la izquierda con el nombre para
           no chocar con el menú de navegación (arriba-derecha). */}
-      <div className="absolute top-0 left-0 right-0 z-[3] container-edge pt-20 md:pt-28 pointer-events-none">
+      <div
+        className="absolute top-0 left-0 right-0 z-[3] container-edge pointer-events-none"
+        style={{ paddingTop: "clamp(6.5rem, 9vw, 9rem)" }}
+      >
         <div
           key={`panel-${panelTick}`}
-          className="project-panel-enter"
+          className="project-panel-enter max-w-[52rem]"
         >
           {/* Línea 1: nombre + indicador + pill */}
           <div className="flex items-center gap-3 flex-wrap mb-2">
             <h3
-              className="shrink-0"
+              className="shrink-0 leading-tight"
               style={{
                 fontFamily: "var(--font-inter)",
                 fontWeight: 600,
@@ -191,7 +194,7 @@ export default function Projects() {
             </span>
           </div>
           {/* Línea 2: descripción */}
-          <p className="text-[12px] md:text-[13px] leading-relaxed max-w-[50ch] opacity-80">
+          <p className="mt-3 text-[13px] md:text-[15px] leading-relaxed max-w-[52ch] opacity-80">
             {current.description}
           </p>
         </div>

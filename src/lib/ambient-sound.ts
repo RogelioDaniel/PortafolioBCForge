@@ -54,6 +54,14 @@ class AmbientSound {
   }
 
   private notifyAnalysis() {
+    const root = document.documentElement;
+    root.style.setProperty("--music-bass", this.bands.bass.toFixed(3));
+    root.style.setProperty("--music-mid", this.bands.mid.toFixed(3));
+    root.style.setProperty("--music-treble", this.bands.treble.toFixed(3));
+    root.style.setProperty("--music-glow", `${Math.round(4 + this.bands.energy * 18)}px`);
+    root.style.setProperty("--music-scale", (1 + this.bands.bass * 0.22).toFixed(3));
+    root.dataset.musicReactive =
+      this.enabled && this.bands.energy > 0.025 ? "true" : "false";
     this.analysisSubscribers.forEach((callback) => callback(this.bands));
   }
 

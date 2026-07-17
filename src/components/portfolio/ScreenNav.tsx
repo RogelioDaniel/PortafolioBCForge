@@ -12,10 +12,8 @@ import { useIsTouch } from "@/lib/motion-hooks";
  * Oculto en la primera pantalla para no estorbar el hero (ahí hay un hint
  * de scroll que invita a la primera flecha).
  *
- * Cuando un sub-nav está activo (p.ej. KineticSection), las flechas inferiores
- * se ocultan si el sub-nav NO está en su borde correspondiente. Esto guía al
- * usuario a usar las flechas laterales de la sección hasta alcanzar el último
- * slide, momento en que las flechas inferiores reaparecen.
+ * Cuando una sección tiene sub-navegación, estas flechas avanzan primero entre
+ * sus estados internos y luego pasan a la siguiente pantalla.
  */
 export default function ScreenNav() {
   const { current, total, next, prev, subNavEdges } = useScreenNav();
@@ -26,27 +24,25 @@ export default function ScreenNav() {
   const nextLabel = SCREENS[Math.min(total - 1, current + 1)]?.label;
   const prevLabel = SCREENS[Math.max(0, current - 1)]?.label;
 
-  // Cuando hay un sub-nav activo, ocultar la flecha si aún no llegamos al borde.
-  // Al llegar al borde, la flecha reaparece suavemente.
-  const hidePrev = subNavEdges ? !subNavEdges.atStart : false;
-  const hideNext = subNavEdges ? !subNavEdges.atEnd : false;
+  const isInsideSubNav =
+    subNavEdges !== null && (!subNavEdges.atStart || !subNavEdges.atEnd);
+  const nextTarget =
+    isInsideSubNav && !subNavEdges.atEnd ? "Siguiente proyecto" : nextLabel;
+  const prevTarget =
+    isInsideSubNav && !subNavEdges.atStart ? "Proyecto anterior" : prevLabel;
 
   return (
     <div
-      className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[55] flex items-center gap-3 md:gap-5 select-none transition-opacity duration-500"
-      style={{
-        opacity: hidePrev && hideNext ? 0 : 1,
-        pointerEvents: hidePrev && hideNext ? "none" : "auto",
-      }}
+      className="screen-nav-audio fixed bottom-5 left-1/2 -translate-x-1/2 z-[55] flex items-center gap-3 md:gap-5 select-none"
       aria-label="Navegación entre pantallas"
     >
       {/* Flecha anterior */}
       <button
         onClick={prev}
-        disabled={isFirst || hidePrev}
+        disabled={isFirst}
         data-cursor="ATRÁS"
-        aria-label={`Pantalla anterior: ${prevLabel}`}
-        className="screen-arrow group disabled:opacity-0 disabled:pointer-events-none transition-all duration-500 hover:scale-110"
+        aria-label={prevTarget ?? "Pantalla anterior"}
+        className="screen-arrow group disabled:opacity-0 disabled:pointer-events-none transition-all duration-300 hover:scale-110"
         style={{
           width: isTouch ? 40 : 46,
           height: isTouch ? 40 : 46,
@@ -68,8 +64,7 @@ export default function ScreenNav() {
 
       {/* Indicador 01/07 */}
       <div
-        className="flex items-center gap-2 px-1 transition-opacity duration-500"
-        style={{ opacity: hidePrev && hideNext ? 0 : 1 }}
+        className="flex items-center gap-2 px-1"
       >
         <span
           className="mono text-[11px] tabular-nums"
@@ -92,10 +87,10 @@ export default function ScreenNav() {
       {/* Flecha siguiente */}
       <button
         onClick={next}
-        disabled={isLast || hideNext}
+        disabled={isLast}
         data-cursor="SIGUIENTE"
-        aria-label={`Siguiente pantalla: ${nextLabel}`}
-        className={`screen-arrow group disabled:opacity-0 disabled:pointer-events-none transition-all duration-500 hover:scale-110${
+        aria-label={nextTarget ?? "Siguiente pantalla"}
+        className={`screen-arrow group disabled:opacity-0 disabled:pointer-events-none transition-all duration-300 hover:scale-110${
           subNavEdges?.atEnd ? " screen-arrow-reveal" : ""
         }`}
         style={{
