@@ -97,6 +97,7 @@ export default function AboutSection() {
     <section
       ref={ref}
       id="sobre-mi"
+      data-screen-scroll
       className="h-[100svh] overflow-y-auto py-16 md:py-20 relative"
       aria-label="Sobre mí"
     >

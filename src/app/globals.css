@@ -1139,6 +1139,13 @@ body.theme-dark .bg-noise {
   transition: transform 180ms ease;
 }
 
+.sound-track-compact-icon {
+  display: none;
+  font-family: var(--font-space-mono);
+  font-size: 16px;
+  line-height: 1;
+}
+
 .sound-track-menu {
   position: relative;
   z-index: 80;
@@ -1946,27 +1953,69 @@ html[data-screen-transition="true"] .voxel-drifter-reactive {
   }
 }
 
-@media (max-width: 767px) {
-  /* En móvil, la ficha de canción vive encima del altavoz; así la fila
-     inferior queda libre para las flechas globales. */
+@media (max-width: 820px) {
+  /* En pantallas estrechas el selector conserva un objetivo táctil de 44px,
+     pero se vuelve compacto para no invadir el CTA ni las flechas globales. */
   .sound-dock {
     align-items: flex-start;
     bottom: max(1.25rem, env(safe-area-inset-bottom));
     flex-direction: column-reverse;
+    left: max(0.5rem, env(safe-area-inset-left));
   }
 
-  .screen-nav-audio,
-  .wa-fab {
+  .screen-nav-audio {
     bottom: max(1.25rem, env(safe-area-inset-bottom));
   }
 
   .sound-track-toggle {
-    width: min(210px, calc(100vw - 40px));
+    display: flex;
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .sound-track-status,
+  .sound-track-copy {
+    display: none;
+  }
+
+  .sound-track-toggle > svg {
+    display: none;
+  }
+
+  .sound-track-compact-icon {
+    display: block;
   }
 
   .sound-invite-label {
     display: none;
   }
+}
+
+@media (max-width: 480px) {
+  .loader-reading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.5rem;
+  }
+
+  .loader-title {
+    font-size: clamp(2.65rem, 14vw, 3.6rem) !important;
+  }
+
+  .loader-percentage > span:first-child {
+    width: 2.7ch;
+    font-size: clamp(1.75rem, 9vw, 2.5rem) !important;
+  }
+
+  .loader-percentage > span:last-child {
+    font-size: 1rem !important;
+  }
+}
+
+@media (max-width: 767px) {
 
   .voxel-drifter:nth-child(n + 3) {
     display: none;

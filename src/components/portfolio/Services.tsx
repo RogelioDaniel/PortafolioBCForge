@@ -72,6 +72,7 @@ export default function Services() {
   return (
     <section
       ref={ref}
+      data-screen-scroll
       className="h-[100svh] overflow-y-auto py-16 md:py-20"
       aria-label="Servicios y stack"
     >

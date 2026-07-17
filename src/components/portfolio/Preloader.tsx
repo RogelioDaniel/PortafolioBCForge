@@ -211,7 +211,7 @@ export default function Preloader({
   return (
     <div
       ref={rootRef}
-      className="fixed inset-0 z-[100] bg-[var(--bg-light)] flex flex-col justify-between"
+      className="fixed inset-0 z-[100] overflow-hidden bg-[var(--bg-light)] flex flex-col justify-between"
       aria-hidden={false}
     >
       {/* Glow sutil de fondo */}

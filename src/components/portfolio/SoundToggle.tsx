@@ -109,6 +109,9 @@ export default function SoundToggle() {
               <strong>{track.title}</strong>
               <small>{track.artist}</small>
             </span>
+            <span className="sound-track-compact-icon" aria-hidden="true">
+              ♪
+            </span>
             <svg
               viewBox="0 0 10 10"
               width="10"
