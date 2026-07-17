@@ -6,7 +6,6 @@ import HeroScene from "./three/HeroScene";
 import { PixelChevron } from "./PixelIcons";
 import { HERO } from "@/lib/portfolio-content";
 import { useIsTouch, usePrefersReducedMotion } from "@/lib/motion-hooks";
-import { useScreenNav } from "@/lib/use-screen-nav";
 
 /**
  * Hero (100vh) — MINIMALISTA Y ELEGANTE.
@@ -14,15 +13,13 @@ import { useScreenNav } from "@/lib/use-screen-nav";
  *  - Animación elegante: cada letra entra escalonada con leve blur/rotación,
  *    línea decorativa que se dibuja debajo del titular, y respiración sutil.
  *  - P4 (bug "no se ven las letras"): ya NO hay parallax de salida con scroll.
- *    Las letras se animan onEnter (al montar / al volver a la pantalla) y
- *    quedan siempre visibles. La animación se re-dispara con replayTick.
+ *    Las letras se animan al montar y quedan visibles durante toda la salida.
  */
 export default function Hero() {
   const rootRef = useRef<HTMLElement>(null);
   const lineRef = useRef<SVGPathElement>(null);
   const reduced = usePrefersReducedMotion();
   const isTouch = useIsTouch();
-  const { replayTick } = useScreenNav();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -96,7 +93,7 @@ export default function Hero() {
       }
     }, rootRef);
     return () => ctx.revert();
-  }, [reduced, replayTick]);
+  }, [reduced]);
 
   // Split de cada línea en caracteres (preserva espacios)
   const renderLine = (line: string, lineIdx: number) =>

@@ -30,12 +30,23 @@ export default function IceCreamScene({
   const drip2Ref = useRef<SVGPathElement>(null);
   const drip3Ref = useRef<SVGPathElement>(null);
   const sheenRef = useRef<SVGRectElement>(null);
-  const glowRef = useRef<SVGEllipseElement>(null);
 
   useEffect(() => {
+    const root = rootRef.current;
+    const screenSlot = root?.closest<HTMLElement>(".screen-slot");
     let raf = 0;
-    const animate = () => {
+    let lastFrameAt = 0;
+    const animate = (timestamp: number) => {
       raf = requestAnimationFrame(animate);
+      if (
+        document.hidden ||
+        screenSlot?.dataset.phase === "exit" ||
+        timestamp - lastFrameAt < 1000 / 30
+      ) {
+        return;
+      }
+      lastFrameAt = timestamp;
+
       const p = progressRef.current;
       const active = activeRef.current;
       if (active !== 2) return;
@@ -142,15 +153,8 @@ export default function IceCreamScene({
         sheenRef.current.style.opacity = sheenOp.toFixed(3);
       }
 
-      // Glow cálido que se intensifica al final (transferencia visual al botón)
-      if (glowRef.current) {
-        const glowOp = 0.08 + dissolveEased * 0.12;
-        const glowRy = 120 + dissolveEased * 40;
-        glowRef.current.setAttribute("ry", glowRy.toFixed(0));
-        glowRef.current.style.opacity = glowOp.toFixed(3);
-      }
     };
-    animate();
+    raf = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(raf);
   }, [activeRef, progressRef]);
 
@@ -192,9 +196,6 @@ export default function IceCreamScene({
 
       {/* Capa clickable */}
       <rect x="0" y="0" width="360" height="440" fill="transparent" aria-hidden="true" />
-
-      {/* Glow cálido detrás — se intensifica al final de la animación */}
-      <ellipse ref={glowRef} cx="180" cy="320" rx="170" ry="120" fill={accent} opacity="0.08" />
 
       {/* TEXTO "HELADO NUBE" — debajo de la cortina (se va revelando) */}
       <g className="icecream-text audio-title-svg" textAnchor="middle">

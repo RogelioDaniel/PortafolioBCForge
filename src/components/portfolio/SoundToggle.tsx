@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getAmbient } from "@/lib/ambient-sound";
+import { useEffect, useRef, useState } from "react";
+import {
+  AMBIENT_TRACKS,
+  getAmbient,
+  type AmbientTrack,
+} from "@/lib/ambient-sound";
 
 /**
  * SoundToggle — botón flotante (esquina inferior-izquierda) que persiste
@@ -11,56 +15,176 @@ import { getAmbient } from "@/lib/ambient-sound";
 export default function SoundToggle() {
   const [on, setOn] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [track, setTrack] = useState<AmbientTrack>(AMBIENT_TRACKS[0]);
+  const dockRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const ambient = getAmbient();
-    const unsub = ambient?.subscribe((v) => setOn(v));
+    const unsubEnabled = ambient?.subscribe((v) => setOn(v));
+    const unsubTrack = ambient?.subscribeTrack((nextTrack) =>
+      setTrack(nextTrack)
+    );
     return () => {
-      unsub?.();
+      unsubEnabled?.();
+      unsubTrack?.();
     };
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const closeFromOutside = (event: PointerEvent) => {
+      if (!dockRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const closeFromEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeFromOutside);
+    document.addEventListener("keydown", closeFromEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeFromOutside);
+      document.removeEventListener("keydown", closeFromEscape);
+    };
+  }, [menuOpen]);
 
   const toggle = () => {
     setHasInteracted(true);
     getAmbient()?.toggle();
   };
 
+  const chooseTrack = async (trackId: string) => {
+    const ambient = getAmbient();
+    if (!ambient) return;
+
+    setHasInteracted(true);
+    setMenuOpen(false);
+    await ambient.selectTrack(trackId);
+    if (!ambient.isEnabled()) {
+      await ambient.enable();
+    }
+  };
+
   const shouldInvite = !on && !hasInteracted;
 
   return (
-    <button
-      onClick={toggle}
-      aria-pressed={on}
-      aria-label={on ? "Silenciar música" : "Reproducir música"}
-      data-cursor={on ? "SILENCIAR" : "SONIDO"}
-      data-on={on ? "true" : "false"}
-      data-invite={shouldInvite ? "true" : "false"}
-      className="sound-toggle fixed bottom-5 left-5 z-40 w-11 h-11 rounded-full border flex items-center justify-center transition-all duration-300 hover:scale-110"
-      style={{
-        borderColor: "var(--pill-border)",
-        background: "var(--bg-light)",
-        backdropFilter: "blur(8px)",
-      }}
+    <div
+      ref={dockRef}
+      className="sound-dock fixed bottom-5 left-5 z-[57] flex items-center gap-2"
     >
-      {shouldInvite && (
-        <>
-          <span className="sound-invite-ring sound-invite-ring--one" aria-hidden="true" />
-          <span className="sound-invite-ring sound-invite-ring--two" aria-hidden="true" />
-          <span className="sound-invite-label" aria-hidden="true">
-            Activa el ritmo
-          </span>
-        </>
+      {menuOpen && (
+        <div
+          id="sound-track-menu"
+          className="sound-track-menu"
+          role="menu"
+          aria-label="Elegir canción"
+        >
+          <div className="sound-track-menu-heading">
+            <span>Selecciona canción</span>
+            <span>{String(AMBIENT_TRACKS.length).padStart(2, "0")}</span>
+          </div>
+          <div className="sound-track-list">
+            {AMBIENT_TRACKS.map((item) => {
+              const active = item.id === track.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={active}
+                  className={`sound-track-option${active ? " is-active" : ""}`}
+                  onClick={() => void chooseTrack(item.id)}
+                >
+                  <span className="sound-track-option-dot" aria-hidden="true" />
+                  <span className="min-w-0">
+                    <strong>{item.title}</strong>
+                    <small>{item.artist}</small>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       )}
-      <SpeakerPixel on={on} />
-      <span
-        className="absolute -right-1 -top-1 w-2.5 h-2.5 rounded-full transition-opacity"
+
+      <button
+        onClick={toggle}
+        aria-pressed={on}
+        aria-label={on ? "Silenciar música" : "Reproducir música"}
+        data-cursor={on ? "SILENCIAR" : "SONIDO"}
+        data-on={on ? "true" : "false"}
+        data-invite={shouldInvite ? "true" : "false"}
+        className="sound-toggle relative w-11 h-11 shrink-0 rounded-full border flex items-center justify-center transition-transform duration-200 hover:scale-105"
         style={{
-          background: on ? "#16a34a" : "var(--ink-faint)",
-          opacity: on ? 1 : 0.3,
+          borderColor: "var(--pill-border)",
+          background: "var(--bg-light)",
+          backdropFilter: "blur(8px)",
         }}
-        aria-hidden="true"
-      />
-    </button>
+      >
+        {shouldInvite && (
+          <>
+            <span className="sound-invite-ring sound-invite-ring--one" aria-hidden="true" />
+            <span className="sound-invite-ring sound-invite-ring--two" aria-hidden="true" />
+            <span className="sound-invite-label" aria-hidden="true">
+              Activa el ritmo
+            </span>
+          </>
+        )}
+        <SpeakerPixel on={on} />
+        <span
+          className="absolute -right-1 -top-1 w-2.5 h-2.5 rounded-full transition-opacity"
+          style={{
+            background: on ? "#16a34a" : "var(--ink-faint)",
+            opacity: on ? 1 : 0.3,
+          }}
+          aria-hidden="true"
+        />
+      </button>
+
+      <button
+        type="button"
+        className="sound-track-toggle"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        aria-controls="sound-track-menu"
+        aria-label={`Canción actual: ${track.title}, ${track.artist}. Elegir otra canción`}
+        onClick={() => {
+          setHasInteracted(true);
+          setMenuOpen((open) => !open);
+        }}
+      >
+        <span className="sound-track-status" aria-hidden="true">
+          {on ? "ON AIR" : "TRACK"}
+        </span>
+        <span className="sound-track-copy">
+          <strong>{track.title}</strong>
+          <small>{track.artist}</small>
+        </span>
+        <svg
+          viewBox="0 0 10 10"
+          width="10"
+          height="10"
+          aria-hidden="true"
+          className={menuOpen ? "rotate-180" : undefined}
+        >
+          <path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+        </svg>
+      </button>
+
+      <span
+        className="sr-only"
+        aria-live="polite"
+      >
+        {on
+          ? `Reproduciendo ${track.title} de ${track.artist}`
+          : `Canción seleccionada: ${track.title} de ${track.artist}`}
+      </span>
+    </div>
   );
 }
 

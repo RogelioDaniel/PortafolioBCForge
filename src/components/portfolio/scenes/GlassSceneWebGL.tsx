@@ -235,7 +235,10 @@ export default function GlassSceneWebGL({
       powerPreference: "high-performance",
     });
     renderer.setSize(W, H);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, coarsePointer ? 1 : 1.25)
+    );
     mount.appendChild(renderer.domElement);
 
     // Dimensiones del panel que cubre el viewport
@@ -275,21 +278,23 @@ export default function GlassSceneWebGL({
     renderer.domElement.style.cursor = "pointer";
     renderer.domElement.addEventListener("click", onClick);
 
+    const screenSlot = mount.closest<HTMLElement>(".screen-slot");
     let visible = true;
+    let screenActive = screenSlot?.dataset.phase !== "exit";
     const io = new IntersectionObserver(
       ([entry]) => {
         visible = entry.isIntersecting;
+        syncRenderLoop();
       },
       { threshold: 0 }
     );
     io.observe(mount);
 
-    // RAF con id estable: el cleanup cancela SIEMPRE el frame pendiente
-    // (antes solo cancelaba el primero → loop fantasma sobre un renderer muerto).
-    let rafId = 0;
-    const animate = () => {
-      rafId = requestAnimationFrame(animate);
-      if (!visible) return;
+    let lastRenderAt = 0;
+    const minimumFrameTime = 1000 / (coarsePointer ? 30 : 45);
+    const animate = (timestamp: number) => {
+      if (timestamp - lastRenderAt < minimumFrameTime) return;
+      lastRenderAt = timestamp;
       const p = progressRef.current;
       const active = activeRef.current;
       // uShatter: 0 al inicio, sube a 1 al 50% del progreso, vuelve a 0 al final
@@ -306,22 +311,46 @@ export default function GlassSceneWebGL({
       mat.uniforms.uShatter.value = shatter;
       renderer.render(scene, camera);
     };
-    animate();
+
+    function syncRenderLoop() {
+      const shouldRender = visible && screenActive && !document.hidden;
+      renderer.setAnimationLoop(shouldRender ? animate : null);
+    }
+
+    const phaseObserver = screenSlot
+      ? new MutationObserver(() => {
+          screenActive = screenSlot.dataset.phase !== "exit";
+          syncRenderLoop();
+        })
+      : null;
+    phaseObserver?.observe(screenSlot!, {
+      attributes: true,
+      attributeFilter: ["data-phase"],
+    });
+
+    const onVisibilityChange = () => syncRenderLoop();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    syncRenderLoop();
 
     const onResize = () => {
       W = mount.clientWidth || window.innerWidth;
       H = mount.clientHeight || window.innerHeight;
       camera.aspect = W / H;
       camera.updateProjectionMatrix();
+      renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio, coarsePointer ? 1 : 1.25)
+      );
       renderer.setSize(W, H);
     };
     window.addEventListener("resize", onResize);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      renderer.setAnimationLoop(null);
       renderer.domElement.removeEventListener("click", onClick);
       window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       io.disconnect();
+      phaseObserver?.disconnect();
       geo.dispose();
       mat.dispose();
       renderer.dispose();

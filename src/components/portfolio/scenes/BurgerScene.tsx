@@ -93,10 +93,26 @@ export default function BurgerScene({
 
     let raf = 0;
     let lastActive = -1;
+    let lastProgress = -1;
+    let revealStarted = false;
+    let revealFinished = false;
+    const screenSlot = root.closest<HTMLElement>(".screen-slot");
     const animate = () => {
       raf = requestAnimationFrame(animate);
+      if (
+        document.hidden ||
+        screenSlot?.dataset.phase === "exit"
+      ) {
+        return;
+      }
+
       const p = progressRef.current;
       const active = activeRef.current;
+      const quantizedProgress = Math.round(p * 1000) / 1000;
+
+      if (p >= 0.05) revealStarted = true;
+      if (revealStarted && p < 0.04) revealFinished = true;
+      if (active === lastActive && quantizedProgress === lastProgress) return;
 
       // Arrancar/detener el driver de capas según si está activo
       if (active === 0 && p < 0.05) {
@@ -106,7 +122,7 @@ export default function BurgerScene({
       // Idle bounce: solo cuando activo y al inicio del scroll
       const idleEl = idleRef.current;
       if (idleEl) {
-        if (active === 0 && p < 0.04) {
+        if (active === 0 && revealFinished && p < 0.04) {
           idleEl.classList.add("is-bouncing");
         } else {
           idleEl.classList.remove("is-bouncing");
@@ -130,6 +146,7 @@ export default function BurgerScene({
       }
 
       lastActive = active;
+      lastProgress = quantizedProgress;
     };
     animate();
 

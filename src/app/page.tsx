@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from "react";
 import Preloader from "@/components/portfolio/Preloader";
 import BackgroundGlow from "@/components/portfolio/BackgroundGlow";
 import Cursor from "@/components/portfolio/Cursor";
@@ -35,7 +40,10 @@ import { usePrefersReducedMotion } from "@/lib/motion-hooks";
  */
 export default function Home() {
   const [loaded, setLoaded] = useState(false);
+  const [appReady, setAppReady] = useState(false);
   const reduced = usePrefersReducedMotion();
+  const finishPreloader = useCallback(() => setLoaded(true), []);
+  const reportAppReady = useCallback(() => setAppReady(true), []);
 
   useEffect(() => {
     // Bloquea scroll durante preloader (el screen-nav también lo bloquea después)
@@ -50,22 +58,37 @@ export default function Home() {
     <>
       <BackgroundGlow />
       <div className="bg-noise" aria-hidden="true" />
-      <Cursor />
+      {loaded && <Cursor />}
 
-      {!loaded && <Preloader onDone={() => setLoaded(true)} />}
+      <ScreenNavProvider>
+        <AppShell reduced={reduced} onReady={reportAppReady} />
+      </ScreenNavProvider>
 
-      {loaded && (
-        <ScreenNavProvider>
-          <AppShell reduced={reduced} />
-        </ScreenNavProvider>
-      )}
+      {!loaded && <Preloader ready={appReady} onDone={finishPreloader} />}
     </>
   );
 }
 
 /** Capa interna que vive dentro del provider para acceder al contexto. */
-function AppShell({ reduced }: { reduced: boolean }) {
+function AppShell({
+  reduced,
+  onReady,
+}: {
+  reduced: boolean;
+  onReady: () => void;
+}) {
   const { current, direction } = useScreenNav();
+
+  useEffect(() => {
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(onReady);
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
+  }, [onReady]);
 
   return (
     <>
@@ -130,7 +153,7 @@ function ScreenStage({
     return () => window.clearTimeout(t);
   }, [displayedCurrent, outgoing, transitionDirection]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
     if (outgoing === null) {
       delete root.dataset.screenTransition;

@@ -170,17 +170,28 @@ export default function LegoScene({
     const brickEls = Array.from(
       container.querySelectorAll<SVGGElement>("[data-brick-id]")
     );
+    const maxGz = Math.max(...bricks.map((brick) => brick.gz));
+    const screenSlot = container.closest<HTMLElement>(".screen-slot");
 
     let raf = 0;
+    let lastProgress = -1;
     const animate = () => {
       raf = requestAnimationFrame(animate);
+      if (
+        document.hidden ||
+        screenSlot?.dataset.phase === "exit"
+      ) {
+        return;
+      }
+
       const p = progressRef.current;
       const active = activeRef.current;
       if (active !== 1) return;
+      const quantizedProgress = Math.round(p * 1000) / 1000;
+      if (quantizedProgress === lastProgress) return;
+      lastProgress = quantizedProgress;
 
       // Normalizar el orden de armado: por altura gz, luego por posición
-      const maxGz = Math.max(...bricks.map((b) => b.gz));
-
       brickEls.forEach((el) => {
         const brickId = parseInt(el.dataset.brickId || "0", 10);
         const brick = bricks[brickId];

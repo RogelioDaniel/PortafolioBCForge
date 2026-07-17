@@ -41,7 +41,9 @@ export default function HeroScene({
       powerPreference: "high-performance",
     });
     renderer.setSize(mount.clientWidth, mount.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, isTouch ? 1 : 1.25)
+    );
     mount.appendChild(renderer.domElement);
 
     const ambient = new THREE.AmbientLight(0xffffff, 0.7);
@@ -155,7 +157,9 @@ export default function HeroScene({
       audioBands.treble = bands.treble;
     });
 
+    const screenSlot = mount.closest<HTMLElement>(".screen-slot");
     let visible = true;
+    let screenActive = screenSlot?.dataset.phase !== "exit";
     let running = false;
     let raf = 0;
 
@@ -166,7 +170,7 @@ export default function HeroScene({
     };
 
     const start = () => {
-      if (running || !visible || document.hidden) return;
+      if (running || !visible || !screenActive || document.hidden) return;
       running = true;
       raf = window.requestAnimationFrame(animate);
     };
@@ -183,7 +187,7 @@ export default function HeroScene({
 
     const startTime = performance.now();
     const animate = () => {
-      if (!visible || document.hidden) {
+      if (!visible || !screenActive || document.hidden) {
         running = false;
         return;
       }
@@ -229,6 +233,18 @@ export default function HeroScene({
       else start();
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
+
+    const phaseObserver = screenSlot
+      ? new MutationObserver(() => {
+          screenActive = screenSlot.dataset.phase !== "exit";
+          if (screenActive) start();
+          else stop();
+        })
+      : null;
+    phaseObserver?.observe(screenSlot!, {
+      attributes: true,
+      attributeFilter: ["data-phase"],
+    });
     start();
 
     const onResize = () => {
@@ -236,6 +252,9 @@ export default function HeroScene({
       const h = mount.clientHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio, isTouch ? 1 : 1.25)
+      );
       renderer.setSize(w, h);
     };
     window.addEventListener("resize", onResize);
@@ -243,6 +262,7 @@ export default function HeroScene({
     return () => {
       stop();
       io.disconnect();
+      phaseObserver?.disconnect();
       unsubscribeAudio?.();
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("mousemove", onMouse);

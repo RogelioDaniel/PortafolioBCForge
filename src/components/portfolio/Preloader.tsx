@@ -13,11 +13,21 @@ import { SITE } from "@/lib/portfolio-content";
  *  - toggle pill ON/OFF de sonido (conectado a Web Audio API)
  * Al llegar a 100, la pantalla se abre con un wipe vertical.
  */
-export default function Preloader({ onDone }: { onDone: () => void }) {
+export default function Preloader({
+  ready,
+  onDone,
+}: {
+  ready: boolean;
+  onDone: () => void;
+}) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const readyRef = useRef(ready);
   const [pct, setPct] = useState(0);
   const [soundOn, setSoundOn] = useState(false);
-  const [, setLeaving] = useState(false);
+
+  useEffect(() => {
+    readyRef.current = ready;
+  }, [ready]);
 
   useEffect(() => {
     const reduced = window.matchMedia(
@@ -28,30 +38,89 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
     const ambient = getAmbient();
     const unsub = ambient?.subscribe((on) => setSoundOn(on));
 
-    // Contador 0 → 100
+    let cancelled = false;
+    let onWindowLoad: (() => void) | null = null;
+    let minimumTimer = 0;
+    let failsafeTimer = 0;
+    let readyFrame = 0;
+    let finishTween: gsap.core.Tween | null = null;
+    let exitTween: gsap.core.Tween | null = null;
+
+    // El contador avanza hasta 88 mientras espera las señales reales de
+    // documento + fuentes. Sólo llega a 100 cuando la interfaz está lista.
     const obj = { v: 0 };
-    const tl = gsap.timeline();
-    tl.to(obj, {
-      v: 100,
-      duration: reduced ? 0.3 : 2.2,
-      ease: "power1.inOut",
+    const approachTween = gsap.to(obj, {
+      v: 88,
+      duration: reduced ? 0.15 : 1.35,
+      ease: "power2.out",
       onUpdate: () => setPct(Math.round(obj.v)),
     });
-    tl.to(
-      rootRef.current,
-      { duration: 0.1, onComplete: () => {} },
-      "+=0.1"
-    );
-    tl.call(() => setLeaving(true));
-    tl.to(rootRef.current, {
-      yPercent: -100,
-      duration: reduced ? 0.3 : 0.9,
-      ease: "power4.inOut",
-      onComplete: () => onDone(),
+
+    const windowReady = new Promise<void>((resolve) => {
+      if (document.readyState === "complete") {
+        resolve();
+        return;
+      }
+      onWindowLoad = () => resolve();
+      window.addEventListener("load", onWindowLoad, { once: true });
+    });
+    const fontsReady = document.fonts?.ready.then(() => undefined) ??
+      Promise.resolve();
+    const interfaceReady = new Promise<void>((resolve) => {
+      const check = () => {
+        if (cancelled) return;
+        if (readyRef.current) {
+          resolve();
+          return;
+        }
+        readyFrame = window.requestAnimationFrame(check);
+      };
+      check();
+    });
+    const minimumVisible = new Promise<void>((resolve) => {
+      minimumTimer = window.setTimeout(resolve, reduced ? 80 : 650);
+    });
+    const failsafe = new Promise<void>((resolve) => {
+      failsafeTimer = window.setTimeout(resolve, reduced ? 180 : 2600);
+    });
+
+    void Promise.all([
+      minimumVisible,
+      Promise.race([
+        Promise.all([windowReady, fontsReady, interfaceReady]),
+        failsafe,
+      ]),
+    ]).then(() => {
+      if (cancelled) return;
+      approachTween.kill();
+      finishTween = gsap.to(obj, {
+        v: 100,
+        duration: reduced ? 0.12 : 0.42,
+        ease: "power2.out",
+        onUpdate: () => setPct(Math.round(obj.v)),
+        onComplete: () => {
+          setPct(100);
+          exitTween = gsap.to(rootRef.current, {
+            yPercent: -100,
+            duration: reduced ? 0.22 : 0.62,
+            ease: "power4.inOut",
+            onComplete: onDone,
+          });
+        },
+      });
     });
 
     return () => {
-      tl.kill();
+      cancelled = true;
+      approachTween.kill();
+      finishTween?.kill();
+      exitTween?.kill();
+      window.clearTimeout(minimumTimer);
+      window.clearTimeout(failsafeTimer);
+      window.cancelAnimationFrame(readyFrame);
+      if (onWindowLoad) {
+        window.removeEventListener("load", onWindowLoad);
+      }
       unsub?.();
     };
   }, [onDone]);
@@ -85,17 +154,36 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
         </span>
       </div>
 
-      {/* Centro — LOADING + barra con círculo deslizante + % (estilo Labs) */}
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6 md:gap-10 px-6 md:px-10">
-        <h1
-          className="display display--heavy leading-[0.82] shrink-0"
-          style={{ fontSize: "clamp(3.2rem, 11vw, 11rem)" }}
-        >
-          LOADING
-        </h1>
-        {/* Barra píldora outline: el círculo negro viaja de izquierda a derecha */}
+      {/* Centro — lectura estable arriba y pista completa debajo. El porcentaje
+          reserva siempre tres dígitos para no redimensionar la barra. */}
+      <div className="relative z-10 w-full px-6 md:px-10">
+        <div className="flex items-end justify-between gap-4 md:gap-10">
+          <h1
+            className="display display--heavy leading-[0.82] min-w-0"
+            style={{ fontSize: "clamp(3.2rem, 11vw, 11rem)" }}
+          >
+            LOADING
+          </h1>
+          <div className="shrink-0 flex items-start justify-end">
+            <span
+              className="display display--heavy tabular-nums leading-[0.82] inline-block w-[3ch] text-right"
+              style={{ fontSize: "clamp(2rem, 9vw, 11rem)" }}
+            >
+              {pct}
+            </span>
+            <span
+              className="display display--heavy leading-none mt-1 md:mt-3"
+              style={{ fontSize: "clamp(1.1rem, 2.8vw, 3rem)" }}
+            >
+              %
+            </span>
+          </div>
+        </div>
+
+        {/* La posición y el porcentaje salen del mismo valor; no hay un tween
+            separado que pueda adelantar o atrasar la bola. */}
         <div
-          className="relative h-14 md:h-24 rounded-full border w-full flex-1"
+          className="relative mt-6 md:mt-8 h-14 md:h-20 rounded-full border w-full"
           style={{ borderColor: "var(--pill-border-strong)" }}
           role="progressbar"
           aria-valuenow={pct}
@@ -103,32 +191,16 @@ export default function Preloader({ onDone }: { onDone: () => void }) {
           aria-valuemax={100}
           aria-label="Cargando"
         >
-          {/* Pista interior con padding; el translateX(-pct%) mantiene el
-              círculo siempre dentro de la pista sin constantes mágicas */}
           <div className="absolute inset-2 md:inset-2.5">
             <span
               className="absolute top-1/2 h-full aspect-square rounded-full bg-[var(--ink)] block"
               style={{
                 left: `${pct}%`,
-                transform: `translateX(-${pct}%) translateY(-50%)`,
-                transition: "left 0.1s linear",
+                transform: `translate3d(-${pct}%, -50%, 0)`,
+                willChange: "left, transform",
               }}
             />
           </div>
-        </div>
-        <div className="shrink-0 flex items-start justify-end">
-          <span
-            className="display display--heavy tabular-nums leading-[0.82]"
-            style={{ fontSize: "clamp(3.2rem, 11vw, 11rem)" }}
-          >
-            {pct}
-          </span>
-          <span
-            className="display display--heavy leading-none mt-1 md:mt-3"
-            style={{ fontSize: "clamp(1.3rem, 3.2vw, 3rem)" }}
-          >
-            %
-          </span>
         </div>
       </div>
 

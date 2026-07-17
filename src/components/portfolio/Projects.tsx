@@ -96,7 +96,7 @@ export default function Projects() {
   useEffect(() => {
     activeRef.current = 0;
     progressRef.current = 0;
-    startReveal(0, 0.2);
+    startReveal(0);
     return () => {
       tweenRef.current?.kill();
     };
@@ -127,11 +127,18 @@ export default function Projects() {
     return () => registerSubNav(sub, true);
   }, [registerSubNav, goToProject, lastIndex]);
 
-  const openProject = (project: Project) => {
+  const openProject = useCallback((project: Project) => {
     if (project.liveUrl && project.liveUrl !== "#") {
       window.open(project.liveUrl, "_blank", "noopener,noreferrer");
     }
-  };
+  }, []);
+
+  // Identidad estable: evita reconstruir el renderer de PRISMA cuando el
+  // contexto de navegación vuelve a renderizar la pantalla.
+  const openCurrentProject = useCallback(() => {
+    const project = PROJECTS[activeRef.current];
+    if (project) openProject(project);
+  }, [openProject]);
 
   return (
     <section
@@ -140,20 +147,23 @@ export default function Projects() {
       data-project-tone={current.scene}
       aria-label="Proyectos destacados"
     >
-      {/* Palabra clave gigante centrada — DEBAJO de la escena */}
-      <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
-        <span
-          key={`kw-${active}`}
-          className="project-keyword audio-title display whitespace-nowrap project-kw-enter"
-          style={{
-            fontSize: "clamp(3.2rem, 15vw, 14.5rem)",
-            color: "var(--ink)",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {current.keyword}
-        </span>
-      </div>
+      {/* Palabra clave gigante centrada — Helado Nube ya lleva su propio
+          lettering dentro de la escena y no necesita la palabra CREMA detrás. */}
+      {current.scene !== "icecream" && (
+        <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
+          <span
+            key={`kw-${active}`}
+            className="project-keyword audio-title display whitespace-nowrap project-kw-enter"
+            style={{
+              fontSize: "clamp(3.2rem, 15vw, 14.5rem)",
+              color: "var(--ink)",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {current.keyword}
+          </span>
+        </div>
+      )}
 
       {/* Escena central (solo se monta la activa). Click en la escena → sitio. */}
       <ProjectScenes
@@ -161,7 +171,7 @@ export default function Projects() {
         active={active}
         activeRef={activeRef}
         progressRef={progressRef}
-        onOpen={() => openProject(current)}
+        onOpen={openCurrentProject}
       />
 
       {/* Panel superior: nombre + descripción del proyecto.

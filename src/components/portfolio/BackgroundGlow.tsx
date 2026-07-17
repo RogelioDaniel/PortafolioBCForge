@@ -12,10 +12,9 @@ const SPARKS = [
 ] as const;
 
 /**
- * BackgroundGlow — resplandor radial cálido durazno/rosa que flota lentamente
- * sobre el fondo lavanda (posición animada con GSAP, ~24s loop, muy sutil).
- * El fondo NUNCA es plano: siempre lavanda + glow en movimiento.
- * Usa CSS custom property --glow-x/--glow-y para mover el centro del radial.
+ * BackgroundGlow — resplandor radial cálido y esfera musical por proyecto.
+ * El drift ambiental vive en una capa CSS compuesta; las bandas globales del
+ * analizador sólo controlan transform y opacidad de los elementos rítmicos.
  */
 export default function BackgroundGlow() {
   return (

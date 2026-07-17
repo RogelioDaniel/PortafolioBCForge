@@ -194,10 +194,10 @@ a {
    Nunca plano: lavanda + glow en movimiento
    ============================================================ */
 .bg-glow {
-  --audio-bass: 0;
-  --audio-mid: 0;
-  --audio-treble: 0;
-  --audio-energy: 0;
+  --audio-bass: var(--music-bass-hit);
+  --audio-mid: var(--music-mid-flow);
+  --audio-treble: var(--music-treble-spark);
+  --audio-energy: var(--music-energy-lift);
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -242,7 +242,7 @@ a {
   transition: opacity 180ms ease-out;
 }
 
-.bg-glow[data-audio-active="true"] .audio-rhythm {
+html[data-music-reactive="true"] .bg-glow .audio-rhythm {
   opacity: 1;
 }
 
@@ -328,7 +328,7 @@ body.theme-dark .bg-glow {
   opacity: 0;
 }
 
-body.theme-dark .bg-glow[data-audio-active="true"] {
+html[data-music-reactive="true"] body.theme-dark .bg-glow {
   opacity: 0.82;
 }
 
@@ -467,24 +467,9 @@ html[data-project-tone="glass"] .audio-wash {
     scale(calc(0.9 + var(--audio-bass) * 0.18));
 }
 
-/* En plena navegación dejamos el halo en un fotograma luminoso estable.
-   Esto evita que las capas grandes compitan con el slide de las pantallas. */
-html[data-screen-transition="true"] .bg-glow .audio-wash {
-  opacity: 0.22;
-  transform: translate3d(-50%, -50%, 0) scale(0.94);
-  transition: none;
-}
-
 html[data-screen-transition="true"] .audio-rail,
 html[data-screen-transition="true"] .audio-spark {
   opacity: 0;
-  transition: none;
-}
-
-html[data-screen-transition="true"] .audio-title {
-  text-shadow:
-    0 0 14px rgb(var(--title-glow-rgb) / 0.54),
-    0 0 30px rgb(var(--title-glow-rgb) / 0.28);
   transition: none;
 }
 
@@ -866,9 +851,9 @@ html.theme-site-dark .cursor-dot.is-hover ~ .cursor-label {
   *,
   *::before,
   *::after {
-    animation-duration: 0.3s !important;
+    animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.3s !important;
+    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
   .reveal-mask > .reveal-inner {
@@ -1058,6 +1043,179 @@ body.theme-dark .bg-noise {
   isolation: isolate;
 }
 
+.sound-track-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  width: min(230px, calc(100vw - 84px));
+  height: 44px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--pill-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-light) 88%, transparent);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.sound-track-toggle:hover,
+.sound-track-toggle[aria-expanded="true"] {
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--bg-light) 96%, transparent);
+}
+
+.sound-track-status {
+  font-family: var(--font-space-mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  opacity: 0.55;
+}
+
+.sound-track-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.sound-track-copy strong,
+.sound-track-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sound-track-copy strong {
+  font-family: var(--font-space-mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sound-track-copy small {
+  margin-top: 3px;
+  font-family: var(--font-inter);
+  font-size: 9px;
+  opacity: 0.56;
+}
+
+.sound-track-toggle svg {
+  transition: transform 180ms ease;
+}
+
+.sound-track-menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  width: min(290px, calc(100vw - 40px));
+  padding: 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--ink) 24%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg-light) 94%, transparent);
+  box-shadow: 0 18px 50px rgba(14, 14, 16, 0.2);
+  color: var(--ink);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+  animation: sound-menu-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sound-track-menu-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.45rem 0.5rem;
+  font-family: var(--font-space-mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.58;
+}
+
+.sound-track-list {
+  display: grid;
+  gap: 3px;
+}
+
+.sound-track-option {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 44px;
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.sound-track-option:hover,
+.sound-track-option:focus-visible {
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+.sound-track-option.is-active {
+  border-color: color-mix(in srgb, var(--ink) 22%, transparent);
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+}
+
+.sound-track-option-dot {
+  width: 6px;
+  height: 6px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.45;
+}
+
+.sound-track-option.is-active .sound-track-option-dot {
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+  opacity: 1;
+}
+
+.sound-track-option strong,
+.sound-track-option small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sound-track-option strong {
+  font-family: var(--font-space-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.sound-track-option small {
+  margin-top: 2px;
+  font-size: 10px;
+  opacity: 0.58;
+}
+
+@keyframes sound-menu-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
 .sound-toggle[data-invite="true"] {
   animation: sound-invite-button 1.65s cubic-bezier(0.22, 1, 0.36, 1) 3;
 }
@@ -1078,8 +1236,8 @@ body.theme-dark .bg-noise {
 
 .sound-invite-label {
   position: absolute;
-  left: calc(100% + 13px);
-  bottom: 50%;
+  left: 0;
+  bottom: calc(100% + 12px);
   display: inline-flex;
   align-items: center;
   min-height: 30px;
@@ -1103,9 +1261,10 @@ body.theme-dark .bg-noise {
 .sound-invite-label::before {
   content: "";
   position: absolute;
-  right: 100%;
-  width: 13px;
-  height: 1px;
+  left: 21px;
+  top: 100%;
+  width: 1px;
+  height: 12px;
   background: var(--ink);
   opacity: 0.35;
 }
@@ -1141,16 +1300,16 @@ body.theme-dark .bg-noise {
   0%,
   8% {
     opacity: 0;
-    transform: translate3d(-8px, 50%, 0);
+    transform: translate3d(0, 8px, 0);
   }
   14%,
   76% {
     opacity: 1;
-    transform: translate3d(0, 50%, 0);
+    transform: translate3d(0, 0, 0);
   }
   100% {
     opacity: 0;
-    transform: translate3d(-4px, 50%, 0);
+    transform: translate3d(0, 4px, 0);
   }
 }
 
@@ -1161,6 +1320,11 @@ body.theme-dark .bg-noise {
 .screen-slot {
   contain: layout paint style;
   backface-visibility: hidden;
+}
+
+html[data-screen-transition="true"] .bg-noise {
+  opacity: 0;
+  mix-blend-mode: normal;
 }
 /* Entrada — la nueva pantalla llega desde el sentido del avance.
    Sin blur (caro): solo translate + fade, GPU-friendly. */

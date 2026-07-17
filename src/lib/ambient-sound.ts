@@ -13,6 +13,41 @@ export type AudioBands = {
 
 type EnabledCallback = (enabled: boolean) => void;
 type AnalysisCallback = (bands: AudioBands) => void;
+type TrackCallback = (track: AmbientTrack) => void;
+
+export type AmbientTrack = {
+  id: string;
+  title: string;
+  artist: string;
+  src: string;
+};
+
+export const AMBIENT_TRACKS: readonly AmbientTrack[] = [
+  {
+    id: "guitar-afro-beat",
+    title: "Guitar Afro Beat",
+    artist: "Aexbeats",
+    src: "/sounds/aexbeats-guitar-afro-beat-554799.mp3",
+  },
+  {
+    id: "duro",
+    title: "Duro",
+    artist: "Kontraa",
+    src: "/sounds/kontraa-duro-afro-music-278978.mp3",
+  },
+  {
+    id: "unlock-me",
+    title: "Unlock Me",
+    artist: "Kontraa",
+    src: "/sounds/kontraa-unlock-me-amapiano-music-149058.mp3",
+  },
+  {
+    id: "milligram",
+    title: "Milligram",
+    artist: "Yellowbirdbeats",
+    src: "/sounds/yellowbirdbeats-afro-smooth-x-afropop-x-afrobeat-chill-afro-beat-milligram-331758.mp3",
+  },
+];
 
 const EMPTY_BANDS: AudioBands = {
   bass: 0,
@@ -24,7 +59,6 @@ const EMPTY_BANDS: AudioBands = {
   trebleSpark: 0,
   energyLift: 0,
 };
-const TRACK_URL = "/sounds/kontraa-unlock-me-amapiano-music-149058.mp3";
 const ANALYSIS_INTERVAL_MS = 1000 / 30;
 const shapeBand = (value: number, gain: number) =>
   value <= 0 ? 0 : Math.min(1, Math.pow(value, 0.72) * gain);
@@ -42,12 +76,24 @@ class AmbientSound {
   private stopTimer: number | null = null;
   private visibilityListening = false;
   private lastAnalysisAt = 0;
+  private trackIndex = Math.floor(Math.random() * AMBIENT_TRACKS.length);
+  private shuffleBag: number[] = [];
+  private trackChangeToken = 0;
   private bands: AudioBands = { ...EMPTY_BANDS };
   private subscribers = new Set<EnabledCallback>();
   private analysisSubscribers = new Set<AnalysisCallback>();
+  private trackSubscribers = new Set<TrackCallback>();
 
   isEnabled() {
     return this.enabled;
+  }
+
+  getTracks() {
+    return AMBIENT_TRACKS;
+  }
+
+  getCurrentTrack() {
+    return AMBIENT_TRACKS[this.trackIndex] ?? AMBIENT_TRACKS[0];
   }
 
   subscribe(callback: EnabledCallback) {
@@ -66,8 +112,21 @@ class AmbientSound {
     };
   }
 
+  subscribeTrack(callback: TrackCallback) {
+    this.trackSubscribers.add(callback);
+    callback(this.getCurrentTrack());
+    return () => {
+      this.trackSubscribers.delete(callback);
+    };
+  }
+
   private notify() {
     this.subscribers.forEach((callback) => callback(this.enabled));
+  }
+
+  private notifyTrack() {
+    const track = this.getCurrentTrack();
+    this.trackSubscribers.forEach((callback) => callback(track));
   }
 
   private notifyAnalysis() {
@@ -112,10 +171,11 @@ class AmbientSound {
 
     if (this.source && this.master && this.analyser && this.audio) return;
 
-    const audio = new Audio(TRACK_URL);
-    audio.loop = true;
+    const audio = new Audio(this.getCurrentTrack().src);
+    audio.loop = false;
     audio.preload = "auto";
     audio.addEventListener("error", this.handleAudioError);
+    audio.addEventListener("ended", this.handleTrackEnded);
 
     const source = this.ctx.createMediaElementSource(audio);
     const master = this.ctx.createGain();
@@ -145,6 +205,79 @@ class AmbientSound {
     this.notify();
     console.warn("AmbientSound: no se pudo cargar la pista de música.");
   };
+
+  private readonly handleTrackEnded = () => {
+    if (!this.wantsPlayback) return;
+    const nextIndex = this.takeRandomTrackIndex();
+    void this.selectTrack(AMBIENT_TRACKS[nextIndex].id);
+  };
+
+  private refillShuffleBag() {
+    const candidates = AMBIENT_TRACKS.map((_, index) => index).filter(
+      (index) => index !== this.trackIndex
+    );
+    for (let index = candidates.length - 1; index > 0; index -= 1) {
+      const target = Math.floor(Math.random() * (index + 1));
+      [candidates[index], candidates[target]] = [
+        candidates[target],
+        candidates[index],
+      ];
+    }
+    this.shuffleBag = candidates;
+  }
+
+  private takeRandomTrackIndex() {
+    if (this.shuffleBag.length === 0) this.refillShuffleBag();
+    return this.shuffleBag.pop() ?? this.trackIndex;
+  }
+
+  async selectTrack(trackId: string) {
+    const nextIndex = AMBIENT_TRACKS.findIndex(
+      (track) => track.id === trackId
+    );
+    if (nextIndex < 0 || nextIndex === this.trackIndex) return;
+
+    const token = ++this.trackChangeToken;
+    const shouldResume = this.enabled || this.wantsPlayback;
+
+    if (shouldResume && this.ctx && this.master) {
+      const now = this.ctx.currentTime;
+      this.master.gain.cancelScheduledValues(now);
+      this.master.gain.setValueAtTime(this.master.gain.value, now);
+      this.master.gain.linearRampToValueAtTime(0, now + 0.12);
+      await new Promise((resolve) => window.setTimeout(resolve, 135));
+      if (token !== this.trackChangeToken) return;
+    }
+
+    this.trackIndex = nextIndex;
+    this.shuffleBag = this.shuffleBag.filter((index) => index !== nextIndex);
+    const track = this.getCurrentTrack();
+
+    if (this.audio) {
+      this.audio.pause();
+      this.audio.src = track.src;
+      this.audio.load();
+    }
+    this.notifyTrack();
+
+    if (!shouldResume || !this.audio) return;
+
+    try {
+      if (this.ctx?.state === "suspended") {
+        await this.ctx.resume();
+      }
+      await this.audio.play();
+      if (token !== this.trackChangeToken) return;
+      if (this.ctx && this.master) {
+        const now = this.ctx.currentTime;
+        this.master.gain.cancelScheduledValues(now);
+        this.master.gain.setValueAtTime(0, now);
+        this.master.gain.linearRampToValueAtTime(0.16, now + 0.2);
+      }
+    } catch (error) {
+      console.warn("AmbientSound: no se pudo cambiar de pista", error);
+    }
+  }
 
   async enable() {
     if (this.enabled || this.wantsPlayback) return;
@@ -345,17 +478,33 @@ class AmbientSound {
   }
 }
 
+const AMBIENT_VERSION = 2;
 const globalWindow =
   typeof window !== "undefined"
-    ? (window as unknown as { __ambient?: AmbientSound })
+    ? (window as unknown as {
+        __ambient?: AmbientSound;
+        __ambientVersion?: number;
+      })
     : undefined;
 
-if (globalWindow && !globalWindow.__ambient) {
+if (
+  globalWindow &&
+  (!globalWindow.__ambient || globalWindow.__ambientVersion !== AMBIENT_VERSION)
+) {
+  if (globalWindow.__ambient?.isEnabled()) {
+    void globalWindow.__ambient.disable();
+  }
   globalWindow.__ambient = new AmbientSound();
+  globalWindow.__ambientVersion = AMBIENT_VERSION;
 }
 
 export function getAmbient() {
   return typeof window !== "undefined"
-    ? (window as unknown as { __ambient?: AmbientSound }).__ambient
+    ? (
+        window as unknown as {
+          __ambient?: AmbientSound;
+          __ambientVersion?: number;
+        }
+      ).__ambient
     : undefined;
 }

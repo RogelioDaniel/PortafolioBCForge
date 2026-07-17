@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -69,7 +70,6 @@ type ScreenNavValue = {
   current: number;
   total: number;
   direction: Direction;
-  isTransitioning: boolean;
   activeId: string;
   goTo: (index: number) => void;
   next: () => void;
@@ -98,13 +98,15 @@ export function useScreenNav() {
 export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState<Direction>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [replayTick, setReplayTick] = useState(0);
   const [subNavEdges, setSubNavEdges] = useState<SubNavEdges | null>(null);
   const lockRef = useRef(false);
   const subNavRef = useRef<SubNav | null>(null);
   const currentRef = useRef(current);
-  currentRef.current = current;
+
+  useLayoutEffect(() => {
+    currentRef.current = current;
+  }, [current]);
 
   const total = SCREENS.length;
 
@@ -148,11 +150,9 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
         if (target === cur || lockRef.current) return cur;
         lockRef.current = true;
         setDirection(target > cur ? "next" : "prev");
-        setIsTransitioning(true);
         // Liberar el lock apenas termina la transición visual.
         window.setTimeout(() => {
           lockRef.current = false;
-          setIsTransitioning(false);
         }, 500);
         // Disparar replayTick para que la nueva pantalla re-animen
         setReplayTick((t) => t + 1);
@@ -234,7 +234,6 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
       current,
       total,
       direction,
-      isTransitioning,
       activeId: SCREENS[current]?.id ?? "top",
       goTo,
       next,
@@ -244,7 +243,7 @@ export function ScreenNavProvider({ children }: { children: React.ReactNode }) {
       subNavEdges,
       notifySubNavChange: syncEdges,
     }),
-    [current, total, direction, isTransitioning, goTo, next, prev, registerSubNav, replayTick, subNavEdges, syncEdges]
+    [current, total, direction, goTo, next, prev, registerSubNav, replayTick, subNavEdges, syncEdges]
   );
 
   return (
