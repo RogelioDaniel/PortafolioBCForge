@@ -14,7 +14,7 @@ export const FACEBOOK_URL =
 
 export const SITE = {
   logo: "BCForge",
-  email: "bcforge@hotmail.com",
+  email: "bcforgesa@hotmail.com",
   city: "México",
   whatsapp: WHATSAPP_URL,
   whatsappDisplay: "56 1707 5485",
