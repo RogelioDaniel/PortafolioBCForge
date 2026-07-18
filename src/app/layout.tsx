@@ -3,6 +3,7 @@ import { Archivo, Space_Mono, Inter, Caveat } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 import { themeInitScript } from "@/lib/use-theme";
 
 // Display: Archivo VARIABLE con eje de anchura (wdth 62–125).
@@ -92,6 +93,7 @@ export default function RootLayout({
             },
           }}
         />
+        <Analytics />
       </body>
     </html>
   );
