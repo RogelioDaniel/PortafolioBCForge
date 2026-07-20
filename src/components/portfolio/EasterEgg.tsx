@@ -16,6 +16,7 @@ export function useEasterEggTrigger(onActivate: () => void) {
   const bufferRef = useRef("");
 
   useEffect(() => {
+    // 1. Escuchar por teclado (PC)
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (
@@ -34,7 +35,40 @@ export function useEasterEggTrigger(onActivate: () => void) {
       }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+
+    // 2. Escuchar por URL (?milenial o #milenial) para celulares
+    const checkUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("milenial") || window.location.hash === "#milenial") {
+        onActivate();
+        
+        // Limpiamos los parámetros para no trabar la navegación futura
+        if (window.location.hash === "#milenial") {
+          window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        } else {
+          const newParams = new URLSearchParams(window.location.search);
+          newParams.delete("milenial");
+          const query = newParams.toString();
+          window.history.replaceState(null, "", window.location.pathname + (query ? `?${query}` : ""));
+        }
+      }
+    };
+
+    // 3. Escuchar por evento táctil del Logo (cabecera)
+    const onCustomEvent = () => {
+      onActivate();
+    };
+
+    checkUrl();
+    // Escucha cambios de hash en vivo
+    window.addEventListener("hashchange", checkUrl);
+    window.addEventListener("trigger-milenial-easter", onCustomEvent);
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("hashchange", checkUrl);
+      window.removeEventListener("trigger-milenial-easter", onCustomEvent);
+    };
   }, [onActivate]);
 }
 
@@ -178,10 +212,7 @@ export default function EasterEgg({ onClose }: { onClose: () => void }) {
           <div className="easter-card-shadow" aria-hidden="true" />
         </div>
 
-        {/* Texto meme abajo */}
-        <p className="easter-meme-bottom">
-          …para que me haga&nbsp;<em>caso.</em> 😅
-        </p>
+
 
         {/* Botón cerrar */}
         <button className="easter-exit-btn" onClick={onClose}>
