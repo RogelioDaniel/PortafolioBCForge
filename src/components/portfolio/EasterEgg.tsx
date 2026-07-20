@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
- * EasterEgg — Sección secreta "Cliente Milenia" 🎬
+ * EasterEgg v2 — "Cliente Milenia" 🐱
  *
- * Se activa escribiendo "milenia" en el teclado desde cualquier pantalla.
- * Muestra el meme del cliente que solo pone atención si le mandas reels.
- * El video se procesa con chroma key en canvas para remover el fondo.
+ * Trigger: escribir "milenial" en el teclado (sin inputs activos).
+ * Efecto: el video de gatitos reemplaza la hamburguesa con un efecto
+ * 3D fancy — perspectiva CSS + parallax al mover el mouse.
  */
 
-const KONAMI = "milenia";
+const SECRET = "milenial";
 
 export function useEasterEggTrigger(onActivate: () => void) {
   const bufferRef = useRef("");
@@ -22,10 +22,13 @@ export function useEasterEggTrigger(onActivate: () => void) {
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
         target.isContentEditable
-      ) return;
+      )
+        return;
 
-      bufferRef.current = (bufferRef.current + e.key.toLowerCase()).slice(-KONAMI.length);
-      if (bufferRef.current === KONAMI) {
+      bufferRef.current = (bufferRef.current + e.key.toLowerCase()).slice(
+        -SECRET.length
+      );
+      if (bufferRef.current === SECRET) {
         onActivate();
         bufferRef.current = "";
       }
@@ -36,97 +39,29 @@ export function useEasterEggTrigger(onActivate: () => void) {
 }
 
 export default function EasterEgg({ onClose }: { onClose: () => void }) {
+  const cardRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
-  const [phase, setPhase] = useState<"intro" | "meme" | "outro">("intro");
-  const [videoReady, setVideoReady] = useState(false);
+  const targetRef = useRef({ rx: -8, ry: 6 });
+  const currentRef = useRef({ rx: -8, ry: 6 });
+  const [entered, setEntered] = useState(false);
 
-  // Procesar chroma key frame a frame (elimina fondo verde/negro)
-  const processFrame = useCallback(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas || video.paused || video.ended) return;
-
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return;
-
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 360;
-
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-
-    // Chroma key: eliminar tonos de verde (fondo chroma típico)
-    // Si no hay fondo verde, simplifica a mix-blend-mode en CSS
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-
-      // Detectar verde chroma (g >> r && g >> b)
-      const isGreen = g > 100 && g > r * 1.4 && g > b * 1.4;
-      // Detectar negro/fondo muy oscuro
-      const isBlack = r < 30 && g < 30 && b < 30;
-      // Detectar blanco casi puro
-      const isWhite = r > 230 && g > 230 && b > 230;
-
-      if (isGreen || isBlack || isWhite) {
-        data[i + 3] = 0; // transparente
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-    rafRef.current = requestAnimationFrame(processFrame);
+  // Entrada suave
+  useEffect(() => {
+    const t = setTimeout(() => setEntered(true), 60);
+    return () => clearTimeout(t);
   }, []);
 
+  // Reproducir video en loop
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const onReady = () => {
-      setVideoReady(true);
-      // Fase intro → meme al cabo de 1.8s
-      setTimeout(() => setPhase("meme"), 1800);
-    };
-
-    video.addEventListener("loadeddata", onReady);
-    video.load();
-
-    return () => {
-      video.removeEventListener("loadeddata", onReady);
-      cancelAnimationFrame(rafRef.current);
-    };
+    const v = videoRef.current;
+    if (!v) return;
+    v.loop = true;
+    v.muted = true;
+    v.play().catch(() => {});
   }, []);
 
-  // Arrancar chroma key cuando el video reproduce
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !videoReady || phase !== "meme") return;
-
-    video.play().catch(() => {});
-
-    const onPlay = () => {
-      rafRef.current = requestAnimationFrame(processFrame);
-    };
-    const onEnd = () => {
-      cancelAnimationFrame(rafRef.current);
-      setPhase("outro");
-    };
-
-    video.addEventListener("play", onPlay);
-    video.addEventListener("ended", onEnd);
-
-    return () => {
-      video.removeEventListener("play", onPlay);
-      video.removeEventListener("ended", onEnd);
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, [videoReady, phase, processFrame]);
-
-  // ESC para cerrar
+  // ESC cierra
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -135,113 +70,129 @@ export default function EasterEgg({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // Mouse parallax 3D — lerp suave hacia el target
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const rx = ((e.clientY / window.innerHeight) - 0.5) * -22;
+      const ry = ((e.clientX / window.innerWidth) - 0.5) * 28;
+      targetRef.current = { rx, ry };
+
+      const card = cardRef.current;
+      if (card) {
+        const rect = card.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        card.style.setProperty("--mouse-x", `${x}%`);
+        card.style.setProperty("--mouse-y", `${y}%`);
+      }
+    };
+
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    const tick = () => {
+      const card = cardRef.current;
+      if (!card) return;
+      currentRef.current.rx = lerp(currentRef.current.rx, targetRef.current.rx, 0.07);
+      currentRef.current.ry = lerp(currentRef.current.ry, targetRef.current.ry, 0.07);
+      card.style.transform = `
+        perspective(700px)
+        rotateX(${currentRef.current.rx}deg)
+        rotateY(${currentRef.current.ry}deg)
+        translateZ(0px)
+      `;
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
   return (
     <div
-      className="easter-egg-overlay"
+      className="easter-wrap"
+      data-entered={entered ? "true" : undefined}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
       role="dialog"
       aria-modal="true"
-      aria-label="Easter egg secreto: cliente Milenia"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      aria-label="Easter egg: cliente Milenia"
     >
-      {/* Grain texture */}
-      <div className="easter-grain" aria-hidden="true" />
-
-      {/* Scanlines retro */}
-      <div className="easter-scanlines" aria-hidden="true" />
-
-      {/* Header clasificado */}
-      <div className="easter-header">
-        <span className="easter-badge">⚠ CLASIFICADO</span>
-        <span className="easter-code">NIVEL: MILENIA · ACCESO CONCEDIDO</span>
+      {/* Partículas decorativas */}
+      <div className="easter-particles" aria-hidden="true">
+        {Array.from({ length: 18 }).map((_, i) => (
+          <span
+            key={i}
+            className="easter-particle"
+            style={{
+              "--i": i,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${(Math.random() * 3).toFixed(2)}s`,
+              animationDuration: `${(2 + Math.random() * 3).toFixed(2)}s`,
+            } as React.CSSProperties}
+          />
+        ))}
       </div>
 
-      {/* Contenido principal */}
-      <div className="easter-content">
+      {/* Contenido central */}
+      <div className="easter-scene">
+        {/* Texto meme arriba */}
+        <p className="easter-meme-top">
+          Cuando tengo que entregarle el sitio a&nbsp;
+          <strong>Milenial:</strong>
+        </p>
 
-        {/* Fase intro */}
-        {phase === "intro" && (
-          <div className="easter-intro">
-            <p className="easter-label">Cuando tengo que entregarle el sitio a mi cliente</p>
-            <h2 className="easter-title glitch" data-text="MILENIA:">
-              MILENIA:
-            </h2>
-          </div>
-        )}
+        {/* Tarjeta 3D con el video */}
+        <div className="easter-3d-stage">
+          <div ref={cardRef} className="easter-card">
+            {/* Brillo especular que sigue al mouse */}
+            <div className="easter-card-shine" aria-hidden="true" />
 
-        {/* Fase meme */}
-        {phase === "meme" && (
-          <div className="easter-meme">
-            <p className="easter-label">Necesito mandarle&hellip;</p>
+            {/* Video */}
+            <video
+              ref={videoRef}
+              src="/easter/milenia.mp4"
+              muted
+              playsInline
+              loop
+              preload="auto"
+              className="easter-video"
+            />
 
-            {/* Lista de reels necesarios */}
-            <div className="easter-checklist">
-              {[
-                "📱 3 Reels de TikTok",
-                "🎬 2 videos de YouTube",
-                "📊 Un PowerPoint animado",
-                "💌 Un PDF con GIFs",
-                "☎️ Una llamada de 45 min",
-              ].map((item, i) => (
-                <span
-                  key={item}
-                  className="easter-check-item"
-                  style={{ animationDelay: `${i * 0.18}s` }}
-                >
-                  {item}
-                </span>
-              ))}
+            {/* Overlay de scan lines sobre el video */}
+            <div className="easter-card-scanlines" aria-hidden="true" />
+
+            {/* Marco decorativo */}
+            <div className="easter-card-frame" aria-hidden="true">
+              <span className="easter-corner tl" />
+              <span className="easter-corner tr" />
+              <span className="easter-corner bl" />
+              <span className="easter-corner br" />
             </div>
-
-            {/* Video del meme (canvas con chroma key) */}
-            <div className="easter-video-wrap">
-              {/* Video oculto fuente */}
-              <video
-                ref={videoRef}
-                src="/easter/milenia.mp4"
-                muted
-                playsInline
-                preload="auto"
-                className="easter-video-src"
-                aria-hidden="true"
-              />
-              {/* Canvas con fondo removido */}
-              <canvas
-                ref={canvasRef}
-                className="easter-canvas"
-                aria-label="Video meme del cliente"
-              />
-              {/* Glow debajo del video */}
-              <div className="easter-video-glow" aria-hidden="true" />
-            </div>
-
-            <p className="easter-caption">
-              &hellip;para que me haga caso.
-            </p>
           </div>
-        )}
 
-        {/* Fase outro */}
-        {phase === "outro" && (
-          <div className="easter-outro">
-            <p className="easter-outro-text">Gracias por entender, Milenia. 🙏</p>
-            <p className="easter-outro-sub">
-              (¿Nos mandas tu feedback por TikTok?)
-            </p>
-            <button className="easter-close-btn" onClick={onClose}>
-              Volver al sitio normal
-            </button>
-          </div>
-        )}
-      </div>
+          {/* Sombra 3D del card */}
+          <div className="easter-card-shadow" aria-hidden="true" />
+        </div>
 
-      {/* Footer */}
-      <div className="easter-footer">
-        <span>[ESC] para escapar de esta realidad</span>
-        {phase !== "outro" && (
-          <button className="easter-skip" onClick={onClose}>
-            Saltar →
-          </button>
-        )}
+        {/* Texto meme abajo */}
+        <p className="easter-meme-bottom">
+          …para que me haga&nbsp;<em>caso.</em> 😅
+        </p>
+
+        {/* Botón cerrar */}
+        <button className="easter-exit-btn" onClick={onClose}>
+          <span>Volver al portafolio</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
+        {/* Hint teclado */}
+        <p className="easter-hint">[ESC] para escapar</p>
       </div>
     </div>
   );
