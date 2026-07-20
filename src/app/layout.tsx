@@ -37,10 +37,17 @@ const caveat = Caveat({
   display: "swap",
 });
 
+// ⚠️ IMPORTANTE: esta es la URL pública real del sitio. Todas las etiquetas
+// Open Graph (og:image, og:url) deben ser ABSOLUTAS o los crawlers de
+// Facebook/WhatsApp/LinkedIn no las resuelven y no muestran vista previa.
+const SITE_URL = "https://bcforge.company";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "BCForge — Sitios web que elevan tu negocio",
   description:
     "BCForge, consultora de desarrollo web en México. Creamos páginas web, tiendas en línea y experiencias interactivas desde $3,000 MXN.",
+  applicationName: "BCForge",
   keywords: [
     "BCForge",
     "páginas web México",
@@ -51,6 +58,10 @@ export const metadata: Metadata = {
     "landing page",
   ],
   authors: [{ name: "BCForge" }],
+  creator: "BCForge",
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: "/icon.svg",
   },
@@ -59,6 +70,15 @@ export const metadata: Metadata = {
     description:
       "Consultora de desarrollo web en México. Páginas, tiendas en línea y experiencias interactivas desde $3,000 MXN.",
     type: "website",
+    url: SITE_URL,
+    siteName: "BCForge",
+    locale: "es_ES",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BCForge — Sitios web que elevan tu negocio",
+    description:
+      "Consultora de desarrollo web en México. Páginas, tiendas en línea y experiencias interactivas desde $3,000 MXN.",
   },
 };
 
