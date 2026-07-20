@@ -57,7 +57,8 @@ export default function EasterEgg({ onClose }: { onClose: () => void }) {
     const v = videoRef.current;
     if (!v) return;
     v.loop = true;
-    v.muted = true;
+    v.muted = false;
+    v.volume = 1.0;
     v.play().catch(() => {});
   }, []);
 
@@ -155,7 +156,6 @@ export default function EasterEgg({ onClose }: { onClose: () => void }) {
             <video
               ref={videoRef}
               src="/easter/milenia.mp4"
-              muted
               playsInline
               loop
               preload="auto"
