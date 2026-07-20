@@ -24,6 +24,7 @@ import SoundToggle from "@/components/portfolio/SoundToggle";
 import CommandPalette from "@/components/portfolio/CommandPalette";
 import ScreenNav from "@/components/portfolio/ScreenNav";
 import VoxelDrifters from "@/components/portfolio/VoxelDrifters";
+import EasterEgg, { useEasterEggTrigger } from "@/components/portfolio/EasterEgg";
 import { ScreenNavProvider, useScreenNav, SCREENS } from "@/lib/use-screen-nav";
 import { usePrefersReducedMotion } from "@/lib/motion-hooks";
 
@@ -100,6 +101,10 @@ function AppShell({
   onHeroReady: () => void;
 }) {
   const { current, direction } = useScreenNav();
+  const [easterOpen, setEasterOpen] = useState(false);
+  const openEaster = useCallback(() => setEasterOpen(true), []);
+  const closeEaster = useCallback(() => setEasterOpen(false), []);
+  useEasterEggTrigger(openEaster);
 
   return (
     <>
@@ -123,6 +128,7 @@ function AppShell({
         heroRunning={heroRunning}
         onHeroReady={onHeroReady}
       />
+      {easterOpen && <EasterEgg onClose={closeEaster} />}
     </>
   );
 }
